@@ -32,4 +32,20 @@ export default [
       ...nextPlugin.configs["core-web-vitals"].rules,
     },
   },
+  {
+    // Frontend components run in the browser; DOM element and event types are
+    // ambient there. Backend modules keep the narrower global list above.
+    files: ["src/app/**/*.tsx", "src/components/**/*.tsx", "src/features/**/*.tsx"],
+    languageOptions: {
+      globals: {
+        AbortController: "readonly",
+        HTMLButtonElement: "readonly",
+        HTMLInputElement: "readonly",
+        HTMLSelectElement: "readonly",
+        KeyboardEvent: "readonly",
+        SVGSVGElement: "readonly",
+        window: "readonly",
+      },
+    },
+  },
 ];

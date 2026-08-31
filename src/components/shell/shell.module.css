@@ -1,0 +1,454 @@
+/* App shell: navigation rail, command bar, content well. */
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+/* ------------------------------------------------------------------- Rail */
+
+.rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  border-right: 1px solid var(--line-soft);
+  background: var(--surface-rail);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--topbar-height);
+  padding: 0 var(--space-5);
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.brandMark {
+  color: var(--brass);
+  flex: none;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brandName {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  line-height: 1.1;
+}
+
+.brandDescriptor {
+  color: var(--text-faint);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-3) var(--space-4);
+}
+
+.navGroup + .navGroup {
+  margin-top: var(--space-6);
+}
+
+.navGroupLabel {
+  padding: 0 var(--space-3) var(--space-2);
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  padding: 0;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 38px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.navItem:hover {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.navItemActive {
+  border-color: var(--brass-hairline);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.navItemActive .navIcon {
+  color: var(--brass);
+}
+
+.navIcon {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.navLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navPending {
+  flex: none;
+  padding: 1px var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.railFooter {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line-soft);
+}
+
+.orgName {
+  color: var(--text-secondary);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orgMeta {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+
+/* --------------------------------------------------------------- Top bar */
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--topbar-height);
+  padding: 0 var(--space-6);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface-canvas);
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--text-faint);
+  font-size: var(--text-body-sm);
+  white-space: nowrap;
+}
+
+.crumbAncestor {
+  flex: none;
+}
+
+.crumbCurrent {
+  color: var(--text-primary);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbarSpacer {
+  flex: 1;
+}
+
+.topbarSearch {
+  width: min(320px, 30vw);
+}
+
+.topbarTools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Scoped to the bar so it outranks the shared button display rule. */
+.topbar .menuButton {
+  display: none;
+}
+
+/* --------------------------------------------------------------- Content */
+
+.content {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* -------------------------------------------------------------- User menu */
+
+.userMenu {
+  position: relative;
+}
+
+.userTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  list-style: none;
+}
+
+.userTrigger::-webkit-details-marker {
+  display: none;
+}
+
+.userTrigger:hover {
+  border-color: var(--line);
+  background: var(--surface-panel);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 1px solid var(--brass-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--brass-tint);
+  color: var(--brass-bright);
+  font-size: var(--text-meta);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.userIdentity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.userName {
+  color: var(--text-primary);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userRole {
+  color: var(--text-faint);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.userPanel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: var(--z-dropdown);
+  width: 264px;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-lg);
+}
+
+.userPanelEmail {
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+  overflow-wrap: anywhere;
+}
+
+.userPanelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.userPanelDivider {
+  height: 1px;
+  margin: var(--space-3) 0;
+  border: 0;
+  background: var(--line-soft);
+}
+
+.logoutForm {
+  display: block;
+}
+
+.logoutButton {
+  width: 100%;
+}
+
+/* ----------------------------------------------------------- Responsive */
+
+/* Laptop and small desktop: the rail keeps its icons, drops its labels. */
+@media (max-width: 1180px) {
+  .shell {
+    grid-template-columns: var(--rail-width-compact) minmax(0, 1fr);
+  }
+
+  .brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .brandText,
+  .navGroupLabel,
+  .navLabel,
+  .navPending,
+  .railFooter {
+    display: none;
+  }
+
+  .navItem {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .content {
+    padding: var(--space-6) var(--space-5) var(--space-12);
+  }
+}
+
+/* Tablet and phone: the rail becomes a drawer. */
+@media (max-width: 860px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: var(--z-modal);
+    width: min(var(--rail-width), 84vw);
+    transform: translateX(-102%);
+    transition: transform var(--duration-slow) var(--ease-out);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Attribute-driven so the open state always outranks the closed default. */
+  .rail[data-open="true"] {
+    transform: translateX(0);
+  }
+
+  .brand {
+    justify-content: flex-start;
+    padding: 0 var(--space-5);
+  }
+
+  .brandText,
+  .navGroupLabel,
+  .navLabel,
+  .navPending,
+  .railFooter {
+    display: revert;
+  }
+
+  .brandText,
+  .navList {
+    display: flex;
+  }
+
+  .navItem {
+    justify-content: flex-start;
+    padding: 0 var(--space-3);
+    min-height: 44px;
+  }
+
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-backdrop);
+    border: 0;
+    background: var(--surface-scrim);
+  }
+
+  .topbar .menuButton {
+    display: inline-flex;
+  }
+
+  .topbar {
+    padding: 0 var(--space-4);
+  }
+
+  .topbarSearch,
+  .crumbAncestor,
+  .userIdentity {
+    display: none;
+  }
+
+  .content {
+    padding: var(--space-6) var(--space-4) var(--space-12);
+    gap: var(--space-6);
+  }
+}

@@ -1,0 +1,480 @@
+/* Shared stylesheet for the Command Center primitives. One file keeps the
+   component vocabulary literally in one place: same shapes, same states. */
+
+/* ------------------------------------------------------------------ Button */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-body-sm);
+  font-weight: 550;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.sizeSm {
+  min-height: 30px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-label);
+}
+
+.sizeLg {
+  min-height: 44px;
+  padding: 0 var(--space-6);
+  font-size: var(--text-body);
+}
+
+/* Brass is the commitment colour: one primary action per view. */
+.primary {
+  background: var(--brass);
+  color: var(--text-on-brass);
+  font-weight: 600;
+}
+
+.primary:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--brass-bright);
+}
+
+.primary:active:not(:disabled) {
+  background: var(--brass-deep);
+}
+
+.secondary {
+  border-color: var(--line);
+  background: var(--surface-panel);
+}
+
+.secondary:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.ghost {
+  color: var(--text-secondary);
+}
+
+.ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.danger {
+  border-color: color-mix(in oklab, var(--danger) 45%, transparent);
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+.danger:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: color-mix(in oklab, var(--danger) 26%, transparent);
+}
+
+.iconButton {
+  min-height: 36px;
+  width: 36px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+}
+
+.iconButton:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+/* -------------------------------------------------------------------- Card */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.cardHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cardTitle {
+  font-size: var(--text-card);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.cardDescription {
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.cardBody {
+  padding: var(--space-5);
+}
+
+/* ------------------------------------------------------------------- Badge */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 22px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badgeBrass {
+  border-color: var(--brass-hairline);
+  background: var(--brass-tint);
+  color: var(--brass-bright);
+}
+
+.badgeSignal {
+  border-color: color-mix(in oklab, var(--signal) 40%, transparent);
+  background: var(--signal-tint);
+  color: var(--signal-bright);
+}
+
+.badgeSuccess {
+  border-color: color-mix(in oklab, var(--success) 40%, transparent);
+  background: var(--success-tint);
+  color: var(--success);
+}
+
+.badgeWarning {
+  border-color: color-mix(in oklab, var(--warning) 40%, transparent);
+  background: var(--warning-tint);
+  color: var(--warning);
+}
+
+.badgeDanger {
+  border-color: color-mix(in oklab, var(--danger) 45%, transparent);
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+/* Status carries a shape as well as a colour, so meaning survives without it. */
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+  flex: none;
+}
+
+.statusDotHollow {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+.statusDotSquare {
+  border-radius: 1px;
+}
+
+/* ------------------------------------------------------------------- Field */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.label {
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--text-muted);
+  font-size: var(--text-meta);
+}
+
+.control {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: var(--text-body-sm);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.control::placeholder {
+  color: var(--text-muted);
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.control:disabled {
+  cursor: not-allowed;
+  color: var(--text-faint);
+  opacity: 0.7;
+}
+
+.control[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.select {
+  appearance: none;
+  padding-right: var(--space-8);
+}
+
+.selectWrap {
+  position: relative;
+  display: block;
+}
+
+.selectChevron {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  translate: 0 -50%;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.searchWrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: var(--space-3);
+  translate: 0 -50%;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  padding-left: calc(var(--space-3) * 2 + 16px);
+}
+
+/* ------------------------------------------------------------------ States */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+}
+
+.stateGlyph {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.stateGlyphDanger {
+  border-color: color-mix(in oklab, var(--danger) 40%, transparent);
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+.stateTitle {
+  font-size: var(--text-section);
+  font-weight: 600;
+}
+
+.stateBody {
+  max-width: 46ch;
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.stateActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* ---------------------------------------------------------------- Skeleton */
+
+.skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--surface-raised) 0%,
+    color-mix(in oklab, var(--surface-raised) 55%, var(--line)) 50%,
+    var(--surface-raised) 100%
+  );
+  background-size: 220% 100%;
+  animation: shimmer 1.4s var(--ease-out) infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 120% 0;
+  }
+
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    background: var(--surface-raised);
+  }
+}
+
+/* ------------------------------------------------------------------- Table */
+
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body-sm);
+}
+
+.table th {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  color: var(--text-muted);
+  font-size: var(--text-label);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody tr:hover td {
+  background: var(--surface-raised);
+}
+
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/* ------------------------------------------------------------- Page header */
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.pageHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.pageTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-title);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.pageLede {
+  max-width: 68ch;
+  color: var(--text-muted);
+  font-size: var(--text-body);
+}
+
+.pageHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.sectionTitle {
+  font-size: var(--text-section);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.sectionMeta {
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+/* A single brass hairline is the brand ornament. Used sparingly, by name. */
+.brassRule {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, var(--brass-hairline), transparent 62%);
+}
