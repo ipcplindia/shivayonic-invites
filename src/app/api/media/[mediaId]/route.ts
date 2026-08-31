@@ -1,0 +1,42 @@
+import { NextResponse } from "next/server";
+
+import { recordSecurityAudit } from "@/auth/audit";
+import { AppAuthError } from "@/auth/errors";
+import { MediaError } from "@/core/media-errors";
+import { mediaRouteError, requireAuthorizedMedia, serializeMedia } from "@/core/media-api";
+import { getObjectStorage } from "@/core/storage-provider";
+import { prisma } from "@/db/client";
+
+type RouteContext = { params: Promise<{ mediaId: string }> };
+
+export async function GET(request: Request, route: RouteContext) {
+  try {
+    const { mediaId } = await route.params;
+    const { media } = await requireAuthorizedMedia(request, mediaId, "MEDIA_READ");
+    return NextResponse.json({ media: serializeMedia(media) });
+  } catch (error) {
+    return mediaRouteError(error);
+  }
+}
+
+export async function DELETE(request: Request, route: RouteContext) {
+  try {
+    const { mediaId } = await route.params;
+    const { context, media } = await requireAuthorizedMedia(request, mediaId, "MEDIA_WRITE");
+    const mode = new URL(request.url).searchParams.get("mode") ?? "archive";
+    if (mode === "archive") {
+      if (media.status === "ARCHIVED") throw new MediaError("MEDIA_STATE_INVALID", 409);
+      const archived = await prisma.mediaAsset.update({ where: { id: media.id }, data: { status: "ARCHIVED", archivedAt: new Date() } });
+      await recordSecurityAudit({ action: "MEDIA_ARCHIVED", organizationId: context.organization.id, actorUserId: context.user.id, entityType: "MediaAsset", entityId: media.id });
+      return NextResponse.json({ media: serializeMedia(archived) });
+    }
+    if (mode !== "delete") throw new MediaError("INVALID_MEDIA_INPUT", 400);
+    if (context.role !== "OWNER") throw new AppAuthError("ROLE_NOT_ALLOWED", 403);
+    await getObjectStorage().deleteObject({ storageKey: media.storageKey });
+    await prisma.mediaAsset.delete({ where: { id: media.id } });
+    await recordSecurityAudit({ action: "MEDIA_DELETED", organizationId: context.organization.id, actorUserId: context.user.id, entityType: "MediaAsset", entityId: media.id });
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    return mediaRouteError(error);
+  }
+}

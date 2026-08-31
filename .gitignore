@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+.shivayonic-media/
+coverage/
+*.log
+*.tsbuildinfo
+prisma/*.db
