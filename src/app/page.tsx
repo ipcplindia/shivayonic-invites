@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
+import heroImage from "../../public/hero/hero-desktop.webp";
 import "@/features/public/public.css";
 import "@/features/public/public-sections.css";
 import { PIcon } from "@/features/public/icons";
@@ -40,12 +42,14 @@ export const metadata: Metadata = {
     title: "Shivayonic Invites | Cinematic Invitations, Original Music & Celebration Films",
     description:
       "Cinematic wedding and celebration invitations, original invitation music, devotional experiences and corporate event films.",
+    images: [{ url: "/hero/og.jpg", width: 1200, height: 630, alt: "Shivayonic Invites" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Shivayonic Invites",
     description:
       "Cinematic invitations, original music and celebration films crafted for moments worth remembering.",
+    images: ["/hero/og.jpg"],
   },
 };
 
@@ -75,7 +79,16 @@ export default function HomePage() {
 
       {/* 01 — HERO */}
       <section className="hero" aria-label="Shivayonic Invites">
-        <div className="heroBg" role="img" aria-label="A royal ivory-and-gold wedding pavilion at golden sunset, framed by peach and rose flowers over a reflective marble floor" />
+        <div className="heroBg" aria-hidden="true" />
+        <Image
+          src={heroImage}
+          alt="A royal ivory-and-gold wedding pavilion at golden sunset, framed by peach and rose flowers over a reflective marble floor"
+          className="heroImg"
+          fill
+          priority
+          sizes="100vw"
+          placeholder="blur"
+        />
         <div className="heroScrim" />
         <div className="heroInner">
           <p className="heroEyebrow">Crafting Invitations</p>

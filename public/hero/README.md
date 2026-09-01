@@ -1,16 +1,15 @@
 # Hero image slot
 
-Drop the approved cinematic hero here as `hero.jpg` (or `hero.webp` and update
-`.heroBg` in `src/features/public/public-sections.css`).
+The approved cinematic hero is installed as `hero-desktop.webp` (generated from
+the supplied `landing page.png`) and rendered via `next/image` in
+`src/app/page.tsx`. `og.jpg` is the 1200x630 Open Graph derivative.
 
-Composition brief (approved): a magnificent ivory-and-gold Indian royal wedding
-pavilion, warm golden sunset with open sky on the LEFT (text safe area), the
-principal pavilion shifted RIGHT, peach/coral/ivory/rose florals, reflective
-marble floor, no baked-in text, no people required.
+To replace: drop a new source, regenerate the webp + og with sharp at the same
+sizes, and keep the filenames. `.heroBg` in
+`src/features/public/public-sections.css` is the warm sunset backdrop shown
+behind the photo while it decodes and if it ever fails to load.
 
-Until the file exists, `.heroBg` shows a warm sunset gradient fallback so the
-page never looks broken. `background-position: 78% center` keeps the pavilion
-right and the left open for the headline.
-
-A dedicated mobile crop may be added later as `hero-mobile.jpg` with a
-`@media (max-width: 760px)` override on `.heroBg`.
+Composition brief (approved): ivory-and-gold Indian royal wedding pavilion,
+golden-hour sunset with open sky/space on the LEFT (headline safe area),
+pavilion dominant and biased right, peach/coral/ivory/rose florals, reflective
+marble floor, no baked-in text.

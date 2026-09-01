@@ -14,7 +14,9 @@ export const contact = {
   instagramProfileUrl: "https://www.instagram.com/shivayonic.invites/",
   youtubeChannelUrl: "https://www.youtube.com/results?search_query=Shivayonic+Invites",
   whatsappNumber: "+91 99900 99990",
-  whatsappUrl: "https://wa.me/919990099990",
+  whatsappUrl:
+    "https://wa.me/919990099990?text=" +
+    encodeURIComponent("Hello Shivayonic Invites, I would like to discuss a cinematic invitation."),
 };
 
 export type NavLink = { label: string; href: string };

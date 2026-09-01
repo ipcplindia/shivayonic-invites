@@ -231,28 +231,45 @@
   overflow: hidden;
 }
 
+/* Warm sunset backdrop; painted behind the photo so the hero never flashes
+   empty while the image decodes, and stays graceful if it fails to load. */
 .heroBg {
   position: absolute;
   inset: 0;
-  z-index: -2;
+  z-index: 0;
   background-color: #f3b978;
   background-image:
-    image-set(url("/hero/hero.jpg") 1x),
     radial-gradient(120% 90% at 78% 30%, #f6c98e 0%, transparent 55%),
     linear-gradient(180deg, #f7d7a6 0%, #f3b978 42%, #eaa565 70%, #d98b4e 100%);
-  background-size: cover, cover, cover;
-  background-position: 78% center, center, center;
-  background-repeat: no-repeat;
+}
+
+/* The approved pavilion photo. Biased right so the left stays open for the
+   headline; next/image serves a resized width per viewport. */
+.heroImg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 1;
+  object-fit: cover;
+  object-position: 72% center;
+}
+
+@media (max-width: 760px) {
+  .heroImg {
+    object-position: 64% center;
+  }
 }
 
 .heroScrim {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 2;
   background: linear-gradient(90deg, rgb(58 30 18 / 0.5) 0%, rgb(58 30 18 / 0.24) 30%, transparent 58%);
 }
 
 .heroInner {
+  position: relative;
+  z-index: 3;
   width: var(--shell);
   margin: 0 auto;
   max-width: 46rem;
@@ -295,6 +312,7 @@
 
 .heroScroll {
   position: absolute;
+  z-index: 3;
   left: 50%;
   bottom: 1.6rem;
   translate: -50% 0;
