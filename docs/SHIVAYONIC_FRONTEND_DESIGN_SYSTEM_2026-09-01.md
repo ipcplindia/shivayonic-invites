@@ -205,3 +205,37 @@ These are requests, not changes — nothing in the backend was modified.
 3. **A projects read/write API** so `/admin/projects` can leave its empty state.
 4. **A cheap counts endpoint** if the overview should ever show totals; the interface will not
    display a number it cannot source.
+
+## 11. Interaction conventions (added in Task 02)
+
+Every modal surface is a native `<dialog>` opened with `showModal()`: focus trap,
+Escape, background inertness, top-layer stacking and focus return come from the
+platform. Layout for these surfaces is declared under `[open]` only, so a closed
+dialog keeps the user agent’s `display: none`. Page scroll is locked while any modal
+or the mobile drawer is open.
+
+| Primitive | File | Role |
+|---|---|---|
+| `Dialog` / `ConfirmDialog` | `src/components/overlay.tsx` | Modal work and destructive confirmation |
+| `Inspector` | same | Right-side detail panel; full-screen sheet below 640px |
+| `CommandPalette` | `src/features/admin/command-palette.tsx` | Ctrl/Cmd + K; searches this client’s destinations only |
+| `ToastProvider` / `useToast` | `src/components/toast.tsx` | Four tones, polite live region, errors persist |
+| `CapabilityNote` | `src/components/ui.tsx` | The single way to say “not connected yet” |
+| `LinkButton` | `src/components/ui.tsx` | Button shape for real navigations and downloads |
+
+No new colour tokens were needed; interaction states reuse `--surface-raised`
+(hover), `--surface-panel` (pressed), `--brass-hairline` (selected) and
+`--surface-scrim` (overlay backdrop).
+
+**Coming-soon pattern.** One `CapabilityNote` under the page header plus a neutral
+“Coming soon” badge in the header action slot. Not a tooltip on every dead control,
+and never a banner.
+
+**URL and storage discipline.** Shareable view state lives in the query string
+(`view`, `kind`, `status`, `q`) and every value is narrowed against a known list
+before use. `localStorage` holds exactly one key, `shivayonic.media.view`, containing
+a layout preference; reads and writes are wrapped in try/catch. No identity, role,
+permission, token or media URL is ever stored.
+
+**Motion.** Dialog and toast entrances 180 ms, drawer 240 ms, all `--ease-out`, all
+collapsed by the global reduced-motion rule.
