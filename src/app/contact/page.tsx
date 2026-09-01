@@ -22,7 +22,7 @@ export default function Page() {
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "Contact" }]} />
         <div className="contactGrid">
           <div className="reveal">
-            <SectionHead center={false} eyebrow="Contact" title="Let us craft yours" lede="Message us on WhatsApp or follow along. Choose an invitation, share your date, and our team takes it from there." />
+            <SectionHead level={1} center={false} eyebrow="Contact" title="Let us craft yours" lede="Message us on WhatsApp or follow along. Choose an invitation, share your date, and our team takes it from there." />
           </div>
           <div className="contactCards reveal">
             {cards.map((c) => (

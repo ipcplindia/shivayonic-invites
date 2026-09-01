@@ -45,6 +45,7 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const closeMenuRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (solid) return;
@@ -68,6 +69,19 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
       window.removeEventListener("mousedown", onClick);
     };
   }, [searchOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    document.body.style.overflow = "hidden";
+    closeMenuRef.current?.focus();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   const shortcuts = searchShortcuts.map((group) => ({
     ...group,
@@ -114,6 +128,7 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
           <button
             type="button"
             className="searchTrigger"
+            aria-label="Search invitations, music and films"
             aria-haspopup="dialog"
             aria-expanded={searchOpen}
             onClick={() => setSearchOpen((v) => !v)}
@@ -173,12 +188,13 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
       </div>
 
       {menuOpen ? (
-        <div className="drawer" role="dialog" aria-label="Menu">
+        <div className="drawer" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="drawerTop">
             <span className="brandName" style={{ color: "var(--cocoa)" }}>
               SHIVAYONIC
             </span>
             <button
+              ref={closeMenuRef}
               type="button"
               className="navIcon"
               style={{ display: "inline-flex", color: "var(--cocoa)", borderColor: "var(--cocoa-line)", background: "transparent" }}

@@ -32,6 +32,8 @@
   line-height: 1;
   color: #fff9f1;
   transition: color 0.4s var(--ease);
+  min-height: 44px;
+  justify-content: center;
 }
 
 .navScrolled .brand,
@@ -210,6 +212,7 @@
   backdrop-filter: blur(14px);
   color: #fff9f1;
   cursor: pointer;
+  flex: none;
 }
 
 .navScrolled .navIcon {
@@ -1096,6 +1099,9 @@
 }
 
 .footerCol a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 0.9rem;
   color: color-mix(in oklab, var(--ivory) 78%, transparent);
   transition: color 0.15s var(--ease);
@@ -1127,8 +1133,11 @@
   display: grid;
   grid-template-rows: auto 1fr;
   background: var(--ivory);
-  padding: 1.5rem;
+  padding: max(1.5rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right))
+    max(1.5rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
   animation: fade 0.25s var(--ease);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @keyframes fade {
@@ -1183,9 +1192,44 @@
 }
 
 @media (max-width: 760px) {
-  .navLinks,
-  .searchWrap {
+  .navLinks {
     display: none;
+  }
+
+  .navBar {
+    gap: 0.55rem;
+    height: 72px;
+  }
+
+  .searchWrap {
+    display: block;
+    width: 44px;
+    flex: 0 0 44px;
+  }
+
+  .searchTrigger {
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    min-width: 44px;
+  }
+
+  .searchTriggerLabel {
+    display: none;
+  }
+
+  .searchPanel {
+    position: fixed;
+    top: calc(72px + env(safe-area-inset-top));
+    right: 1rem;
+    left: 1rem;
+    width: auto;
+    max-height: calc(100dvh - 88px - env(safe-area-inset-top));
+    overflow-y: auto;
+  }
+
+  .searchInput {
+    font-size: 16px;
   }
 
   .navIcon,

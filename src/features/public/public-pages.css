@@ -102,6 +102,12 @@
   color: var(--saffron);
 }
 
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .crumbSep {
   color: var(--umber-soft);
 }
@@ -639,6 +645,39 @@
   .catHeroTitle {
     max-width: 100%;
   }
+
+  .productHero {
+    gap: 1.25rem;
+  }
+
+  .productGallery {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.1fr);
+    gap: 0.6rem;
+  }
+
+  .productMain {
+    aspect-ratio: 4 / 4.35;
+    border-radius: 18px;
+  }
+
+  .productThumbs {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .productThumb {
+    border-radius: 8px;
+  }
+
+  .productTitle {
+    font-size: clamp(2rem, 11vw, 2.6rem);
+  }
+
+  .productActions .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
 }
 
 /* -------------------------------------------------------- Legal / policy pages */
@@ -673,12 +712,64 @@
   font-size: 1.02rem;
 }
 
+.notFound {
+  max-width: 42rem;
+  margin: 8vh auto;
+  text-align: center;
+}
+
 /* -------------------------------------------------------- Product delivery cols */
 
 .deliverCols {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: clamp(1.5rem, 4vw, 3rem);
+}
+
+.catalogueFilters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(170px, 1fr)) auto auto;
+  gap: 0.8rem;
+  align-items: end;
+  margin-bottom: 2rem;
+}
+
+.filterField {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--umber);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.filterField input,
+.filterField select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--cocoa-line);
+  border-radius: 12px;
+  background: var(--ivory);
+  color: var(--cocoa);
+  font: inherit;
+  font-size: 1rem;
+}
+
+@media (max-width: 760px) {
+  .catalogueFilters {
+    grid-template-columns: 1fr;
+  }
+
+  .catalogueFilters .btn {
+    justify-content: center;
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .catalogueFilters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {

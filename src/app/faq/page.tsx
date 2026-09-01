@@ -15,7 +15,7 @@ export default function Page() {
     <PageFrame solidNav>
       <Band>
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "FAQ" }]} />
-        <SectionHead eyebrow="FAQ" title="Questions, answered" />
+        <SectionHead level={1} eyebrow="FAQ" title="Questions, answered" />
         <div className="faqList reveal">
           {faqs.map((f) => (
             <details key={f.q} className="faqItem">

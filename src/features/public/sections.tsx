@@ -20,18 +20,21 @@ export function SectionHead({
   title,
   lede,
   center = true,
+  level = 2,
 }: {
   eyebrow: string;
   title: string;
   lede?: string;
   center?: boolean;
+  level?: 1 | 2;
 }) {
+  const Heading = level === 1 ? "h1" : "h2";
   return (
     <div className={center ? "sectionHead reveal" : "reveal"} style={center ? undefined : { maxWidth: "46ch" }}>
       <span className="eyebrow">{eyebrow}</span>
-      <h2 className="sectionTitle" style={center ? undefined : { textAlign: "left" }}>
+      <Heading className="sectionTitle" style={center ? undefined : { textAlign: "left" }}>
         {title}
-      </h2>
+      </Heading>
       {lede ? (
         <p className="sectionLede" style={center ? undefined : { margin: "1rem 0 0", textAlign: "left" }}>
           {lede}

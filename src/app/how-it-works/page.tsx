@@ -14,7 +14,7 @@ export default function Page() {
     <PageFrame solidNav>
       <Band>
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "How It Works" }]} />
-        <SectionHead eyebrow="How Shivayonic Works" title="Four steps, start to shared" lede="Simple, personal, and quick — most invitations are delivered within 1 to 4 days." />
+        <SectionHead level={1} eyebrow="How Shivayonic Works" title="Four steps, start to shared" lede="Simple, personal, and quick — most invitations are delivered within 1 to 4 days." />
         <div className="steps reveal">
           {steps.map((s) => (
             <div key={s.title} className="step">

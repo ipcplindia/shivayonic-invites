@@ -69,7 +69,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
     <PageFrame solidNav>
       <Band>
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: doc.title }]} />
-        <SectionHead center={false} eyebrow="Policies" title={doc.title} lede={doc.intro} />
+        <SectionHead level={1} center={false} eyebrow="Policies" title={doc.title} lede={doc.intro} />
         <div className="legalDoc reveal">
           {doc.sections.map((s) => (
             <section key={s.heading} className="legalSection">
