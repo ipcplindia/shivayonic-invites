@@ -198,8 +198,8 @@
    readable anywhere on the hero — not just a thin outline. */
 .btnOnDark {
   border-color: color-mix(in oklab, #fff 60%, transparent);
-  background: rgb(40 20 10 / 0.42);
-  color: #fff9f1;
+  background: rgb(40 20 10 / 0.5);
+  color: #ffffff;
   backdrop-filter: blur(6px);
   text-shadow: 0 1px 8px rgb(30 14 6 / 0.6);
 }
