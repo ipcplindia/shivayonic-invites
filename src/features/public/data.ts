@@ -128,14 +128,15 @@ export type Product = {
   occasion: string;
   style: string;
   priceFrom?: string;
+  img?: string;
   tone: Category["tone"];
 };
 
 export const featuredProducts: Product[] = [
-  { name: "Diwali Nights", occasion: "Diwali", style: "Heritage", priceFrom: "₹4,999", tone: "rose" },
-  { name: "Birthday Bash", occasion: "Birthday", style: "Storybook", priceFrom: "₹3,499", tone: "gold" },
-  { name: "Mehendi Night", occasion: "Mehendi", style: "Floral", priceFrom: "₹2,499", tone: "saffron" },
-  { name: "Reception Gala", occasion: "Reception", style: "Modern Luxe", priceFrom: "₹3,999", tone: "teal" },
+  { name: "Diwali Nights", occasion: "Diwali", style: "Heritage", priceFrom: "₹4,999", img: "/products/diwali-nights.webp", tone: "rose" },
+  { name: "Birthday Bash", occasion: "Birthday", style: "Storybook", priceFrom: "₹3,499", img: "/products/birthday-bash.webp", tone: "gold" },
+  { name: "Mehendi Night", occasion: "Mehendi", style: "Floral", priceFrom: "₹2,499", img: "/products/mehendi-night.webp", tone: "saffron" },
+  { name: "Reception Gala", occasion: "Reception", style: "Modern Luxe", priceFrom: "₹3,999", img: "/products/reception-gala.webp", tone: "teal" },
 ];
 
 export type SocialWork = {

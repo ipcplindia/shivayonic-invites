@@ -178,7 +178,7 @@ export default function HomePage() {
             <div className="productGrid reveal">
               {featuredProducts.map((product) => (
                 <article key={product.name} className="product">
-                  <div className={`productArt tone-${product.tone}`} aria-hidden="true" />
+                  <div className={`productArt tone-${product.tone}`} style={product.img ? { backgroundImage: `url(${product.img})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined} aria-hidden="true" />
                   <div className="productBody">
                     <h3 className="productName">{product.name}</h3>
                     <p className="productMeta">
