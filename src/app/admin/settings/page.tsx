@@ -13,6 +13,7 @@ import {
   EmptyState,
   PageHeader,
 } from "@/components/ui";
+import { CopyValue } from "@/components/copy-value";
 import { can } from "@/features/access";
 import { permissions as allPermissions, type Permission } from "@/shared/auth";
 
@@ -60,7 +61,11 @@ export default async function SettingsPage() {
               <Badge tone="brass">{roleLabel(context.role)}</Badge>
             </dd>
             <dt className={styles.definitionTerm}>Organization</dt>
-            <dd className={styles.definitionValue}>{context.organization.name}</dd>
+            <dd className={styles.definitionValue}>
+              {context.organization.name}{" "}
+              <span className={styles.definitionSlug}>{context.organization.slug}</span>
+              <CopyValue value={context.organization.slug} label="Organization identifier" />
+            </dd>
           </dl>
         </Card>
       </SettingsSection>

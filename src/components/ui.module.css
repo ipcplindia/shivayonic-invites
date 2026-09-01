@@ -18,6 +18,7 @@
   font-weight: 550;
   letter-spacing: 0.005em;
   white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
   transition:
     background-color var(--duration-fast) var(--ease-out),
@@ -470,6 +471,26 @@
 .sectionMeta {
   color: var(--text-muted);
   font-size: var(--text-body-sm);
+}
+
+/* One restrained way to say "this exists, it is not connected yet". Used in
+   place of a tooltip on every disabled control. */
+.capabilityNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.capabilityNoteIcon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--text-faint);
 }
 
 /* A single brass hairline is the brand ornament. Used sparingly, by name. */

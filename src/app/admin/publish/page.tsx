@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import styles from "@/app/admin/admin.module.css";
 import { getCurrentUserContext } from "@/auth/context";
 import { Icon, type IconName } from "@/components/icon";
-import { Card, CardHeader, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
+import { Badge, CapabilityNote, Card, CardHeader, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
 import { can } from "@/features/access";
 import { publicationPlatforms, type PublicationPlatform } from "@/shared/domain";
 
@@ -36,8 +36,14 @@ export default async function PublishPage() {
     <>
       <PageHeader
         title="Publish"
-        lede="Send one finished master out to every channel it belongs on. Nothing is published from here yet — the provider integrations are still being built."
+        lede="Send one finished master out to every channel it belongs on."
+        actions={<Badge tone="neutral">Coming soon</Badge>}
       />
+
+      <CapabilityNote>
+        Available after a publishing integration is connected. Nothing on this page sends anything
+        anywhere yet.
+      </CapabilityNote>
 
       <section aria-label="Channels">
         <div className={styles.channelGrid}>

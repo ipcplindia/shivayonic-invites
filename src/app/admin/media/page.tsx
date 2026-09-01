@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { getCurrentUserContext } from "@/auth/context";
@@ -20,7 +21,10 @@ export default async function MediaPage() {
         title="Media Library"
         lede="Master files for every film, invitation and score held in the studio. Metadata only — the files themselves are served through signed, authenticated access."
       />
-      <MediaLibrary canUpload={can(context, "MEDIA_WRITE")} />
+      {/* MediaLibrary reads the query string, so it needs a suspense boundary. */}
+      <Suspense fallback={null}>
+        <MediaLibrary canUpload={can(context, "MEDIA_WRITE")} />
+      </Suspense>
     </>
   );
 }

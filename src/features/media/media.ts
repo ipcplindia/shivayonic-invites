@@ -41,6 +41,66 @@ export const mediaStatusFilters = [
   { value: "ARCHIVED", label: "Archived" },
 ] as const;
 
+/** The list API filters by status server-side; kind is filtered on the client. */
+export const mediaKindFilters = [
+  { value: "", label: "All formats" },
+  { value: "IMAGE", label: "Images" },
+  { value: "VIDEO", label: "Video" },
+  { value: "AUDIO", label: "Audio" },
+] as const;
+
+export const mediaViewModes = ["grid", "list"] as const;
+export type MediaViewMode = (typeof mediaViewModes)[number];
+
+/** Narrows an untrusted query-string or localStorage value onto a known option. */
+export function parseOption<T extends string>(
+  value: string | null | undefined,
+  allowed: readonly T[],
+): T | "" {
+  return value && (allowed as readonly string[]).includes(value) ? (value as T) : "";
+}
+
+/**
+ * The download route rejects anything that is not READY, so a master is only
+ * openable — and only previewable — once it has finished processing.
+ */
+export function isDownloadable(media: MediaAssetSummary) {
+  return media.status === "READY";
+}
+
+/**
+ * The only thing the Media Library persists locally: which layout the operator
+ * prefers. No identity, no role, no permissions, no media access URL.
+ */
+export const MEDIA_VIEW_STORAGE_KEY = "shivayonic.media.view";
+
+type ReadableStorage = { getItem(key: string): string | null };
+
+export function readViewPreference(storage: ReadableStorage | undefined): MediaViewMode | "" {
+  try {
+    return parseOption(storage?.getItem(MEDIA_VIEW_STORAGE_KEY), mediaViewModes);
+  } catch {
+    // Private browsing, or a browser configured to block site data.
+    return "";
+  }
+}
+
+/**
+ * Client-side narrowing of the page the API returned. Status is filtered by the
+ * server; these two are not, and the interface says so on screen.
+ */
+export function filterMedia(
+  media: MediaAssetSummary[],
+  filters: { kind?: string; query?: string },
+) {
+  const needle = (filters.query ?? "").trim().toLowerCase();
+  return media.filter(
+    (item) =>
+      (!filters.kind || item.kind === filters.kind) &&
+      (!needle || item.originalFilename.toLowerCase().includes(needle)),
+  );
+}
+
 type StatusPresentation = {
   label: string;
   tone: "neutral" | "signal" | "success" | "warning" | "danger";

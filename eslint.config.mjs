@@ -39,11 +39,18 @@ export default [
     languageOptions: {
       globals: {
         AbortController: "readonly",
+        document: "readonly",
+        EventTarget: "readonly",
+        HTMLAnchorElement: "readonly",
+        HTMLDialogElement: "readonly",
         HTMLButtonElement: "readonly",
         HTMLInputElement: "readonly",
         HTMLSelectElement: "readonly",
         KeyboardEvent: "readonly",
+        navigator: "readonly",
+        setTimeout: "readonly",
         SVGSVGElement: "readonly",
+        URLSearchParams: "readonly",
         window: "readonly",
       },
     },

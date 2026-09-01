@@ -166,6 +166,12 @@
   overflow-wrap: anywhere;
 }
 
+.definitionSlug {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+}
+
 .note {
   color: var(--text-muted);
   font-size: var(--text-body-sm);

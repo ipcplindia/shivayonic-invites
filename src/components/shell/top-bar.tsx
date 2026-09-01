@@ -1,11 +1,15 @@
 import { Icon } from "@/components/icon";
 import styles from "@/components/shell/shell.module.css";
-import { Badge, Button, IconButton, SearchInput } from "@/components/ui";
+import { UserMenu } from "@/components/shell/user-menu";
+import { IconButton } from "@/components/ui";
 import type { CurrentUserContext } from "@/shared/auth";
 
 /**
- * Top command bar. Search and notifications are present as inert affordances
- * (disabled, and labelled as such) rather than as controls that pretend to work.
+ * Top command bar.
+ *
+ * Search is a real trigger for the command palette, and says exactly what it
+ * searches. Notifications stay inert and labelled as such — there is no
+ * notification service to read from.
  */
 export function TopBar({
   context,
@@ -13,12 +17,14 @@ export function TopBar({
   navId,
   menuOpen = false,
   onToggleMenu,
+  onOpenCommandPalette,
 }: {
   context: CurrentUserContext;
   pageTitle: string;
   navId?: string;
   menuOpen?: boolean;
   onToggleMenu?: () => void;
+  onOpenCommandPalette?: () => void;
 }) {
   return (
     <header className={styles.topbar}>
@@ -41,16 +47,25 @@ export function TopBar({
 
       <span className={styles.topbarSpacer} />
 
-      <div className={styles.topbarSearch}>
-        <SearchInput
-          label="Search the Command Center"
-          placeholder="Search is not connected yet"
-          disabled
-          title="Global search arrives with the search service."
-        />
-      </div>
+      <button
+        type="button"
+        className={styles.searchTrigger}
+        onClick={onOpenCommandPalette}
+        aria-haspopup="dialog"
+      >
+        <Icon name="search" size={16} className={styles.searchTriggerIcon} />
+        <span className={styles.searchTriggerLabel}>Search commands and destinations…</span>
+        <kbd className={styles.kbd}>Ctrl K</kbd>
+      </button>
 
       <div className={styles.topbarTools}>
+        <IconButton
+          icon="search"
+          label="Search commands and destinations"
+          className={styles.searchIconTrigger}
+          onClick={onOpenCommandPalette}
+          aria-haspopup="dialog"
+        />
         <IconButton
           icon="bell"
           label="Notifications — not connected yet"
@@ -63,49 +78,4 @@ export function TopBar({
   );
 }
 
-function UserMenu({ context }: { context: CurrentUserContext }) {
-  return (
-    <details className={styles.userMenu}>
-      <summary className={styles.userTrigger} aria-label={`Account menu for ${context.user.name}`}>
-        <span className={styles.avatar} aria-hidden="true">
-          {initials(context.user.name)}
-        </span>
-        <span className={styles.userIdentity}>
-          <span className={styles.userName}>{context.user.name}</span>
-          <span className={styles.userRole}>{roleLabel(context.role)}</span>
-        </span>
-        <Icon name="chevronDown" size={14} />
-      </summary>
-
-      <div className={styles.userPanel}>
-        <p className={styles.userPanelEmail}>{context.user.email}</p>
-        <hr className={styles.userPanelDivider} />
-        <div className={styles.userPanelRow}>
-          <span>Organization</span>
-          <strong>{context.organization.name}</strong>
-        </div>
-        <div className={styles.userPanelRow}>
-          <span>Role</span>
-          <Badge tone="brass">{roleLabel(context.role)}</Badge>
-        </div>
-        <hr className={styles.userPanelDivider} />
-        <form method="post" action="/api/auth/logout" className={styles.logoutForm}>
-          <Button type="submit" variant="ghost" icon="logout" className={styles.logoutButton}>
-            Sign out
-          </Button>
-        </form>
-      </div>
-    </details>
-  );
-}
-
-export function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "SY";
-  const letters = parts.length === 1 ? parts[0].slice(0, 2) : `${parts[0][0]}${parts[parts.length - 1][0]}`;
-  return letters.toUpperCase();
-}
-
-export function roleLabel(role: CurrentUserContext["role"]) {
-  return role.charAt(0) + role.slice(1).toLowerCase();
-}
+export { initials, roleLabel } from "@/components/shell/user-menu";

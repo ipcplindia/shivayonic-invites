@@ -78,14 +78,30 @@ describe("TopBar", () => {
     expect(markup).toContain("Shivayonic Invites");
   });
 
+  it("offers a command palette trigger that says what it actually searches", () => {
+    const markup = renderToStaticMarkup(
+      <TopBar context={contextFor("OWNER")} pageTitle="Overview" />,
+    );
+
+    expect(markup).toContain("Search commands and destinations…");
+    expect(markup).toContain('aria-haspopup="dialog"');
+  });
+
   it("keeps unimplemented tools inert rather than pretending they work", () => {
     const markup = renderToStaticMarkup(
       <TopBar context={contextFor("OWNER")} pageTitle="Overview" />,
     );
 
-    expect(markup).toContain("Search is not connected yet");
-    expect(markup).toMatch(/type="search"[^>]*disabled/);
     expect(markup).toContain("Notifications — not connected yet");
+    expect(markup).toMatch(/aria-label="Notifications[^>]*disabled/);
+  });
+
+  it("links to Settings from the account menu", () => {
+    const markup = renderToStaticMarkup(
+      <TopBar context={contextFor("STAFF")} pageTitle="Overview" />,
+    );
+
+    expect(markup).toContain('href="/admin/settings"');
   });
 
   it("offers a real sign-out route", () => {

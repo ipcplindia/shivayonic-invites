@@ -1,4 +1,5 @@
 import type {
+  AnchorHTMLAttributes,
   ButtonHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
@@ -51,6 +52,38 @@ export function Button({
       {icon ? <Icon name={icon} size={size === "sm" ? 14 : 16} /> : null}
       {children}
     </button>
+  );
+}
+
+type LinkButtonProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
+  variant?: ButtonVariant;
+  size?: "sm" | "md" | "lg";
+  icon?: IconName;
+};
+
+/** Same shape as Button, for the cases that are genuinely a navigation or a download. */
+export function LinkButton({
+  variant = "secondary",
+  size = "md",
+  icon,
+  className,
+  children,
+  ...rest
+}: LinkButtonProps) {
+  return (
+    <a
+      className={cx(
+        styles.button,
+        styles[variant],
+        size === "sm" && styles.sizeSm,
+        size === "lg" && styles.sizeLg,
+        className,
+      )}
+      {...rest}
+    >
+      {icon ? <Icon name={icon} size={size === "sm" ? 14 : 16} /> : null}
+      {children}
+    </a>
   );
 }
 
@@ -384,6 +417,19 @@ export function SectionHeader({ title, meta }: { title: string; meta?: ReactNode
       <h2 className={styles.sectionTitle}>{title}</h2>
       {meta ? <span className={styles.sectionMeta}>{meta}</span> : null}
     </div>
+  );
+}
+
+/**
+ * The single pattern for a capability that exists in the architecture but is not
+ * connected yet. One quiet line of prose beats a tooltip on every dead control.
+ */
+export function CapabilityNote({ children }: { children: ReactNode }) {
+  return (
+    <p className={styles.capabilityNote}>
+      <Icon name="lock" size={15} className={styles.capabilityNoteIcon} />
+      <span>{children}</span>
+    </p>
   );
 }
 

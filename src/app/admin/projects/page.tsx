@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import styles from "@/app/admin/admin.module.css";
 import { getCurrentUserContext } from "@/auth/context";
-import { Button, Card, EmptyState, PageHeader, SearchInput, Select } from "@/components/ui";
+import { Badge, Button, CapabilityNote, Card, EmptyState, PageHeader, SearchInput, Select } from "@/components/ui";
 import { can } from "@/features/access";
 
 export const metadata: Metadata = { title: "Projects" };
@@ -19,36 +19,36 @@ export default async function ProjectsPage() {
       <PageHeader
         title="Projects"
         lede="Every commission, from first brief to delivered invitation. A project groups the masters, the score and the publications that belong to one celebration."
+        actions={<Badge tone="neutral">Coming soon</Badge>}
       />
+
+      <CapabilityNote>
+        Projects become interactive once the commissions API is connected. Search, filtering and
+        creation are laid out here so the shape is settled, and stay disabled until then.
+      </CapabilityNote>
 
       <section aria-label="Projects">
         <div className={styles.toolbar}>
           <div className={styles.toolbarSearch}>
             <SearchInput
               label="Search projects"
-              placeholder="Project search is not connected yet"
+              placeholder="Search projects"
               disabled
-              title="Search becomes available with the projects API."
             />
           </div>
           <Select
             label="Stage"
             hideLabel
             disabled
-            title="Filtering becomes available with the projects API."
             options={[{ value: "", label: "All stages" }]}
           />
           <span className={styles.toolbarSpacer} />
           <Button
             variant="primary"
             icon="plus"
-            disabled={!canWrite}
+            disabled
             aria-disabled
-            title={
-              canWrite
-                ? "Project creation arrives with the projects API."
-                : "Creating projects requires the PROJECT_WRITE permission."
-            }
+            title={canWrite ? undefined : "Creating projects requires the PROJECT_WRITE permission."}
           >
             New project
           </Button>

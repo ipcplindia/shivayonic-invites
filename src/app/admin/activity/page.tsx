@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import styles from "@/app/admin/admin.module.css";
 import { getCurrentUserContext } from "@/auth/context";
-import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
+import { Badge, CapabilityNote, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import { can } from "@/features/access";
 
 export const metadata: Metadata = { title: "Activity" };
@@ -17,7 +17,13 @@ export default async function ActivityPage() {
       <PageHeader
         title="Activity"
         lede="A record of who changed what inside this organization."
+        actions={<Badge tone="neutral">Coming soon</Badge>}
       />
+
+      <CapabilityNote>
+        Audit events are already recorded server-side. This page becomes live once a scoped audit
+        read endpoint exists; until then nothing is shown rather than something invented.
+      </CapabilityNote>
 
       <Card>
         <CardHeader

@@ -104,6 +104,114 @@
   font-variant-numeric: tabular-nums;
 }
 
+.mediaCardButton {
+  composes: mediaCard;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.mediaCardButton:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-raised);
+}
+
+.mediaCardButton:active {
+  background: var(--surface-panel);
+}
+
+.toolbarNote {
+  padding-bottom: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--text-meta);
+}
+
+.recentSkeleton {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+/* --------------------------------------------------------------- Inspector */
+
+.fieldRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: var(--text-body-sm);
+}
+
+.fieldRow:last-child {
+  border-bottom: 0;
+}
+
+.fieldLabel {
+  color: var(--text-muted);
+  flex: none;
+}
+
+.fieldValue {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.fieldValueMono {
+  composes: fieldValue;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.inspectorNote {
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.preview {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.previewPlaceholder {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  margin-bottom: var(--space-4);
+  padding: var(--space-6) var(--space-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+  text-align: center;
+}
+
+.previewLoading {
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.previewMedia {
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: var(--surface-canvas);
+}
+
+.previewAudio {
+  width: 100%;
+}
+
 .skeletonCard {
   display: flex;
   flex-direction: column;
@@ -129,6 +237,22 @@
 
 .recentRow:last-child {
   border-bottom: 0;
+}
+
+.recentRowButton {
+  composes: recentRow;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recentRowButton:hover {
+  background: var(--surface-raised);
 }
 
 .recentName {

@@ -1,0 +1,351 @@
+/* Overlay surfaces: dialog, confirm, right-side inspector, command palette,
+   toasts. All modal surfaces are native <dialog> elements, so focus trapping,
+   Escape, inertness of the page behind, and focus return are the platform's
+   job rather than ours. */
+
+/* ------------------------------------------------------------------ Dialog */
+
+.dialog {
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+  width: min(520px, calc(100vw - var(--space-8)));
+  max-height: calc(100dvh - var(--space-8));
+  overflow: visible;
+}
+
+.dialog::backdrop {
+  background: var(--surface-scrim);
+  backdrop-filter: blur(2px);
+}
+
+.dialog[open] {
+  animation: dialogIn var(--duration-base) var(--ease-out);
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.dialogTitle {
+  font-size: var(--text-section);
+  font-weight: 600;
+}
+
+.dialogDescription {
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.dialogBody {
+  padding: var(--space-5);
+  overflow-y: auto;
+}
+
+.dialogFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line-soft);
+}
+
+/* --------------------------------------------------------------- Inspector */
+
+.drawer {
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+  width: min(460px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+.drawer::backdrop {
+  background: var(--surface-scrim);
+}
+
+/* Only an open dialog lays itself out; a closed one keeps the UA display:none. */
+.drawer[open] {
+  display: flex;
+  flex-direction: column;
+  animation: drawerIn var(--duration-slow) var(--ease-out);
+}
+
+@keyframes drawerIn {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+.drawerBody {
+  flex: 1;
+  padding: var(--space-5);
+  overflow-y: auto;
+}
+
+.drawerFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line-soft);
+}
+
+/* Below 640px the inspector is a full-screen sheet. `inset` rather than a width
+   so the dialog's auto margins cannot push it off the right edge. */
+@media (max-width: 640px) {
+  .drawer {
+    inset: 0;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+}
+
+/* ---------------------------------------------------------- Command palette */
+
+.palette {
+  margin: 10vh auto auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+  width: min(560px, calc(100vw - var(--space-6)));
+  max-height: min(60dvh, 520px);
+  overflow: hidden;
+}
+
+.palette::backdrop {
+  background: var(--surface-scrim);
+  backdrop-filter: blur(2px);
+}
+
+.palette[open] {
+  display: flex;
+  flex-direction: column;
+  animation: dialogIn var(--duration-base) var(--ease-out);
+}
+
+.paletteSearch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-muted);
+}
+
+.paletteInput {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-body);
+  outline: none;
+}
+
+.paletteInput::placeholder {
+  color: var(--text-muted);
+}
+
+.paletteList {
+  flex: 1;
+  margin: 0;
+  padding: var(--space-2);
+  list-style: none;
+  overflow-y: auto;
+}
+
+.paletteGroup {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.paletteItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-body-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.paletteItem[data-active="true"] {
+  border-color: var(--brass-hairline);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.paletteItem[data-active="true"] .paletteIcon {
+  color: var(--brass);
+}
+
+.paletteIcon {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.paletteLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paletteHint {
+  flex: none;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+
+.paletteEmpty {
+  padding: var(--space-8) var(--space-5);
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+  text-align: center;
+}
+
+.paletteFooter {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--line-soft);
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+}
+
+/* ------------------------------------------------------------------ Toasts */
+
+.toastRegion {
+  position: fixed;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(360px, calc(100vw - var(--space-8)));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  animation: toastIn var(--duration-base) var(--ease-out);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.toastSuccess {
+  border-color: color-mix(in oklab, var(--success) 40%, transparent);
+}
+
+.toastWarning {
+  border-color: color-mix(in oklab, var(--warning) 40%, transparent);
+}
+
+.toastError {
+  border-color: color-mix(in oklab, var(--danger) 45%, transparent);
+}
+
+.toastIconSuccess {
+  color: var(--success);
+}
+
+.toastIconWarning {
+  color: var(--warning);
+}
+
+.toastIconError {
+  color: var(--danger);
+}
+
+.toastIconInfo {
+  color: var(--signal-bright);
+}
+
+.toastText {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-body-sm);
+  overflow-wrap: anywhere;
+}
+
+.toastDismiss {
+  flex: none;
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.toastDismiss:hover {
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .toastRegion {
+    right: var(--space-3);
+    left: var(--space-3);
+    bottom: var(--space-3);
+    width: auto;
+  }
+}

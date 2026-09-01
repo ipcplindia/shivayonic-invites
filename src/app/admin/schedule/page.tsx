@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { getCurrentUserContext } from "@/auth/context";
-import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
+import { Badge, CapabilityNote, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import { can } from "@/features/access";
 
 export const metadata: Metadata = { title: "Schedule" };
@@ -16,7 +16,12 @@ export default async function SchedulePage() {
       <PageHeader
         title="Schedule"
         lede="Release windows for invitations that must land at a chosen hour — a muhurat, a launch, a reveal."
+        actions={<Badge tone="neutral">Coming soon</Badge>}
       />
+
+      <CapabilityNote>
+        Available after the publishing queue is connected. No release can be scheduled from here yet.
+      </CapabilityNote>
 
       <Card>
         <CardHeader
