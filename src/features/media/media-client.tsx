@@ -16,11 +16,13 @@ import {
   Skeleton,
   StatusBadge,
 } from "@/components/ui";
-import { MediaInspector } from "@/features/media/media-inspector";
+import { can } from "@/features/access";
+import { MediaApiError, listMedia } from "@/features/media/media-api";
+import { MediaInspector, type MediaChange } from "@/features/media/media-inspector";
+import { UploadDialog } from "@/features/media/upload-dialog";
 import styles from "@/features/media/media.module.css";
 import {
   buildMediaListQuery,
-  describeApiError,
   formatBytes,
   formatDate,
   formatDuration,
@@ -30,17 +32,17 @@ import {
   mediaStatusFilters,
   mediaStatuses,
   mediaViewModes,
+  mergeMediaPages,
   MEDIA_PAGE_SIZE,
   MEDIA_QUERY_MAX_LENGTH,
   MEDIA_VIEW_STORAGE_KEY,
   parseOption,
   readViewPreference,
   presentStatus,
-  type MediaAssetSummary,
-  type MediaListResponse,
-  type MediaPagination,
   type MediaViewMode,
 } from "@/features/media/media";
+import type { CurrentUserContext } from "@/shared/auth";
+import type { MediaAssetSummary, MediaPagination } from "@/shared/media";
 
 type MediaFilters = { kind: string; status: string; q: string };
 
@@ -49,62 +51,87 @@ type LoadState =
   | { phase: "error"; message: string; retryable: boolean }
   | { phase: "ready"; media: MediaAssetSummary[]; pageInfo: MediaPagination };
 
+const emptyFilters: MediaFilters = { kind: "", status: "", q: "" };
+
 /**
  * Reads `GET /api/media`. Same-origin, so the session cookie travels on its own
  * and the frontend never touches auth internals.
  *
- * Since the hardened media contract, kind, status and the filename query are all
- * applied by the server, and the response is a cursor page. This gate renders
- * the first page only; paging through `pageInfo.nextCursor` is Task 03.
+ * Kind, status and the filename query are all applied by the server, and the
+ * response is a cursor page. Changing any filter starts a fresh first page;
+ * `loadMore` appends the next one and never re-appends an id already held.
  */
-function useMediaList(filters: MediaFilters) {
+function useMediaPages(filters: MediaFilters) {
   const [state, setState] = useState<LoadState>({ phase: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState("");
   const { kind, status, q } = filters;
 
   useEffect(() => {
     const controller = new AbortController();
     setState({ phase: "loading" });
+    setMoreError("");
 
-    const query = buildMediaListQuery({ kind, status, q });
-    fetch(`/api/media?${query}`, {
-      signal: controller.signal,
-      headers: { accept: "application/json" },
-    })
-      .then(async (response) => {
-        const body = await response.json().catch(() => null);
-        if (!response.ok) {
-          const code: string | undefined = body?.error?.code;
-          const error = new Error(describeApiError(code, response.status));
-          // A 401/403 will not resolve by pressing the button again.
-          (error as Error & { retryable?: boolean }).retryable = response.status >= 500;
-          throw error;
-        }
-        const payload = body as MediaListResponse;
+    listMedia(buildMediaListQuery({ kind, status, q }), controller.signal)
+      .then((payload) =>
         setState({
           phase: "ready",
           media: payload.media ?? [],
           pageInfo: payload.pageInfo ?? { nextCursor: null, hasMore: false },
-        });
-      })
+        }),
+      )
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        const known = error instanceof Error && error.message;
+        const known = error instanceof MediaApiError;
         setState({
           phase: "error",
-          message: known
-            ? (error as Error).message
-            : "The Command Center could not reach the media service.",
-          retryable:
-            !known || (error as Error & { retryable?: boolean }).retryable !== false,
+          message: known ? error.message : "The media library could not be loaded.",
+          retryable: known ? error.retryable || error.status === 0 : true,
         });
       });
 
     return () => controller.abort();
   }, [attempt, kind, q, status]);
 
+  const loadMore = useCallback(async () => {
+    if (state.phase !== "ready" || !state.pageInfo.nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    setMoreError("");
+    try {
+      const payload = await listMedia(
+        buildMediaListQuery({ kind, status, q, cursor: state.pageInfo.nextCursor }),
+      );
+      setState((current) => {
+        if (current.phase !== "ready") return current;
+        return {
+          phase: "ready",
+          media: mergeMediaPages(current.media, payload.media ?? []),
+          pageInfo: payload.pageInfo ?? { nextCursor: null, hasMore: false },
+        };
+      });
+    } catch (error) {
+      // The pages already loaded stay exactly where they are.
+      setMoreError(
+        error instanceof MediaApiError ? error.message : "More results could not be loaded.",
+      );
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [kind, loadingMore, q, state, status]);
+
   const reload = useCallback(() => setAttempt((value) => value + 1), []);
-  return { state, reload };
+  return { state, reload, loadMore, loadingMore, moreError };
+}
+
+/** Reads the saved view mode, tolerating a browser that refuses storage. */
+function storeViewPreference(mode: MediaViewMode) {
+  try {
+    // A layout preference only. Nothing about the user, their role or their data.
+    window.localStorage.setItem(MEDIA_VIEW_STORAGE_KEY, mode);
+  } catch {
+    // Private browsing or blocked storage: the URL still carries the choice.
+  }
 }
 
 /* --------------------------------------------------------------- Media card */
@@ -122,10 +149,11 @@ export function MediaCard({
 
   const body = (
     <>
+      <div className={styles.cardThumb} aria-hidden="true">
+        <Icon name={kindIcon(media.kind)} size={26} />
+      </div>
       <div className={styles.mediaCardTop}>
-        <span className={styles.kindGlyph}>
-          <Icon name={kindIcon(media.kind)} size={18} />
-        </span>
+        <span className={styles.mediaKind}>{titleCase(media.kind)}</span>
         <StatusBadge label={status.label} tone={status.tone} shape={status.shape} />
       </div>
       <h3 className={styles.mediaName}>{media.originalFilename}</h3>
@@ -173,7 +201,7 @@ export function MediaCard({
 export function MediaCardSkeleton() {
   return (
     <div className={styles.skeletonCard} aria-hidden="true">
-      <Skeleton width={34} height={34} radius="var(--radius-md)" />
+      <Skeleton width="100%" height={92} radius="var(--radius-md)" />
       <Skeleton width="80%" height={13} />
       <Skeleton width="45%" height={11} />
     </div>
@@ -182,11 +210,12 @@ export function MediaCardSkeleton() {
 
 /* ------------------------------------------------------------ Media library */
 
-export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
+export function MediaLibrary({ context }: { context: CurrentUserContext }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const notify = useToast();
+  const canUpload = can(context, "MEDIA_WRITE");
 
   // Query string is the source of truth, so a filtered view is shareable and
   // survives back/forward. Unknown values are discarded, never trusted.
@@ -200,13 +229,12 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
   useEffect(() => setStoredView(readViewPreference(window.localStorage)), []);
   const view: MediaViewMode = urlView || storedView || "grid";
 
-  // The filename query now reaches the server, so the field is typed locally and
-  // settles into the URL rather than issuing a request per keystroke.
   const [draftQuery, setDraftQuery] = useState(query);
-  useEffect(() => setDraftQuery(query), [query]);
   const [selected, setSelected] = useState<MediaAssetSummary | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+
   const filters = useMemo(() => ({ kind, status, q: query }), [kind, query, status]);
-  const { state, reload } = useMediaList(filters);
+  const { state, reload, loadMore, loadingMore, moreError } = useMediaPages(filters);
   const refreshing = useRef(false);
 
   const setParams = useCallback(
@@ -222,10 +250,13 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
     [pathname, router, searchParams],
   );
 
-  // The debounce above needs the latest writer without re-arming on every render.
+  // The debounce below needs the latest writer without re-arming on every render.
   const setParamsRef = useRef(setParams);
   setParamsRef.current = setParams;
 
+  // The filename query reaches the server, so the field is typed locally and
+  // settles into the URL rather than issuing a request per keystroke.
+  useEffect(() => setDraftQuery(query), [query]);
   useEffect(() => {
     if (draftQuery === query) return;
     const timer = setTimeout(() => setParamsRef.current({ q: draftQuery }), 250);
@@ -239,12 +270,7 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
 
   function chooseView(mode: MediaViewMode) {
     setStoredView(mode);
-    try {
-      // A layout preference only. Nothing about the user, their role or their data.
-      window.localStorage.setItem(MEDIA_VIEW_STORAGE_KEY, mode);
-    } catch {
-      // Private browsing or blocked storage: the URL still carries the choice.
-    }
+    storeViewPreference(mode);
     setParams({ view: mode });
   }
 
@@ -254,27 +280,31 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
   }
 
   useEffect(() => {
-    if (!refreshing.current) return;
-    if (state.phase === "loading") return;
+    if (!refreshing.current || state.phase === "loading") return;
     refreshing.current = false;
-    notify(
-      state.phase === "ready" ? "success" : "error",
-      state.phase === "ready"
-        ? `Media list refreshed — ${state.media.length} master${state.media.length === 1 ? "" : "s"} loaded.`
-        : state.message,
-    );
+    if (state.phase === "error") notify("error", state.message);
   }, [notify, state]);
 
+  function onMediaChanged(change: MediaChange) {
+    notify(
+      "success",
+      change.action === "archived" ? "Master archived." : "Master deleted permanently.",
+    );
+    // One authoritative reconciliation: refetch rather than patch local state.
+    reload();
+  }
+
   const filtersActive = Boolean(status || kind || query);
-  const visible = state.phase === "ready" ? state.media : [];
+  const media = state.phase === "ready" ? state.media : [];
+  const hasMore = state.phase === "ready" && state.pageInfo.hasMore;
 
   return (
     <section aria-label="Media library">
       <div className={styles.toolbar}>
         <div className={styles.toolbarSearch}>
           <SearchInput
-            label="Search masters by filename"
-            placeholder="Search by filename"
+            label="Search filenames"
+            placeholder="Search filenames"
             value={draftQuery}
             maxLength={MEDIA_QUERY_MAX_LENGTH}
             onChange={(event) => setDraftQuery(event.target.value)}
@@ -295,11 +325,7 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
           options={mediaStatusFilters.map((option) => ({ ...option }))}
         />
         {filtersActive ? (
-          <Button
-            variant="ghost"
-            icon="close"
-            onClick={clearFilters}
-          >
+          <Button variant="ghost" icon="close" onClick={clearFilters}>
             Clear filters
           </Button>
         ) : null}
@@ -334,26 +360,19 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
         >
           Refresh
         </Button>
-        <Button
-          variant="primary"
-          icon="upload"
-          disabled
-          aria-disabled
-          title={
-            canUpload
-              ? "Available once the upload workflow ships."
-              : "Uploading requires the MEDIA_WRITE permission."
-          }
-        >
-          Upload master
-        </Button>
+        {canUpload ? (
+          <Button variant="primary" icon="upload" onClick={() => setUploadOpen(true)}>
+            Upload master
+          </Button>
+        ) : null}
       </div>
 
-      <p className={styles.toolbarNote}>
-        {state.phase === "ready" && state.pageInfo.hasMore
-          ? `Showing the first ${MEDIA_PAGE_SIZE} matching masters, newest first. More remain — paging through them arrives with the full Media Library.`
-          : `Showing up to ${MEDIA_PAGE_SIZE} matching masters, newest first. Format, status and filename are all matched by the server.`}
-      </p>
+      {state.phase === "ready" && media.length > 0 ? (
+        <p className={styles.toolbarNote} role="status">
+          {`${media.length} master${media.length === 1 ? "" : "s"} shown, newest first.`}
+          {hasMore ? " More are available." : ""}
+        </p>
+      ) : null}
 
       {state.phase === "loading" ? (
         <div className={styles.grid} aria-busy="true" aria-live="polite">
@@ -366,7 +385,7 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
       {state.phase === "error" ? (
         <Card>
           <ErrorState
-            title="Media could not be loaded"
+            title="The media library could not be loaded"
             body={state.message}
             action={
               state.retryable ? (
@@ -379,56 +398,47 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
         </Card>
       ) : null}
 
-      {state.phase === "ready" && visible.length === 0 ? (
+      {state.phase === "ready" && media.length === 0 ? (
         <Card>
-          <EmptyState
-            icon="media"
-            title={filtersActive ? "Nothing matches these filters" : "No masters held yet"}
-            body={
-              filtersActive
-                ? "No master in this organization matches these filters. Widen them to see the rest of the library."
-                : "Master files uploaded to the studio appear here with their status, format and size."
-            }
-            action={
-              filtersActive ? (
-                <Button icon="close" onClick={clearFilters}>
-                  Clear filters
-                </Button>
-              ) : undefined
-            }
+          <EmptyStateForContext
+            canUpload={canUpload}
+            query={query}
+            filtersActive={filtersActive}
+            onClear={clearFilters}
+            onUpload={() => setUploadOpen(true)}
           />
         </Card>
       ) : null}
 
-      {state.phase === "ready" && visible.length > 0 ? (
+      {media.length > 0 ? (
         view === "grid" ? (
           <div className={styles.grid}>
-            {visible.map((media) => (
-              <MediaCard key={media.id} media={media} onOpen={setSelected} />
+            {media.map((item) => (
+              <MediaCard key={item.id} media={item} onOpen={setSelected} />
             ))}
           </div>
         ) : (
           <Card>
             <ul className={styles.recentList}>
-              {visible.map((media) => {
-                const itemStatus = presentStatus(media.status);
+              {media.map((item) => {
+                const itemStatus = presentStatus(item.status);
                 return (
-                  <li key={media.id}>
+                  <li key={item.id}>
                     <button
                       type="button"
                       className={styles.recentRowButton}
-                      onClick={() => setSelected(media)}
+                      onClick={() => setSelected(item)}
                       aria-haspopup="dialog"
                     >
-                      <Icon name={kindIcon(media.kind)} size={16} />
-                      <span className={styles.recentName}>{media.originalFilename}</span>
-                      <span className={styles.recentDate}>{formatBytes(media.sizeBytes)}</span>
+                      <Icon name={kindIcon(item.kind)} size={16} />
+                      <span className={styles.recentName}>{item.originalFilename}</span>
+                      <span className={styles.recentDate}>{formatBytes(item.sizeBytes)}</span>
                       <StatusBadge
                         label={itemStatus.label}
                         tone={itemStatus.tone}
                         shape={itemStatus.shape}
                       />
-                      <span className={styles.recentDate}>{formatDate(media.createdAt)}</span>
+                      <span className={styles.recentDate}>{formatDate(item.createdAt)}</span>
                     </button>
                   </li>
                 );
@@ -438,17 +448,109 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
         )
       ) : null}
 
-      <MediaInspector media={selected} onClose={() => setSelected(null)} />
+      {hasMore || moreError ? (
+        <div className={styles.loadMore}>
+          {moreError ? (
+            <p className={styles.loadMoreError} role="alert">
+              {moreError}
+            </p>
+          ) : null}
+          {hasMore ? (
+            <Button icon="chevronDown" onClick={() => void loadMore()} disabled={loadingMore}>
+              {loadingMore ? "Loading…" : `Load ${MEDIA_PAGE_SIZE} more`}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      <MediaInspector
+        context={context}
+        summary={selected}
+        onClose={() => setSelected(null)}
+        onChanged={onMediaChanged}
+      />
+
+      {canUpload ? (
+        <UploadDialog
+          open={uploadOpen}
+          onClose={() => setUploadOpen(false)}
+          onSettled={reload}
+          onUploaded={(count) =>
+            notify("success", `${count} master${count === 1 ? "" : "s"} uploaded.`)
+          }
+        />
+      ) : null}
     </section>
   );
 }
 
-const emptyFilters: MediaFilters = { kind: "", status: "", q: "" };
+function EmptyStateForContext({
+  canUpload,
+  query,
+  filtersActive,
+  onClear,
+  onUpload,
+}: {
+  canUpload: boolean;
+  query: string;
+  filtersActive: boolean;
+  onClear: () => void;
+  onUpload: () => void;
+}) {
+  if (query) {
+    return (
+      <EmptyState
+        icon="search"
+        title={`No filenames match “${query}”`}
+        body="Filenames are matched across the whole library, so nothing here carries that text."
+        action={
+          <Button icon="close" onClick={onClear}>
+            Clear search
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (filtersActive) {
+    return (
+      <EmptyState
+        icon="media"
+        title="No masters match these filters"
+        body="Nothing in this organization's library matches. Widen the filters to see the rest."
+        action={
+          <Button icon="close" onClick={onClear}>
+            Clear filters
+          </Button>
+        }
+      />
+    );
+  }
+
+  return (
+    <EmptyState
+      icon="media"
+      title="No masters yet"
+      body={
+        canUpload
+          ? "Upload a film, an invitation or a score. Masters are stored privately — uploading publishes nothing."
+          : "Films, invitations and scores appear here once someone with upload rights adds them."
+      }
+      action={
+        canUpload ? (
+          <Button variant="primary" icon="upload" onClick={onUpload}>
+            Upload master
+          </Button>
+        ) : undefined
+      }
+    />
+  );
+}
 
 /* ------------------------------------------------------------- Recent media */
 
 export function RecentMedia() {
-  const { state, reload } = useMediaList(emptyFilters);
+  const { state, reload } = useMediaPages(emptyFilters);
   const recent = state.phase === "ready" ? state.media.slice(0, 5) : [];
 
   return (
@@ -489,14 +591,14 @@ export function RecentMedia() {
 
       {recent.length > 0 ? (
         <ul className={styles.recentList}>
-          {recent.map((media) => {
-            const status = presentStatus(media.status);
+          {recent.map((item) => {
+            const status = presentStatus(item.status);
             return (
-              <li key={media.id} className={styles.recentRow}>
-                <Icon name={kindIcon(media.kind)} size={16} />
-                <span className={styles.recentName}>{media.originalFilename}</span>
+              <li key={item.id} className={styles.recentRow}>
+                <Icon name={kindIcon(item.kind)} size={16} />
+                <span className={styles.recentName}>{item.originalFilename}</span>
                 <StatusBadge label={status.label} tone={status.tone} shape={status.shape} />
-                <span className={styles.recentDate}>{formatDate(media.createdAt)}</span>
+                <span className={styles.recentDate}>{formatDate(item.createdAt)}</span>
               </li>
             );
           })}
@@ -504,4 +606,8 @@ export function RecentMedia() {
       ) : null}
     </Card>
   );
+}
+
+function titleCase(value: string) {
+  return value.charAt(0) + value.slice(1).toLowerCase();
 }

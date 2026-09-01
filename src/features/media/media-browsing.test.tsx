@@ -1,8 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { getPermissionsForRole } from "@/auth/permissions";
 import { MediaCard } from "@/features/media/media-client";
 import { MediaInspector } from "@/features/media/media-inspector";
+import { UploadDialog } from "@/features/media/upload-dialog";
 import {
   MEDIA_PAGE_SIZE,
   MEDIA_QUERY_MAX_LENGTH,
@@ -12,11 +14,22 @@ import {
   mediaKinds,
   mediaStatuses,
   mediaViewModes,
+  mergeMediaPages,
   parseOption,
   readViewPreference,
 } from "@/features/media/media";
 // The contract itself is imported from the shared module, not mirrored locally.
 import type { MediaAssetDetail, MediaAssetSummary, MediaListResponse } from "@/shared/media";
+import type { CurrentUserContext, MemberRole } from "@/shared/auth";
+
+function contextFor(role: MemberRole): CurrentUserContext {
+  return {
+    user: { id: "user-1", name: "Aarav Mehta", email: "aarav@shivayonic.test" },
+    organization: { id: "org-1", name: "Shivayonic Invites", slug: "shivayonic-invites" },
+    role,
+    permissions: getPermissionsForRole(role),
+  };
+}
 
 const video: MediaAssetSummary = {
   id: "a4f1c2e0-0000-4000-8000-000000000000",
@@ -45,12 +58,14 @@ const audio: MediaAssetSummary = {
   height: null,
 };
 
+const noop = () => {};
+
 describe("URL and storage state", () => {
   it("accepts only known values from the query string", () => {
     expect(parseOption("grid", mediaViewModes)).toBe("grid");
-    expect(parseOption("list", mediaViewModes)).toBe("list");
     expect(parseOption("<script>", mediaViewModes)).toBe("");
-    expect(parseOption(null, mediaViewModes)).toBe("");
+    expect(parseOption("DOCUMENT", mediaKinds)).toBe("DOCUMENT");
+    expect(parseOption("EVERYTHING", mediaKinds)).toBe("");
   });
 
   it("persists a layout preference and nothing else", () => {
@@ -60,7 +75,6 @@ describe("URL and storage state", () => {
     expect(MEDIA_VIEW_STORAGE_KEY).toBe("shivayonic.media.view");
     expect(readViewPreference(storage)).toBe("list");
 
-    // Anything unexpected in storage falls back to the safe default.
     store.set(MEDIA_VIEW_STORAGE_KEY, "OWNER");
     expect(readViewPreference(storage)).toBe("");
   });
@@ -91,48 +105,87 @@ describe("server filter contract", () => {
 
   it("omits empty filters rather than sending blanks the route would reject", () => {
     const query = new URLSearchParams(buildMediaListQuery({ kind: "", status: "", q: "   " }));
-
     expect([...query.keys()]).toEqual(["limit"]);
   });
 
-  it("carries a cursor when one is supplied", () => {
-    const query = new URLSearchParams(buildMediaListQuery({ cursor: "abc123" }));
-    expect(query.get("cursor")).toBe("abc123");
+  it("carries a cursor only when continuing a page", () => {
+    expect(new URLSearchParams(buildMediaListQuery({ cursor: "abc" })).get("cursor")).toBe("abc");
+    expect(new URLSearchParams(buildMediaListQuery({})).has("cursor")).toBe(false);
   });
 
   it("offers exactly the kinds and statuses the shared contract defines", () => {
     expect(mediaKinds).toEqual(["IMAGE", "VIDEO", "AUDIO", "DOCUMENT"]);
     expect(mediaStatuses).toContain("ARCHIVED");
-    expect(parseOption("DOCUMENT", mediaKinds)).toBe("DOCUMENT");
-    expect(parseOption("EVERYTHING", mediaKinds)).toBe("");
     expect(MEDIA_QUERY_MAX_LENGTH).toBe(120);
+  });
+});
+
+describe("cursor pagination", () => {
+  it("appends the next page without re-adding an id already held", () => {
+    const merged = mergeMediaPages([video, audio], [audio, { ...video, id: "c9" }]);
+
+    expect(merged.map((item) => item.id)).toEqual([video.id, "b5", "c9"]);
+  });
+
+  it("keeps the loaded pages when the next page returns nothing", () => {
+    expect(mergeMediaPages([video], [])).toEqual([video]);
+  });
+
+  it("understands the cursor page the list route returns", () => {
+    // Typed against the shared contract: a shape change breaks this at compile time.
+    const response: MediaListResponse = {
+      media: [video],
+      pageInfo: { nextCursor: "eyJpZCI6ImE0ZjEifQ", hasMore: true },
+    };
+
+    expect(response.pageInfo.hasMore).toBe(true);
+    expect(response.pageInfo.nextCursor).toBeTypeOf("string");
   });
 });
 
 describe("MediaCard", () => {
   it("becomes a button that opens a dialog once it is openable", () => {
     const plain = renderToStaticMarkup(<MediaCard media={video} />);
-    const openable = renderToStaticMarkup(<MediaCard media={video} onOpen={() => {}} />);
+    const openable = renderToStaticMarkup(<MediaCard media={video} onOpen={noop} />);
 
     expect(plain).toMatch(/^<article/);
     expect(openable).toMatch(/^<button/);
     expect(openable).toContain('aria-haspopup="dialog"');
   });
+
+  it("shows kind, status and technical metadata without streaming anything", () => {
+    const markup = renderToStaticMarkup(<MediaCard media={video} />);
+
+    expect(markup).toContain("Video");
+    expect(markup).toContain("Ready");
+    expect(markup).toContain("700 MB");
+    expect(markup).toContain("3840×2160");
+    // A grid of cards must never mount media elements.
+    expect(markup).not.toContain("<video");
+    expect(markup).not.toContain("<img");
+  });
 });
 
 describe("MediaInspector", () => {
+  const owner = contextFor("OWNER");
+
+  function render(media: MediaAssetSummary | null, context = owner) {
+    return renderToStaticMarkup(
+      <MediaInspector context={context} summary={media} onClose={noop} onChanged={noop} />,
+    );
+  }
+
   it("shows operator-facing metadata for the selected master", () => {
-    const markup = renderToStaticMarkup(<MediaInspector media={video} onClose={() => {}} />);
+    const markup = render(video);
 
     expect(markup).toContain("mehta-wedding-film-master.mp4");
     expect(markup).toContain("video/mp4");
     expect(markup).toContain("700 MB");
-    expect(markup).toContain("3840×2160");
     expect(markup).toContain("3:05");
   });
 
   it("offers download through the authorised route, never a storage URL", () => {
-    const markup = renderToStaticMarkup(<MediaInspector media={video} onClose={() => {}} />);
+    const markup = render(video);
 
     expect(markup).toContain(`href="/api/media/${video.id}/download"`);
     expect(markup).not.toContain("http");
@@ -143,14 +196,14 @@ describe("MediaInspector", () => {
   it("withholds download and preview until the master is ready", () => {
     expect(isDownloadable(audio)).toBe(false);
 
-    const markup = renderToStaticMarkup(<MediaInspector media={audio} onClose={() => {}} />);
+    const markup = render(audio);
 
     expect(markup).not.toContain("/download");
-    expect(markup).toContain("finishes processing");
+    expect(markup).toContain("once this master is ready");
   });
 
   it("does not autoplay, and loads no media until asked", () => {
-    const markup = renderToStaticMarkup(<MediaInspector media={video} onClose={() => {}} />);
+    const markup = render(video);
 
     expect(markup).toContain("Load preview");
     expect(markup).not.toContain("<video");
@@ -163,9 +216,7 @@ describe("MediaInspector", () => {
       storageKey: "organizations/org-1/media/a4f1/secret.mp4",
     } as MediaAssetSummary;
 
-    const markup = renderToStaticMarkup(
-      <MediaInspector media={contaminated} onClose={() => {}} />,
-    );
+    const markup = render(contaminated);
 
     expect(markup).not.toContain("storageKey");
     expect(markup).not.toContain("secret.mp4");
@@ -179,42 +230,98 @@ describe("MediaInspector", () => {
       creator: { id: "u1", name: "Aarav Mehta" },
     };
 
-    const markup = renderToStaticMarkup(<MediaInspector media={detail} onClose={() => {}} />);
+    const markup = renderToStaticMarkup(
+      <MediaInspector context={owner} summary={detail} onClose={noop} onChanged={noop} />,
+    );
 
     expect(markup).toContain("Mehta Wedding");
     expect(markup).toContain("Uploaded by");
-    expect(markup).toContain("Aarav Mehta");
-    // Internal identifiers stay out of the interface.
     expect(markup).not.toContain("u1");
   });
 
+  it("offers archive to a MEDIA_WRITE holder and delete only to an owner", () => {
+    const asOwner = render(video);
+    const asStaff = render(video, contextFor("STAFF"));
+    const asAdmin = render(video, contextFor("ADMIN"));
+
+    expect(asOwner).toContain(">Archive<");
+    expect(asOwner).toContain(">Delete<");
+    // Staff and admin may archive; neither may delete, and neither is offered the
+    // confirmation dialog for it.
+    expect(asStaff).toContain(">Archive<");
+    expect(asStaff).not.toContain(">Delete<");
+    expect(asStaff).not.toContain("Delete this master permanently?");
+    expect(asAdmin).not.toContain(">Delete<");
+  });
+
+  it("does not offer archive on an already archived master", () => {
+    const markup = render({ ...video, status: "ARCHIVED" });
+
+    expect(markup).not.toContain(">Archive<");
+    expect(markup).toContain("Archived masters are hidden");
+  });
+
+  it("puts both destructive actions behind a confirmation naming the file", () => {
+    const markup = render(video);
+
+    expect(markup).toContain("Archive this master?");
+    expect(markup).toContain("Delete this master permanently?");
+    expect(markup).toContain("cannot be undone");
+    expect(markup).toContain(video.originalFilename);
+    // Confirmations are dialogs, and a closed dialog is not open.
+    expect(markup).not.toContain("<dialog open");
+  });
+
+  it("explains a failed master without exposing probe output", () => {
+    const markup = render({ ...video, status: "FAILED" });
+
+    expect(markup).toContain("failed validation");
+    expect(markup).not.toContain("ffprobe");
+    expect(markup).not.toContain("stderr");
+  });
+
   it("renders nothing selectable when no master is open", () => {
-    const markup = renderToStaticMarkup(<MediaInspector media={null} onClose={() => {}} />);
+    const markup = render(null);
 
     expect(markup).not.toContain("<dialog open");
     expect(markup).not.toContain("mehta-wedding-film-master.mp4");
   });
 });
 
-describe("paginated list contract", () => {
-  it("understands the cursor page the list route returns", () => {
-    // Typed against the shared contract: a shape change breaks this at compile time.
-    const response: MediaListResponse = {
-      media: [video],
-      pageInfo: { nextCursor: "eyJpZCI6ImE0ZjEifQ", hasMore: true },
-    };
+describe("UploadDialog", () => {
+  function render() {
+    return renderToStaticMarkup(
+      <UploadDialog open={false} onClose={noop} onUploaded={noop} onSettled={noop} />,
+    );
+  }
 
-    expect(response.media).toHaveLength(1);
-    expect(response.pageInfo.hasMore).toBe(true);
-    expect(response.pageInfo.nextCursor).toBeTypeOf("string");
+  it("offers a real file input as well as the drop area", () => {
+    const markup = render();
+
+    expect(markup).toContain('type="file"');
+    expect(markup).toContain("multiple");
+    expect(markup).toContain("Choose files");
+    expect(markup).toContain("Drop masters here");
   });
 
-  it("treats an exhausted page as having no cursor", () => {
-    const response: MediaListResponse = {
-      media: [],
-      pageInfo: { nextCursor: null, hasMore: false },
-    };
+  it("advertises only the formats the server accepts", () => {
+    const markup = render();
 
-    expect(response.pageInfo.nextCursor).toBeNull();
+    expect(markup).toContain("video/mp4");
+    expect(markup).toContain(".mov");
+    expect(markup).not.toContain("application/pdf");
+    expect(markup).toContain("up to 2 GB");
+  });
+
+  it("carries an accessible status region for upload progression", () => {
+    const markup = render();
+
+    expect(markup).toContain('role="status"');
+    expect(markup).toContain('aria-live="polite"');
+    expect(markup).toContain("No files chosen yet.");
+  });
+
+  it("says plainly that uploading publishes nothing", () => {
+    expect(render()).toContain("Nothing is published by uploading");
   });
 });

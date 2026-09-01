@@ -101,6 +101,12 @@ export function readViewPreference(storage: ReadableStorage | undefined): MediaV
   }
 }
 
+/** Appends the next page, dropping any id already held so a repeat never doubles. */
+export function mergeMediaPages<T extends { id: string }>(existing: T[], incoming: T[]): T[] {
+  const seen = new Set(existing.map((item) => item.id));
+  return [...existing, ...incoming.filter((item) => !seen.has(item.id))];
+}
+
 /** Builds the list query from the contract's own request shape. */
 export function buildMediaListQuery(filters: {
   kind?: string;

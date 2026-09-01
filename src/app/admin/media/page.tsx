@@ -19,11 +19,11 @@ export default async function MediaPage() {
     <>
       <PageHeader
         title="Media Library"
-        lede="Master files for every film, invitation and score held in the studio. Metadata only — the files themselves are served through signed, authenticated access."
+        lede="Master files for every film, invitation and score held in the studio. Files are stored privately and reached only through authenticated, authorised access."
       />
       {/* MediaLibrary reads the query string, so it needs a suspense boundary. */}
       <Suspense fallback={null}>
-        <MediaLibrary canUpload={can(context, "MEDIA_WRITE")} />
+        <MediaLibrary context={context} />
       </Suspense>
     </>
   );

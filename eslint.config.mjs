@@ -43,6 +43,14 @@ export default [
     languageOptions: {
       globals: {
         AbortController: "readonly",
+        AbortSignal: "readonly",
+        Blob: "readonly",
+        File: "readonly",
+        FileList: "readonly",
+        HTMLDivElement: "readonly",
+        RequestInit: "readonly",
+        Response: "readonly",
+        XMLHttpRequest: "readonly",
         clearTimeout: "readonly",
         document: "readonly",
         EventTarget: "readonly",
