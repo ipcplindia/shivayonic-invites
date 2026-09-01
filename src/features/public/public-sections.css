@@ -12,11 +12,11 @@
 }
 
 .navBar {
-  width: var(--shell);
+  width: min(1560px, 100% - 3rem);
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 2rem;
   height: 76px;
 }
 
@@ -57,14 +57,15 @@
 .navLinks {
   display: flex;
   align-items: center;
-  gap: 1.4rem;
-  margin-left: 1rem;
+  gap: 1.9rem;
+  margin-left: 1.5rem;
 }
 
 .navLink {
   color: #fff9f1;
   font-size: 0.9rem;
   font-weight: 500;
+  white-space: nowrap;
   position: relative;
   padding: 0.25rem 0;
   transition: color 0.2s var(--ease);

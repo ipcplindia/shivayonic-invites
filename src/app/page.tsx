@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "@/features/public/public.css";
 import "@/features/public/public-sections.css";
+import "@/features/public/public-pages.css";
 import { PIcon } from "@/features/public/icons";
 import { SiteNav } from "@/features/public/site-nav";
 import { SocialRibbon } from "@/features/public/marquee";
