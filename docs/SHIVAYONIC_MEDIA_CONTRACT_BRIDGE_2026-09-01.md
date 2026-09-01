@@ -38,3 +38,9 @@ Import types from `@/shared/media`. Read `pageInfo.nextCursor` to load another p
 - Projects API / Project CRUD.
 
 These are not required for the Media Library contract bridge.
+
+## Fresh cross-tenant verification — 2026-09-01
+
+Temporary Organization A/B fixtures were created against the development database. As an authenticated Organization A owner, base list, `kind`, `status`, filename search, project filter, cursor continuation, and a tampered opaque cursor returned only Organization A data. Organization B's distinctive filename and media ID never appeared.
+
+Organization B detail, attachment download, inline preview, and Range requests all returned tenant-safe `404` responses. No metadata, signed URL, bytes, or `Content-Range` leaked. Temporary media, project, tenant, and user records were removed; audit evidence was preserved.
