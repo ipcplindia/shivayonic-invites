@@ -11,7 +11,7 @@ import {
   formatDuration,
   isDownloadable,
   presentStatus,
-  type MediaAssetSummary,
+  type MediaAsset,
 } from "@/features/media/media";
 
 /**
@@ -25,7 +25,7 @@ export function MediaInspector({
   media,
   onClose,
 }: {
-  media: MediaAssetSummary | null;
+  media: MediaAsset | null;
   onClose: () => void;
 }) {
   const open = media !== null;
@@ -77,10 +77,10 @@ export function MediaInspector({
           <Field label="Added" value={formatDate(media.createdAt)} />
           <Field label="Last updated" value={formatDate(media.updatedAt)} />
           {media.archivedAt ? <Field label="Archived" value={formatDate(media.archivedAt)} /> : null}
-          <Field
-            label="Project"
-            value={media.projectId ? "Linked" : "Not linked to a project"}
-          />
+          <Field label="Project" value={projectLabel(media)} />
+          {"creator" in media && media.creator ? (
+            <Field label="Uploaded by" value={media.creator.name ?? "Unknown"} />
+          ) : null}
         </>
       ) : null}
     </Inspector>
@@ -101,7 +101,7 @@ function Field({ label, value, mono }: { label: string; value: string; mono?: bo
  * use directly — cookies travel with it, the server re-checks MEDIA_READ, and
  * no URL is stored anywhere. Nothing plays until the operator asks it to.
  */
-function MediaPreview({ media }: { media: MediaAssetSummary }) {
+function MediaPreview({ media }: { media: MediaAsset }) {
   const [state, setState] = useState<"idle" | "loading" | "ready" | "failed">("idle");
 
   if (!isDownloadable(media)) {
@@ -133,7 +133,10 @@ function MediaPreview({ media }: { media: MediaAssetSummary }) {
     );
   }
 
-  const src = `/api/media/${media.id}/download`;
+  // The authorised route, asked for inline so it streams with Range support
+  // instead of being offered as an attachment. No storage URL is constructed,
+  // and nothing about it is persisted.
+  const src = `/api/media/${media.id}/download?disposition=inline`;
   const onLoad = () => setState("ready");
   const onError = () => setState("failed");
 
@@ -172,6 +175,12 @@ function MediaPreview({ media }: { media: MediaAssetSummary }) {
       ) : null}
     </div>
   );
+}
+
+/** Detail carries the project name; a summary row only knows that one exists. */
+function projectLabel(media: MediaAsset) {
+  if ("project" in media && media.project) return media.project.name;
+  return media.projectId ? "Linked" : "Not linked to a project";
 }
 
 function titleCase(value: string) {

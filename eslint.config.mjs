@@ -35,10 +35,15 @@ export default [
   {
     // Frontend components run in the browser; DOM element and event types are
     // ambient there. Backend modules keep the narrower global list above.
-    files: ["src/app/**/*.tsx", "src/components/**/*.tsx", "src/features/**/*.tsx"],
+    files: [
+      "src/app/**/*.tsx",
+      "src/components/**/*.tsx",
+      "src/features/**/*.{ts,tsx}",
+    ],
     languageOptions: {
       globals: {
         AbortController: "readonly",
+        clearTimeout: "readonly",
         document: "readonly",
         EventTarget: "readonly",
         HTMLAnchorElement: "readonly",

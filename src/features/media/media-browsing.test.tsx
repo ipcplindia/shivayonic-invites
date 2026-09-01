@@ -4,14 +4,19 @@ import { describe, expect, it } from "vitest";
 import { MediaCard } from "@/features/media/media-client";
 import { MediaInspector } from "@/features/media/media-inspector";
 import {
+  MEDIA_PAGE_SIZE,
+  MEDIA_QUERY_MAX_LENGTH,
   MEDIA_VIEW_STORAGE_KEY,
-  filterMedia,
+  buildMediaListQuery,
   isDownloadable,
+  mediaKinds,
+  mediaStatuses,
   mediaViewModes,
   parseOption,
   readViewPreference,
-  type MediaAssetSummary,
 } from "@/features/media/media";
+// The contract itself is imported from the shared module, not mirrored locally.
+import type { MediaAssetDetail, MediaAssetSummary, MediaListResponse } from "@/shared/media";
 
 const video: MediaAssetSummary = {
   id: "a4f1c2e0-0000-4000-8000-000000000000",
@@ -72,14 +77,35 @@ describe("URL and storage state", () => {
   });
 });
 
-describe("client-side filtering", () => {
-  const page = [video, audio];
+describe("server filter contract", () => {
+  it("sends every filter to the list route, and asks for one page", () => {
+    const query = new URLSearchParams(
+      buildMediaListQuery({ kind: "VIDEO", status: "READY", q: "mehta" }),
+    );
 
-  it("narrows by format and by filename, and clears back to the full page", () => {
-    expect(filterMedia(page, { kind: "AUDIO" })).toEqual([audio]);
-    expect(filterMedia(page, { query: "mehta" })).toEqual([video]);
-    expect(filterMedia(page, { kind: "VIDEO", query: "sharma" })).toEqual([]);
-    expect(filterMedia(page, {})).toHaveLength(2);
+    expect(query.get("limit")).toBe(String(MEDIA_PAGE_SIZE));
+    expect(query.get("kind")).toBe("VIDEO");
+    expect(query.get("status")).toBe("READY");
+    expect(query.get("q")).toBe("mehta");
+  });
+
+  it("omits empty filters rather than sending blanks the route would reject", () => {
+    const query = new URLSearchParams(buildMediaListQuery({ kind: "", status: "", q: "   " }));
+
+    expect([...query.keys()]).toEqual(["limit"]);
+  });
+
+  it("carries a cursor when one is supplied", () => {
+    const query = new URLSearchParams(buildMediaListQuery({ cursor: "abc123" }));
+    expect(query.get("cursor")).toBe("abc123");
+  });
+
+  it("offers exactly the kinds and statuses the shared contract defines", () => {
+    expect(mediaKinds).toEqual(["IMAGE", "VIDEO", "AUDIO", "DOCUMENT"]);
+    expect(mediaStatuses).toContain("ARCHIVED");
+    expect(parseOption("DOCUMENT", mediaKinds)).toBe("DOCUMENT");
+    expect(parseOption("EVERYTHING", mediaKinds)).toBe("");
+    expect(MEDIA_QUERY_MAX_LENGTH).toBe(120);
   });
 });
 
@@ -145,10 +171,50 @@ describe("MediaInspector", () => {
     expect(markup).not.toContain("secret.mp4");
   });
 
+  it("prefers the detail contract's project name and uploader when present", () => {
+    const detail: MediaAssetDetail = {
+      ...video,
+      projectId: "p1",
+      project: { id: "p1", name: "Mehta Wedding" },
+      creator: { id: "u1", name: "Aarav Mehta" },
+    };
+
+    const markup = renderToStaticMarkup(<MediaInspector media={detail} onClose={() => {}} />);
+
+    expect(markup).toContain("Mehta Wedding");
+    expect(markup).toContain("Uploaded by");
+    expect(markup).toContain("Aarav Mehta");
+    // Internal identifiers stay out of the interface.
+    expect(markup).not.toContain("u1");
+  });
+
   it("renders nothing selectable when no master is open", () => {
     const markup = renderToStaticMarkup(<MediaInspector media={null} onClose={() => {}} />);
 
     expect(markup).not.toContain("<dialog open");
     expect(markup).not.toContain("mehta-wedding-film-master.mp4");
+  });
+});
+
+describe("paginated list contract", () => {
+  it("understands the cursor page the list route returns", () => {
+    // Typed against the shared contract: a shape change breaks this at compile time.
+    const response: MediaListResponse = {
+      media: [video],
+      pageInfo: { nextCursor: "eyJpZCI6ImE0ZjEifQ", hasMore: true },
+    };
+
+    expect(response.media).toHaveLength(1);
+    expect(response.pageInfo.hasMore).toBe(true);
+    expect(response.pageInfo.nextCursor).toBeTypeOf("string");
+  });
+
+  it("treats an exhausted page as having no cursor", () => {
+    const response: MediaListResponse = {
+      media: [],
+      pageInfo: { nextCursor: null, hasMore: false },
+    };
+
+    expect(response.pageInfo.nextCursor).toBeNull();
   });
 });

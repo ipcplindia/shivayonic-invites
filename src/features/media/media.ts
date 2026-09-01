@@ -1,56 +1,72 @@
 import type { IconName } from "@/components/icon";
 import type { StatusShape } from "@/components/ui";
+import type {
+  MediaAssetDetail,
+  MediaAssetSummary,
+  MediaKind,
+  MediaStatus,
+} from "@/shared/media";
 
 /**
- * Frontend view of the Task 03 media contract.
+ * Presentation helpers for the media contract.
  *
- * This mirrors `serializeMedia` in `src/core/media-api.ts` exactly — it is the
- * JSON that `GET /api/media` already returns. It is declared here rather than
- * imported so no UI module reaches into a backend-owned file; see the Task 01
- * report for the recommendation to promote this shape into `src/shared`.
+ * The contract itself lives in `src/shared/media.ts` and is the authority for
+ * both sides. The frontend no longer mirrors it; it re-exports the application
+ * facing types so UI modules have one import to reach for.
  *
- * Deliberately absent, and never to be added: storageKey, filesystem paths,
- * bucket names, credentials.
+ * Storage keys, filesystem paths, bucket names and credentials are absent from
+ * that contract and are never reconstructed here.
  */
-export type MediaAssetSummary = {
-  id: string;
-  projectId: string | null;
-  kind: string;
-  status: string;
-  originalFilename: string;
-  mimeType: string;
-  /** Serialised from a bigint, so it arrives as a decimal string. */
-  sizeBytes: string;
-  width: number | null;
-  height: number | null;
-  durationMs: number | null;
-  createdAt: string;
-  updatedAt: string;
-  archivedAt: string | null;
+export type {
+  MediaAssetDetail,
+  MediaAssetSummary,
+  MediaKind,
+  MediaListResponse,
+  MediaPagination,
+  MediaStatus,
+} from "@/shared/media";
+
+/** Either shape renders in the same places; detail is a superset of summary. */
+export type MediaAsset = MediaAssetSummary | MediaAssetDetail;
+
+const statusLabels: Record<MediaStatus, string> = {
+  PENDING_UPLOAD: "Awaiting upload",
+  UPLOADED: "Uploaded",
+  PROCESSING: "Processing",
+  READY: "Ready",
+  FAILED: "Failed",
+  ARCHIVED: "Archived",
 };
 
-export type MediaListResponse = { media: MediaAssetSummary[] };
+const kindLabels: Record<MediaKind, string> = {
+  IMAGE: "Images",
+  VIDEO: "Video",
+  AUDIO: "Audio",
+  DOCUMENT: "Documents",
+};
+
+/** Both filters are applied by the server; these lists only drive the controls. */
+export const mediaStatuses = Object.keys(statusLabels) as MediaStatus[];
+export const mediaKinds = Object.keys(kindLabels) as MediaKind[];
 
 export const mediaStatusFilters = [
   { value: "", label: "All statuses" },
-  { value: "PENDING_UPLOAD", label: "Awaiting upload" },
-  { value: "UPLOADED", label: "Uploaded" },
-  { value: "PROCESSING", label: "Processing" },
-  { value: "READY", label: "Ready" },
-  { value: "FAILED", label: "Failed" },
-  { value: "ARCHIVED", label: "Archived" },
-] as const;
+  ...mediaStatuses.map((status) => ({ value: status, label: statusLabels[status] })),
+];
 
-/** The list API filters by status server-side; kind is filtered on the client. */
 export const mediaKindFilters = [
   { value: "", label: "All formats" },
-  { value: "IMAGE", label: "Images" },
-  { value: "VIDEO", label: "Video" },
-  { value: "AUDIO", label: "Audio" },
-] as const;
+  ...mediaKinds.map((kind) => ({ value: kind, label: kindLabels[kind] })),
+];
 
 export const mediaViewModes = ["grid", "list"] as const;
 export type MediaViewMode = (typeof mediaViewModes)[number];
+
+/** The server caps a page at 100; this is the page size the library asks for. */
+export const MEDIA_PAGE_SIZE = 50;
+
+/** Longest filename query the list route accepts before it rejects the request. */
+export const MEDIA_QUERY_MAX_LENGTH = 120;
 
 /** Narrows an untrusted query-string or localStorage value onto a known option. */
 export function parseOption<T extends string>(
@@ -64,7 +80,7 @@ export function parseOption<T extends string>(
  * The download route rejects anything that is not READY, so a master is only
  * openable — and only previewable — once it has finished processing.
  */
-export function isDownloadable(media: MediaAssetSummary) {
+export function isDownloadable(media: MediaAsset) {
   return media.status === "READY";
 }
 
@@ -85,20 +101,19 @@ export function readViewPreference(storage: ReadableStorage | undefined): MediaV
   }
 }
 
-/**
- * Client-side narrowing of the page the API returned. Status is filtered by the
- * server; these two are not, and the interface says so on screen.
- */
-export function filterMedia(
-  media: MediaAssetSummary[],
-  filters: { kind?: string; query?: string },
-) {
-  const needle = (filters.query ?? "").trim().toLowerCase();
-  return media.filter(
-    (item) =>
-      (!filters.kind || item.kind === filters.kind) &&
-      (!needle || item.originalFilename.toLowerCase().includes(needle)),
-  );
+/** Builds the list query from the contract's own request shape. */
+export function buildMediaListQuery(filters: {
+  kind?: string;
+  status?: string;
+  q?: string;
+  cursor?: string;
+}) {
+  const params = new URLSearchParams({ limit: String(MEDIA_PAGE_SIZE) });
+  for (const key of ["kind", "status", "q", "cursor"] as const) {
+    const value = filters[key]?.trim();
+    if (value) params.set(key, value);
+  }
+  return params.toString();
 }
 
 type StatusPresentation = {
@@ -108,7 +123,7 @@ type StatusPresentation = {
 };
 
 /** Tone and dot shape both change, so status never depends on colour alone. */
-const statusPresentation: Record<string, StatusPresentation> = {
+const statusPresentation: Record<MediaStatus, StatusPresentation> = {
   PENDING_UPLOAD: { label: "Awaiting upload", tone: "warning", shape: "hollow" },
   UPLOADED: { label: "Uploaded", tone: "signal", shape: "solid" },
   PROCESSING: { label: "Processing", tone: "signal", shape: "hollow" },
@@ -117,8 +132,8 @@ const statusPresentation: Record<string, StatusPresentation> = {
   ARCHIVED: { label: "Archived", tone: "neutral", shape: "square" },
 };
 
-export function presentStatus(status: string): StatusPresentation {
-  return statusPresentation[status] ?? { label: status, tone: "neutral", shape: "square" };
+export function presentStatus(status: MediaStatus | string): StatusPresentation {
+  return statusPresentation[status as MediaStatus] ?? { label: status, tone: "neutral", shape: "square" };
 }
 
 const kindIcons: Record<string, IconName> = {
@@ -127,8 +142,8 @@ const kindIcons: Record<string, IconName> = {
   AUDIO: "audio",
 };
 
-export function kindIcon(kind: string): IconName {
-  return kindIcons[kind] ?? "media";
+export function kindIcon(kind: MediaKind | string): IconName {
+  return kindIcons[kind as MediaKind] ?? "media";
 }
 
 export function formatBytes(sizeBytes: string) {

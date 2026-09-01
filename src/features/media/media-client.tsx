@@ -19,46 +19,58 @@ import {
 import { MediaInspector } from "@/features/media/media-inspector";
 import styles from "@/features/media/media.module.css";
 import {
+  buildMediaListQuery,
   describeApiError,
-  filterMedia,
   formatBytes,
   formatDate,
   formatDuration,
   kindIcon,
   mediaKindFilters,
+  mediaKinds,
   mediaStatusFilters,
+  mediaStatuses,
   mediaViewModes,
+  MEDIA_PAGE_SIZE,
+  MEDIA_QUERY_MAX_LENGTH,
   MEDIA_VIEW_STORAGE_KEY,
   parseOption,
   readViewPreference,
   presentStatus,
   type MediaAssetSummary,
   type MediaListResponse,
+  type MediaPagination,
   type MediaViewMode,
 } from "@/features/media/media";
+
+type MediaFilters = { kind: string; status: string; q: string };
 
 type LoadState =
   | { phase: "loading" }
   | { phase: "error"; message: string; retryable: boolean }
-  | { phase: "ready"; media: MediaAssetSummary[] };
+  | { phase: "ready"; media: MediaAssetSummary[]; pageInfo: MediaPagination };
 
 /**
- * Reads the existing `GET /api/media` route. Same-origin, so the session cookie
- * travels on its own and the frontend never touches auth internals.
+ * Reads `GET /api/media`. Same-origin, so the session cookie travels on its own
+ * and the frontend never touches auth internals.
  *
- * `status` is the only filter the API supports; everything else is applied to
- * the page it returns, and the interface says so.
+ * Since the hardened media contract, kind, status and the filename query are all
+ * applied by the server, and the response is a cursor page. This gate renders
+ * the first page only; paging through `pageInfo.nextCursor` is Task 03.
  */
-function useMediaList(status: string) {
+function useMediaList(filters: MediaFilters) {
   const [state, setState] = useState<LoadState>({ phase: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const { kind, status, q } = filters;
 
   useEffect(() => {
     const controller = new AbortController();
     setState({ phase: "loading" });
 
-    const query = status ? `?status=${encodeURIComponent(status)}` : "";
-    fetch(`/api/media${query}`, { signal: controller.signal, headers: { accept: "application/json" } })
+    const query = buildMediaListQuery({ kind, status, q });
+    fetch(`/api/media?${query}`, {
+      signal: controller.signal,
+      headers: { accept: "application/json" },
+    })
       .then(async (response) => {
         const body = await response.json().catch(() => null);
         if (!response.ok) {
@@ -68,7 +80,12 @@ function useMediaList(status: string) {
           (error as Error & { retryable?: boolean }).retryable = response.status >= 500;
           throw error;
         }
-        setState({ phase: "ready", media: (body as MediaListResponse).media ?? [] });
+        const payload = body as MediaListResponse;
+        setState({
+          phase: "ready",
+          media: payload.media ?? [],
+          pageInfo: payload.pageInfo ?? { nextCursor: null, hasMore: false },
+        });
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -84,7 +101,7 @@ function useMediaList(status: string) {
       });
 
     return () => controller.abort();
-  }, [status, attempt]);
+  }, [attempt, kind, q, status]);
 
   const reload = useCallback(() => setAttempt((value) => value + 1), []);
   return { state, reload };
@@ -173,23 +190,23 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
 
   // Query string is the source of truth, so a filtered view is shareable and
   // survives back/forward. Unknown values are discarded, never trusted.
-  const status = parseOption(
-    searchParams.get("status"),
-    mediaStatusFilters.map((option) => option.value).filter(Boolean) as string[],
-  );
-  const kind = parseOption(
-    searchParams.get("kind"),
-    mediaKindFilters.map((option) => option.value).filter(Boolean) as string[],
-  );
-  const query = searchParams.get("q") ?? "";
+  const status = parseOption(searchParams.get("status"), mediaStatuses);
+  const kind = parseOption(searchParams.get("kind"), mediaKinds);
+  // The list route rejects a query longer than its own limit, so clamp here.
+  const query = (searchParams.get("q") ?? "").slice(0, MEDIA_QUERY_MAX_LENGTH);
   const urlView = parseOption(searchParams.get("view"), mediaViewModes);
 
   const [storedView, setStoredView] = useState<MediaViewMode | "">("");
   useEffect(() => setStoredView(readViewPreference(window.localStorage)), []);
   const view: MediaViewMode = urlView || storedView || "grid";
 
+  // The filename query now reaches the server, so the field is typed locally and
+  // settles into the URL rather than issuing a request per keystroke.
+  const [draftQuery, setDraftQuery] = useState(query);
+  useEffect(() => setDraftQuery(query), [query]);
   const [selected, setSelected] = useState<MediaAssetSummary | null>(null);
-  const { state, reload } = useMediaList(status);
+  const filters = useMemo(() => ({ kind, status, q: query }), [kind, query, status]);
+  const { state, reload } = useMediaList(filters);
   const refreshing = useRef(false);
 
   const setParams = useCallback(
@@ -204,6 +221,21 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
     },
     [pathname, router, searchParams],
   );
+
+  // The debounce above needs the latest writer without re-arming on every render.
+  const setParamsRef = useRef(setParams);
+  setParamsRef.current = setParams;
+
+  useEffect(() => {
+    if (draftQuery === query) return;
+    const timer = setTimeout(() => setParamsRef.current({ q: draftQuery }), 250);
+    return () => clearTimeout(timer);
+  }, [draftQuery, query]);
+
+  function clearFilters() {
+    setDraftQuery("");
+    setParams({ q: "", kind: "", status: "" });
+  }
 
   function chooseView(mode: MediaViewMode) {
     setStoredView(mode);
@@ -234,21 +266,18 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
   }, [notify, state]);
 
   const filtersActive = Boolean(status || kind || query);
-
-  const visible = useMemo(
-    () => (state.phase === "ready" ? filterMedia(state.media, { kind, query }) : []),
-    [kind, query, state],
-  );
+  const visible = state.phase === "ready" ? state.media : [];
 
   return (
     <section aria-label="Media library">
       <div className={styles.toolbar}>
         <div className={styles.toolbarSearch}>
           <SearchInput
-            label="Filter loaded masters by filename"
-            placeholder="Filter by filename"
-            value={query}
-            onChange={(event) => setParams({ q: event.target.value })}
+            label="Search masters by filename"
+            placeholder="Search by filename"
+            value={draftQuery}
+            maxLength={MEDIA_QUERY_MAX_LENGTH}
+            onChange={(event) => setDraftQuery(event.target.value)}
           />
         </div>
         <Select
@@ -269,7 +298,7 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
           <Button
             variant="ghost"
             icon="close"
-            onClick={() => setParams({ q: "", kind: "", status: "" })}
+            onClick={clearFilters}
           >
             Clear filters
           </Button>
@@ -321,8 +350,9 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
       </div>
 
       <p className={styles.toolbarNote}>
-        Showing the 100 most recent masters. Status is filtered by the server; format and filename
-        narrow only the masters loaded here.
+        {state.phase === "ready" && state.pageInfo.hasMore
+          ? `Showing the first ${MEDIA_PAGE_SIZE} matching masters, newest first. More remain — paging through them arrives with the full Media Library.`
+          : `Showing up to ${MEDIA_PAGE_SIZE} matching masters, newest first. Format, status and filename are all matched by the server.`}
       </p>
 
       {state.phase === "loading" ? (
@@ -356,12 +386,12 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
             title={filtersActive ? "Nothing matches these filters" : "No masters held yet"}
             body={
               filtersActive
-                ? "No master in the loaded page matches. Widen the status filter to pull a different page from the server."
+                ? "No master in this organization matches these filters. Widen them to see the rest of the library."
                 : "Master files uploaded to the studio appear here with their status, format and size."
             }
             action={
               filtersActive ? (
-                <Button icon="close" onClick={() => setParams({ q: "", kind: "", status: "" })}>
+                <Button icon="close" onClick={clearFilters}>
                   Clear filters
                 </Button>
               ) : undefined
@@ -413,10 +443,12 @@ export function MediaLibrary({ canUpload }: { canUpload: boolean }) {
   );
 }
 
+const emptyFilters: MediaFilters = { kind: "", status: "", q: "" };
+
 /* ------------------------------------------------------------- Recent media */
 
 export function RecentMedia() {
-  const { state, reload } = useMediaList("");
+  const { state, reload } = useMediaList(emptyFilters);
   const recent = state.phase === "ready" ? state.media.slice(0, 5) : [];
 
   return (
