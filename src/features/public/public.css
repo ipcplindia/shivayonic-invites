@@ -194,14 +194,18 @@
   background: color-mix(in oklab, var(--gold) 8%, transparent);
 }
 
+/* Sits over a bright photo, so it carries its own dark-glass fill to stay
+   readable anywhere on the hero — not just a thin outline. */
 .btnOnDark {
-  border-color: color-mix(in oklab, #fff 55%, transparent);
+  border-color: color-mix(in oklab, #fff 60%, transparent);
+  background: rgb(40 20 10 / 0.42);
   color: #fff9f1;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(6px);
+  text-shadow: 0 1px 8px rgb(30 14 6 / 0.6);
 }
 
 .btnOnDark:hover {
-  background: color-mix(in oklab, #fff 14%, transparent);
+  background: rgb(40 20 10 / 0.6);
   border-color: #fff;
 }
 
