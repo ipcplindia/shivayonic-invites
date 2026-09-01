@@ -115,7 +115,7 @@ export default function HomePage() {
         </a>
       </section>
 
-      <main>
+      <main className="siteMain">
         {/* 02 — EXPLORE OUR WORLD */}
         <section className="section" id="explore">
           <div className="shell">

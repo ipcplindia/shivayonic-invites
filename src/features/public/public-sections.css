@@ -222,14 +222,45 @@
 
 /* ============================================================ HERO */
 
+/* Immersive reveal, pure CSS: the hero is sticky, so it holds at the top while
+   the cream content panel below scrolls up and rises over it. No JS, no scroll
+   handlers — `overflow-x: clip` on `.site` does not create a scroll container,
+   so sticky stays reliable. `overflow: clip` (not hidden) keeps the sticky. */
 .hero {
-  position: relative;
+  position: sticky;
+  top: 0;
   min-height: 100svh;
+  height: 100svh;
   display: flex;
   align-items: center;
   isolation: isolate;
-  overflow: hidden;
+  overflow: clip;
+  background-color: #e79a52;
 }
+
+/* The content surface that rises over the hero: its own ivory ground, a soft
+   editorial top contour, and a small negative offset so it lifts over the photo
+   rather than butting against it. z-index above the sticky hero. */
+.siteMain {
+  position: relative;
+  z-index: 2;
+  /* Flush with the bottom of the 100svh hero, so it is NOT visible at rest;
+     it rises over the sticky hero the moment scrolling begins. */
+  margin-top: 0;
+  border-radius: 2.5rem 2.5rem 0 0;
+  background: var(--ivory);
+  box-shadow: 0 -30px 70px rgb(68 36 29 / 0.18);
+}
+
+@media (max-width: 760px) {
+  .siteMain {
+    margin-top: 0;
+    border-radius: 1.6rem 1.6rem 0 0;
+  }
+}
+
+/* Reduced motion: the rise is scroll-position only (no animation), which is
+   already motion-safe; nothing to disable here. */
 
 /* Warm sunset backdrop; painted behind the photo so the hero never flashes
    empty while the image decodes, and stays graceful if it fails to load. */
@@ -250,8 +281,11 @@
   inset: 0;
   z-index: 1;
   opacity: 1;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  object-position: 72% center;
+  object-position: 68% center;
+  scale: 1.03;
 }
 
 @media (max-width: 760px) {
@@ -277,11 +311,12 @@
 }
 
 .heroEyebrow {
-  color: #ffe6c4;
-  font-size: 0.78rem;
-  font-weight: 600;
+  color: #ff9e3d;
+  font-size: 0.82rem;
+  font-weight: 700;
   letter-spacing: 0.34em;
   text-transform: uppercase;
+  text-shadow: 0 1px 10px rgb(40 18 8 / 0.55);
 }
 
 .heroTitle {

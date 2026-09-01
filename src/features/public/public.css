@@ -29,7 +29,7 @@
   --font-display: var(--font-serif-festive), "Iowan Old Style", Georgia, serif;
   --font-body: var(--font-sans-ui), ui-sans-serif, system-ui, sans-serif;
 
-  --shell: min(1240px, 100% - 3rem);
+  --shell: min(1360px, 100% - 4rem);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   position: relative;
