@@ -11,25 +11,28 @@ import {
   StyleCard,
 } from "@/features/public/sections";
 import { contact } from "@/features/public/data";
-import {
-  productsFor,
-  visualStyleCards,
-  type CategoryConfig,
-} from "@/features/public/pages";
+import { listProducts, listStyles } from "@/features/public/catalogue-data";
+import type { CategoryConfig, ToneName } from "@/features/public/pages";
+
+const styleTones: ToneName[] = ["gold", "rose", "teal", "sage"];
 
 /**
- * One reusable category-page architecture. Wedding, celebrations, devotional and
- * corporate all render through this with different config — no cloned pages.
+ * One reusable category-page architecture, now backed by the real catalogue.
+ * Products and styles come from the verified public APIs; the hero copy and
+ * accent stay config-driven. No cloned pages, no redesign.
  */
-export function CategoryPage({
+export async function CategoryPage({
   config,
   breadcrumb,
 }: {
   config: CategoryConfig;
   breadcrumb: { label: string; href?: string }[];
 }) {
-  const products = productsFor(config.productCategory);
-  const styles = visualStyleCards.slice(0, 4);
+  const [{ products }, styles] = await Promise.all([
+    listProducts({ category: config.productCategory, limit: 12 }),
+    listStyles(),
+  ]);
+  const styleCards = styles.slice(0, 4);
 
   return (
     <PageFrame>
@@ -65,29 +68,37 @@ export function CategoryPage({
           <SectionHead
             eyebrow="Featured Designs"
             title="Invitations you can make your own"
-            lede="Concept designs shown here — each can be personalised in your chosen visual world."
+            lede="Each design can be personalised in your chosen visual world."
           />
-          <CollectionGrid products={products} />
+          {products.length > 0 ? (
+            <CollectionGrid products={products} />
+          ) : (
+            <p className="sectionLede" style={{ textAlign: "center" }}>
+              New designs for this category are on the way. Message us and we will craft yours.
+            </p>
+          )}
         </div>
       </section>
 
-      <Band variant="cream" label="Visual styles">
-        <SectionHead
-          eyebrow="Choose Your Visual World"
-          title="One occasion, many ways to tell it"
-          lede="Pick a direction — the same event can be royal and cinematic, or soft and hand-drawn."
-        />
-        <div className="styleCards reveal">
-          {styles.map((s) => (
-            <StyleCard key={s.name} name={s.name} note={s.note} tone={s.tone} />
-          ))}
-        </div>
-        <div style={{ textAlign: "center", marginTop: "2rem" }}>
-          <a href="/styles" className="btn btnGhost">
-            Explore all styles
-          </a>
-        </div>
-      </Band>
+      {styleCards.length > 0 ? (
+        <Band variant="cream" label="Visual styles">
+          <SectionHead
+            eyebrow="Choose Your Visual World"
+            title="One occasion, many ways to tell it"
+            lede="Pick a direction — the same event can be royal and cinematic, or soft and hand-drawn."
+          />
+          <div className="styleCards reveal">
+            {styleCards.map((s, i) => (
+              <StyleCard key={s.id} name={s.name} note={s.description ?? ""} tone={styleTones[i % styleTones.length]} />
+            ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: "2rem" }}>
+            <a href="/styles" className="btn btnGhost">
+              Explore all styles
+            </a>
+          </div>
+        </Band>
+      ) : null}
 
       <CTASection
         title="Ready to make yours?"

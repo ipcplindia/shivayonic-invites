@@ -1,7 +1,8 @@
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, Breadcrumb, CategoryHero, CTASection, SectionHead, StyleCard } from "@/features/public/sections";
-import { visualStyleCards } from "@/features/public/pages";
+import { listStyles } from "@/features/public/catalogue-data";
 import { contact } from "@/features/public/data";
+import type { ToneName } from "@/features/public/pages";
 
 export const metadata = {
   title: { absolute: "Visual Styles | Shivayonic Invites" },
@@ -10,18 +11,40 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function Page() {
+const tones: ToneName[] = ["gold", "rose", "saffron", "teal", "sage", "cocoa"];
+
+export default async function Page() {
+  const styles = await listStyles();
   return (
     <PageFrame>
-      <CategoryHero eyebrow="Choose Your Visual World" title="One occasion, many ways to tell it" lede="Pick a visual direction — the same event can be royal and cinematic, or soft and hand-drawn." tone="teal" primary={{ label: "Browse invitations", href: "/invitations" }} />
+      <CategoryHero
+        eyebrow="Choose Your Visual World"
+        title="One occasion, many ways to tell it"
+        lede="Pick a visual direction — the same event can be royal and cinematic, or soft and hand-drawn."
+        tone="teal"
+        primary={{ label: "Browse invitations", href: "/invitations" }}
+      />
       <Band>
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "Styles" }]} />
         <SectionHead eyebrow="Styles" title="Find your look" lede="These are visual styles, not occasions — any occasion can be told in any of them." />
-        <div className="styleCards reveal">
-          {visualStyleCards.map((s) => (<StyleCard key={s.name} name={s.name} note={s.note} tone={s.tone} />))}
-        </div>
+        {styles.length > 0 ? (
+          <div className="styleCards reveal">
+            {styles.map((s, i) => (
+              <StyleCard key={s.id} name={s.name} note={s.description ?? ""} tone={tones[i % tones.length]} />
+            ))}
+          </div>
+        ) : (
+          <p className="sectionLede" style={{ textAlign: "center" }}>
+            Visual styles are being added. Message us and we will guide the direction for your invitation.
+          </p>
+        )}
       </Band>
-      <CTASection title="Not sure which style fits?" lede="Tell us the occasion and mood; we will suggest a direction." primary={{ label: "Chat on WhatsApp", href: contact.whatsappUrl, external: true }} secondary={{ label: "Contact us", href: "/contact" }} />
+      <CTASection
+        title="Not sure which style fits?"
+        lede="Tell us the occasion and mood; we will suggest a direction."
+        primary={{ label: "Chat on WhatsApp", href: contact.whatsappUrl, external: true }}
+        secondary={{ label: "Contact us", href: "/contact" }}
+      />
     </PageFrame>
   );
 }

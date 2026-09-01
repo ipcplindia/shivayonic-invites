@@ -9,16 +9,6 @@
 
 export type ToneName = "rose" | "saffron" | "gold" | "teal" | "sage" | "cocoa";
 
-export type Product = {
-  slug: string;
-  name: string;
-  occasion: string;
-  style: string;
-  priceFrom?: string;
-  tone: ToneName;
-  category: "wedding" | "celebrations" | "devotional" | "corporate";
-};
-
 export type CategoryConfig = {
   key: string;
   path: string;
@@ -29,34 +19,9 @@ export type CategoryConfig = {
   intro: { title: string; body: string };
   /** Sub-occasions shown as a chip rail (each may become a route later). */
   chips: { label: string; href: string }[];
-  productCategory: Product["category"];
+  /** Public catalogue category slug this page lists products for. */
+  productCategory: string;
 };
-
-/* ---------------------------------------------------------- Products */
-
-export const products: Product[] = [
-  { slug: "marigold-vows", name: "Marigold Vows", occasion: "Wedding", style: "Royal Cinematic", priceFrom: "₹4,999", tone: "rose", category: "wedding" },
-  { slug: "golden-hour", name: "Golden Hour", occasion: "Reception", style: "Modern Luxe", priceFrom: "₹3,499", tone: "gold", category: "wedding" },
-  { slug: "turmeric-sun", name: "Turmeric Sun", occasion: "Haldi", style: "Floral", priceFrom: "₹2,499", tone: "saffron", category: "wedding" },
-  { slug: "peacock-court", name: "Peacock Court", occasion: "Sangeet", style: "Heritage", priceFrom: "₹3,999", tone: "teal", category: "wedding" },
-  { slug: "henna-nights", name: "Henna Nights", occasion: "Mehendi", style: "Traditional", priceFrom: "₹2,499", tone: "sage", category: "wedding" },
-  { slug: "first-light", name: "First Light", occasion: "Save the Date", style: "Minimal Elegant", priceFrom: "₹1,999", tone: "gold", category: "wedding" },
-  { slug: "little-star", name: "Little Star", occasion: "Birthday", style: "Storybook", priceFrom: "₹1,799", tone: "rose", category: "celebrations" },
-  { slug: "silver-years", name: "Silver Years", occasion: "Anniversary", style: "Watercolour", priceFrom: "₹2,199", tone: "sage", category: "celebrations" },
-  { slug: "cradle-song", name: "Cradle Song", occasion: "Godh Bharai", style: "Floral", priceFrom: "₹1,999", tone: "saffron", category: "celebrations" },
-  { slug: "diya-glow", name: "Diya Glow", occasion: "Diwali", style: "Heritage", priceFrom: "₹1,499", tone: "gold", category: "devotional" },
-  { slug: "ganesha-blessings", name: "Ganesha Blessings", occasion: "Ganesh Chaturthi", style: "Devotional", priceFrom: "₹1,499", tone: "saffron", category: "devotional" },
-  { slug: "brand-unveiled", name: "Brand Unveiled", occasion: "Product Launch", style: "Modern Minimal", priceFrom: "₹4,499", tone: "teal", category: "corporate" },
-  { slug: "annual-stage", name: "Annual Stage", occasion: "Annual Day", style: "Modern Luxe", priceFrom: "₹3,999", tone: "cocoa", category: "corporate" },
-];
-
-export function productsFor(category: Product["category"]) {
-  return products.filter((p) => p.category === category);
-}
-
-export function findProduct(slug: string) {
-  return products.find((p) => p.slug === slug);
-}
 
 /* ---------------------------------------------------------- Categories */
 
@@ -167,21 +132,6 @@ export const weddingEvents: Record<string, { title: string; note: string; occasi
 export const weddingEventSlugs = Object.keys(weddingEvents);
 
 /* ---------------------------------------------------------- Visual styles */
-
-export const visualStyleCards: { name: string; note: string; tone: ToneName }[] = [
-  { name: "Royal Cinematic", note: "Grand, warm, film-like.", tone: "gold" },
-  { name: "Cartoon", note: "Playful and characterful.", tone: "saffron" },
-  { name: "Sketch", note: "Hand-drawn intimacy.", tone: "sage" },
-  { name: "Watercolour", note: "Soft washes of colour.", tone: "rose" },
-  { name: "Minimal Elegant", note: "Quiet, confident, spare.", tone: "cocoa" },
-  { name: "Floral", note: "Blooms and garlands.", tone: "rose" },
-  { name: "Traditional", note: "Motifs and heritage.", tone: "saffron" },
-  { name: "Modern Luxe", note: "Sleek and premium.", tone: "gold" },
-  { name: "Heritage", note: "Palace-court richness.", tone: "teal" },
-  { name: "Beach", note: "Airy, coastal light.", tone: "sage" },
-  { name: "Storybook", note: "Warm and narrative.", tone: "rose" },
-  { name: "Contemporary", note: "Clean and current.", tone: "teal" },
-];
 
 /* ---------------------------------------------------------- FAQ */
 

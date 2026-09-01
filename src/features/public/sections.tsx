@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 
 import { PIcon } from "@/features/public/icons";
-import type { Product, ToneName } from "@/features/public/pages";
+import type { ToneName } from "@/features/public/pages";
+import { priceLabel, toneForProduct } from "@/features/public/catalogue-data";
+import type { PublicProductSummary } from "@/shared/catalogue";
 
 /** Small shared bits reused across the public pages. */
 
@@ -153,18 +155,20 @@ export function ChipRail({ items }: { items: { label: string; href: string }[] }
 
 /* ---------------------------------------------------------- Product card */
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: { product: PublicProductSummary }) {
+  const price = priceLabel(product);
+  const style = product.styles[0]?.name ?? product.category.name;
   return (
     <article className="pcard">
-      <a href={`/product/${product.slug}`} className={`pcardArt tone-${product.tone}`} aria-label={product.name}>
-        <span className="pcardTag">{product.occasion}</span>
+      <a href={`/product/${product.slug}`} className={`pcardArt tone-${toneForProduct(product)}`} aria-label={product.name}>
+        <span className="pcardTag">{product.category.name}</span>
       </a>
       <div className="pcardBody">
         <h3 className="pcardName">{product.name}</h3>
-        <p className="pcardMeta">{product.style}</p>
-        {product.priceFrom ? (
+        <p className="pcardMeta">{style}</p>
+        {price ? (
           <p className="pcardPrice">
-            {product.priceFrom} <span>starting</span>
+            {price} <span>starting</span>
           </p>
         ) : null}
         <div className="pcardCtas">
@@ -180,7 +184,7 @@ export function ProductCard({ product }: { product: Product }) {
   );
 }
 
-export function CollectionGrid({ products }: { products: Product[] }) {
+export function CollectionGrid({ products }: { products: PublicProductSummary[] }) {
   return (
     <div className="collection reveal">
       {products.map((p) => (
