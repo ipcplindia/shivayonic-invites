@@ -132,10 +132,10 @@ export type Product = {
 };
 
 export const featuredProducts: Product[] = [
-  { name: "Marigold Vows", occasion: "Wedding", style: "Royal Cinematic", priceFrom: "₹4,999", tone: "rose" },
-  { name: "Golden Hour", occasion: "Reception", style: "Modern Luxe", priceFrom: "₹3,499", tone: "gold" },
-  { name: "Turmeric Sun", occasion: "Haldi", style: "Floral", priceFrom: "₹2,499", tone: "saffron" },
-  { name: "Peacock Court", occasion: "Sangeet", style: "Heritage", priceFrom: "₹3,999", tone: "teal" },
+  { name: "Diwali Nights", occasion: "Diwali", style: "Heritage", priceFrom: "₹4,999", tone: "rose" },
+  { name: "Birthday Bash", occasion: "Birthday", style: "Storybook", priceFrom: "₹3,499", tone: "gold" },
+  { name: "Mehendi Night", occasion: "Mehendi", style: "Floral", priceFrom: "₹2,499", tone: "saffron" },
+  { name: "Reception Gala", occasion: "Reception", style: "Modern Luxe", priceFrom: "₹3,999", tone: "teal" },
 ];
 
 export type SocialWork = {
