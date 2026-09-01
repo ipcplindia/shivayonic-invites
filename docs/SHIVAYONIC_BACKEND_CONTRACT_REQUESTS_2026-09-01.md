@@ -135,3 +135,23 @@ video can seek without downloading the whole master.
 **Why it matters.** Today a video preview of a 2 GB master streams without range
 support. The preview is therefore opt-in: nothing loads until the operator presses
 "Load preview", and nothing autoplays.
+
+---
+
+## 7. Promote the upload MIME/size table into a shared contract
+
+**Frontend need.** An accurate accept list and early prevalidation for the upload
+dialog.
+
+**Existing contract.** The allowlist and per-family size limits live in
+`src/core/media.ts`, which imports `next/server` via `MediaError` and so cannot
+be imported into a client bundle.
+
+**Missing.** A shared, dependency-free copy. The frontend currently mirrors the
+table in `src/features/media/upload.ts`.
+
+**Minimum change.** Move the MIME → {kind, maxBytes, extension} map into
+`src/shared/media.ts` (data only), and have `src/core/media.ts` consume it.
+
+**Why not frontend-side.** Copying the table is the only safe option today, and
+copies drift from the server they must match.
