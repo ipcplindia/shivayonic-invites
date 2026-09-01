@@ -60,6 +60,8 @@ export default [
         HTMLInputElement: "readonly",
         HTMLSelectElement: "readonly",
         KeyboardEvent: "readonly",
+        MouseEvent: "readonly",
+        Node: "readonly",
         navigator: "readonly",
         setTimeout: "readonly",
         SVGSVGElement: "readonly",

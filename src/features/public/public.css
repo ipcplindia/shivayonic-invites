@@ -1,0 +1,248 @@
+/*
+ * CELEBRATION IVORY — public site design language.
+ *
+ * Nothing like the admin's dark "Lacquer & Brass": warm, airy, festive,
+ * editorial. Every rule is scoped under `.site`, and `.site` paints its own
+ * ivory ground over the admin's dark body background, so the two never collide.
+ */
+
+.site {
+  --ivory: #fff9f1;
+  --cream: #f7e8d4;
+  --cream-deep: #f0dcc2;
+  --cocoa: #44241d;
+  --umber: #765b50;
+  --umber-soft: #9a8579;
+  --saffron: #e98a32;
+  --rose: #c94d68;
+  --gold: #c89a49;
+  --teal: #357c79;
+  --sage: #a7b99a;
+
+  --gold-line: color-mix(in oklab, var(--gold) 42%, transparent);
+  --cocoa-line: color-mix(in oklab, var(--cocoa) 12%, transparent);
+  --cocoa-line-soft: color-mix(in oklab, var(--cocoa) 7%, transparent);
+  --rose-tint: color-mix(in oklab, var(--rose) 10%, transparent);
+  --saffron-tint: color-mix(in oklab, var(--saffron) 12%, transparent);
+  --teal-tint: color-mix(in oklab, var(--teal) 10%, transparent);
+
+  --font-display: var(--font-serif-festive), "Iowan Old Style", Georgia, serif;
+  --font-body: var(--font-sans-ui), ui-sans-serif, system-ui, sans-serif;
+
+  --shell: min(1240px, 100% - 3rem);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  min-height: 100dvh;
+  background: var(--ivory);
+  color: var(--cocoa);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  overflow-x: clip;
+}
+
+.site *,
+.site *::before,
+.site *::after {
+  box-sizing: border-box;
+}
+
+.site h1,
+.site h2,
+.site h3 {
+  margin: 0;
+  font-weight: 400;
+}
+
+.site p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.site img {
+  display: block;
+  max-width: 100%;
+}
+
+.site a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site :focus-visible {
+  outline: 2px solid var(--saffron);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.shell {
+  width: var(--shell);
+  margin: 0 auto;
+}
+
+.section {
+  padding: clamp(4rem, 9vw, 7rem) 0;
+}
+
+.sectionHead {
+  max-width: 46ch;
+  margin: 0 auto clamp(2.5rem, 5vw, 3.75rem);
+  text-align: center;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 1rem;
+  color: var(--saffron);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.95rem, 4.6vw, 3.15rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.sectionLede {
+  margin: 1.1rem auto 0;
+  max-width: 54ch;
+  color: var(--umber);
+  font-size: clamp(1rem, 1.4vw, 1.1rem);
+}
+
+/* Brand ornament: a gold diamond flanked by two fading rules. Used, not sprayed. */
+.ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  color: var(--gold);
+}
+
+.ornament::before,
+.ornament::after {
+  content: "";
+  width: clamp(2rem, 7vw, 3.5rem);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-line));
+}
+
+.ornament::after {
+  background: linear-gradient(90deg, var(--gold-line), transparent);
+}
+
+.diamond {
+  width: 7px;
+  height: 7px;
+  rotate: 45deg;
+  border: 1px solid var(--gold);
+  flex: none;
+}
+
+/* ---------------------------------------------------------------- Buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.6rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.18s var(--ease), background-color 0.18s var(--ease),
+    border-color 0.18s var(--ease), color 0.18s var(--ease);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btnPrimary {
+  background: var(--cocoa);
+  color: var(--ivory);
+}
+
+.btnPrimary:hover {
+  background: #58312a;
+}
+
+.btnSaffron {
+  background: var(--saffron);
+  color: #3a1e08;
+}
+
+.btnSaffron:hover {
+  background: #f0983f;
+}
+
+.btnGhost {
+  border-color: var(--cocoa-line);
+  color: var(--cocoa);
+}
+
+.btnGhost:hover {
+  border-color: var(--gold);
+  background: color-mix(in oklab, var(--gold) 8%, transparent);
+}
+
+.btnOnDark {
+  border-color: color-mix(in oklab, #fff 55%, transparent);
+  color: #fff9f1;
+  backdrop-filter: blur(2px);
+}
+
+.btnOnDark:hover {
+  background: color-mix(in oklab, #fff 14%, transparent);
+  border-color: #fff;
+}
+
+/* --------------------------------------------------------------- Reveal */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: reveal 0.7s var(--ease) forwards;
+  animation-timeline: view();
+  animation-range: entry 0% cover 22%;
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Scroll-driven animations aren't everywhere yet; never leave content hidden. */
+@supports not (animation-timeline: view()) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site *,
+  .site *::before,
+  .site *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

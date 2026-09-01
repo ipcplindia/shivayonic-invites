@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 
 import "@/styles/global.css";
 
@@ -28,6 +28,14 @@ const technicalMono = Geist_Mono({
   variable: "--font-mono-technical",
 });
 
+// Public site only: a warm, high-contrast display serif for the festive homepage.
+const displayFestive = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  axes: ["SOFT", "opsz"],
+  variable: "--font-serif-festive",
+});
+
 export const metadata: Metadata = {
   title: { default: "Shivayonic Command Center", template: "%s · Shivayonic Command Center" },
   description: "Private operating platform for Shivayonic Invites.",
@@ -38,7 +46,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html
       lang="en"
-      className={`${displaySerif.variable} ${uiSans.variable} ${technicalMono.variable}`}
+      className={`${displaySerif.variable} ${uiSans.variable} ${technicalMono.variable} ${displayFestive.variable}`}
     >
       <body>{children}</body>
     </html>
