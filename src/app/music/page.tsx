@@ -12,7 +12,7 @@ export const metadata = {
 export default function Page() {
   return (
     <PageFrame>
-      <CategoryHero eyebrow="Original Music" title="Music that makes the invitation yours" lede="An original song, a scored voiceover, a signature motif — written around your names and your date." tone="cocoa" primary={{ label: "Talk to us", href: "/contact" }} secondary={{ label: "Watch our films", href: "/films" }} />
+      <CategoryHero eyebrow="Original Music" title="Music that makes the invitation yours" lede="An original song, a scored voiceover, a signature motif — written around your names and your date." tone="cocoa" image="/categories/music.webp" primary={{ label: "Talk to us", href: "/contact" }} secondary={{ label: "Watch our films", href: "/films" }} />
       <Band>
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "Music" }]} />
         <div style={{ display: "grid", gap: "clamp(3rem,7vw,5rem)" }}>

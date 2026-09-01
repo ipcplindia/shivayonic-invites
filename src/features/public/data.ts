@@ -19,6 +19,14 @@ export const contact = {
     encodeURIComponent("Hello Shivayonic Invites, I would like to discuss a cinematic invitation."),
 };
 
+/** WhatsApp deep link prefilled for a specific design or service. */
+export function whatsappFor(subject: string): string {
+  return (
+    "https://wa.me/919990099990?text=" +
+    encodeURIComponent(`Hello Shivayonic Invites, I would like to customise the ${subject} invitation.`)
+  );
+}
+
 export type NavLink = { label: string; href: string };
 
 export const navLinks: NavLink[] = [
@@ -124,20 +132,27 @@ export const visualStyles: string[] = [
 ];
 
 export type Product = {
+  slug: string;
   name: string;
   occasion: string;
   style: string;
   priceFrom?: string;
   img?: string;
   tone: Category["tone"];
+  /** One-line premium description for the product page. */
+  blurb: string;
 };
 
 export const featuredProducts: Product[] = [
-  { name: "Diwali Nights", occasion: "Diwali", style: "Heritage", priceFrom: "₹4,999", img: "/products/diwali-nights.webp", tone: "rose" },
-  { name: "Birthday Bash", occasion: "Birthday", style: "Storybook", priceFrom: "₹3,499", img: "/products/birthday-bash.webp", tone: "gold" },
-  { name: "Mehendi Night", occasion: "Mehendi", style: "Floral", priceFrom: "₹2,499", img: "/products/mehendi-night.webp", tone: "saffron" },
-  { name: "Reception Gala", occasion: "Reception", style: "Modern Luxe", priceFrom: "₹3,999", img: "/products/reception-gala.webp", tone: "teal" },
+  { slug: "diwali-nights", name: "Diwali Nights", occasion: "Diwali", style: "Heritage", priceFrom: "₹4,999", img: "/products/diwali-nights.webp", tone: "rose", blurb: "A warm, lamp-lit Diwali invitation with gold-leaf detailing and a heritage soul." },
+  { slug: "birthday-bash", name: "Birthday Bash", occasion: "Birthday", style: "Storybook", priceFrom: "₹3,499", img: "/products/birthday-bash.webp", tone: "gold", blurb: "A playful, storybook birthday invite built to make everyone smile at first glance." },
+  { slug: "mehendi-night", name: "Mehendi Night", occasion: "Mehendi", style: "Floral", priceFrom: "₹2,499", img: "/products/mehendi-night.webp", tone: "saffron", blurb: "Henna greens and marigold golds — a floral mehendi invitation full of colour and song." },
+  { slug: "reception-gala", name: "Reception Gala", occasion: "Reception", style: "Modern Luxe", priceFrom: "₹3,999", img: "/products/reception-gala.webp", tone: "teal", blurb: "A modern-luxe reception invitation with clean type and a grand, welcoming glow." },
 ];
+
+export function featuredBySlug(slug: string): Product | undefined {
+  return featuredProducts.find((p) => p.slug === slug);
+}
 
 export type SocialWork = {
   id: string;

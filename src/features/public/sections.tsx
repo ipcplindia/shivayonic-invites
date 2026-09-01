@@ -67,6 +67,7 @@ export function CategoryHero({
   title,
   lede,
   tone,
+  image,
   primary,
   secondary,
 }: {
@@ -74,12 +75,19 @@ export function CategoryHero({
   title: string;
   lede: string;
   tone: ToneName;
+  /** Optional lead photo — reuses the same approved artwork as the homepage card. */
+  image?: string;
   primary?: { label: string; href: string };
   secondary?: { label: string; href: string };
 }) {
   return (
     <section className="catHero">
-      <span className={`catHeroArt tone-${tone}`} aria-hidden="true" />
+      <span className={`catHeroArt tone-${tone}`} aria-hidden="true">
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="catHeroPhoto" src={image} alt="" aria-hidden="true" decoding="async" />
+        ) : null}
+      </span>
       <div className="catHeroInner">
         <p className="catHeroEyebrow">{eyebrow}</p>
         <h1 className="catHeroTitle">{title}</h1>

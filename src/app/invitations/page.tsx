@@ -30,7 +30,11 @@ export default function Page() {
         <div className="bento reveal">
           {cards.map((c, i) => (
             <a key={c.key} href={c.path} className={"tile " + (i === 0 ? "tileWide " : "") + (c.tone === "cocoa" ? "tileCocoa" : "")}>
-              <span className={"tileArt tone-" + c.tone} aria-hidden="true" />
+              <span
+                className={"tileArt tone-" + c.tone}
+                style={{ backgroundImage: `url(${c.heroImage})`, backgroundSize: "cover", backgroundPosition: "center" }}
+                aria-hidden="true"
+              />
               <div className="tileBody">
                 <h3 className="tileTitle">{c.eyebrow}</h3>
                 <p className="tileBlurb">{c.lede}</p>

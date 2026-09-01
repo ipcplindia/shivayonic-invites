@@ -35,10 +35,10 @@ export function SiteFooter() {
           <FooterCol
             title="Legal"
             links={[
-              ["Privacy", "#"],
-              ["Terms", "#"],
-              ["Refund & Cancellation", "#"],
-              ["Content & IP", "#"],
+              ["Privacy", "/privacy"],
+              ["Terms", "/terms"],
+              ["Refund & Cancellation", "/refund"],
+              ["Content & IP", "/content-ip"],
             ]}
           />
           <FooterCol

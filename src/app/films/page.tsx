@@ -12,14 +12,18 @@ export const metadata = {
 export default function Page() {
   return (
     <PageFrame>
-      <CategoryHero eyebrow="Cinematic Films" title="Stories that move" lede="Invitation films that carry the whole feeling of the day, and make people want to reply." tone="rose" primary={{ label: "Talk to us", href: "/contact" }} secondary={{ label: "See our work", href: "/our-work" }} />
+      <CategoryHero eyebrow="Cinematic Films" title="Stories that move" lede="Invitation films that carry the whole feeling of the day, and make people want to reply." tone="rose" image="/categories/films.webp" primary={{ label: "Talk to us", href: "/contact" }} secondary={{ label: "See our work", href: "/our-work" }} />
       <Band>
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "Films" }]} />
         <SectionHead eyebrow="Films" title="What we craft" />
         <div className="styleCards reveal">
           {filmKinds.map((f, i) => (
             <div key={f.title} className="styleCard">
-              <span className={"styleCardArt tone-" + (["gold","rose","teal","sage"][i % 4])} aria-hidden="true" />
+              <span
+                className={"styleCardArt tone-" + (["gold","rose","teal","sage"][i % 4])}
+                style={{ backgroundImage: `url(${f.img})`, backgroundSize: "cover", backgroundPosition: "center" }}
+                aria-hidden="true"
+              />
               <div className="styleCardBody">
                 <p className="styleCardName">{f.title}</p>
                 <p className="styleCardNote">{f.blurb}</p>

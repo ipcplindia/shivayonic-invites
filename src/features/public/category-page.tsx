@@ -41,6 +41,7 @@ export async function CategoryPage({
         title={config.title}
         lede={config.lede}
         tone={config.tone}
+        image={config.heroImage}
         primary={{ label: "Browse designs", href: "#designs" }}
         secondary={{ label: "Talk to us", href: "/contact" }}
       />

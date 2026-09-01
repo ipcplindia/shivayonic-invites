@@ -5,6 +5,7 @@ import "@/features/public/public-sections.css";
 import "@/features/public/public-pages.css";
 import { PIcon } from "@/features/public/icons";
 import { SiteNav } from "@/features/public/site-nav";
+import { SiteFooter } from "@/features/public/site-footer";
 import { SocialRibbon } from "@/features/public/marquee";
 import {
   categories,
@@ -170,7 +171,7 @@ export default function HomePage() {
         </section>
 
         {/* 04 — FEATURED WEDDING PRODUCTS */}
-        <section className="section">
+        <section className="section" id="featured">
           <div className="shell">
             <SectionHead
               eyebrow="Featured Wedding Invitations"
@@ -192,10 +193,10 @@ export default function HomePage() {
                       </p>
                     ) : null}
                     <div className="productCtas">
-                      <Link href="/catalogue" className="btn btnGhost">
+                      <Link href={`/product/${product.slug}`} className="btn btnGhost">
                         View Details
                       </Link>
-                      <Link href="/catalogue" className="btn btnPrimary">
+                      <Link href={`/product/${product.slug}`} className="btn btnPrimary">
                         Customize
                       </Link>
                     </div>
@@ -476,72 +477,7 @@ export default function HomePage() {
       </div>
 
       {/* FOOTER */}
-      <footer className="footer">
-        <div className="shell">
-          <div className="footerTop">
-            <div>
-              <p className="footerBrandName">SHIVAYONIC INVITES</p>
-              <p className="footerBrandSub">By Bholenath Productions &amp; Shivayonic Music</p>
-            </div>
-            <FooterCol
-              title="Explore"
-              links={[
-                ["Wedding", "#wedding"],
-                ["Celebrations", "#celebrations"],
-                ["Devotional", "#devotional"],
-                ["Corporate", "#corporate"],
-                ["Music", "#music"],
-                ["Films", "#films"],
-              ]}
-            />
-            <FooterCol
-              title="Help"
-              links={[
-                ["How It Works", "#explore"],
-                ["Customization", "#styles"],
-                ["Delivery", "#contact"],
-                ["Contact", "#contact"],
-              ]}
-            />
-            <FooterCol
-              title="Legal"
-              links={[
-                ["Privacy", "#"],
-                ["Terms", "#"],
-                ["Refund & Cancellation", "#"],
-                ["Content & IP", "#"],
-              ]}
-            />
-            <FooterCol
-              title="Follow"
-              links={[
-                ["Instagram", contact.instagramProfileUrl],
-                ["YouTube", contact.youtubeChannelUrl],
-                ["WhatsApp", contact.whatsappUrl],
-              ]}
-            />
-          </div>
-          <div className="footerBottom">
-            <span>© 2026 Shivayonic Invites. All rights reserved.</span>
-            <span>Crafted in India.</span>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function FooterCol({ title, links }: { title: string; links: [string, string][] }) {
-  return (
-    <div className="footerCol">
-      <p className="footerColTitle">{title}</p>
-      <ul>
-        {links.map(([label, href]) => (
-          <li key={label}>
-            <a href={href}>{label}</a>
-          </li>
-        ))}
-      </ul>
+      <SiteFooter />
     </div>
   );
 }
