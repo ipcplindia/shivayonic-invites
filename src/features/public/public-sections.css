@@ -500,9 +500,8 @@
   padding: 1.4rem 1.25rem;
   border: 1px solid color-mix(in oklab, var(--gold) 30%, transparent);
   border-radius: 16px;
-  /* Warm champagne–rose metallic sheen. */
-  background:
-    linear-gradient(135deg, #fbeede 0%, #f4dcc0 38%, #ecc9b6 66%, #e8bfae 100%);
+  /* Each card a distinct light tint, all close to the cream section behind. */
+  background: linear-gradient(135deg, #fbeede 0%, #f4dcc0 40%, #ecc9b6 100%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
   overflow: hidden;
   transition: border-color 0.2s var(--ease), transform 0.2s var(--ease),
@@ -1304,3 +1303,12 @@
 .tileArt::after {
   background: linear-gradient(180deg, rgb(30 14 6 / 0.08) 0%, rgb(30 14 6 / 0.22) 42%, rgb(30 14 6 / 0.66) 100%);
 }
+
+/* Wedding-journey cards: distinct light tints, all in the cream family so they
+   sit against the section's champagne background. */
+.chapter:nth-child(6n + 1) { background: linear-gradient(135deg, #fbe7e2 0%, #f2cfc6 100%); }
+.chapter:nth-child(6n + 2) { background: linear-gradient(135deg, #fbeccb 0%, #eed6a6 100%); }
+.chapter:nth-child(6n + 3) { background: linear-gradient(135deg, #fce2c9 0%, #f2c9a2 100%); }
+.chapter:nth-child(6n + 4) { background: linear-gradient(135deg, #e6ece1 0%, #cbdccf 100%); }
+.chapter:nth-child(6n + 5) { background: linear-gradient(135deg, #ece9d6 0%, #d3d6b7 100%); }
+.chapter:nth-child(6n + 6) { background: linear-gradient(135deg, #f7e6d2 0%, #ecceb0 100%); }
