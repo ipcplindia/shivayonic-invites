@@ -12,7 +12,7 @@
 }
 
 .navBar {
-  width: min(1560px, 100% - 3rem);
+  width: calc(100% - 2rem);
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -233,7 +233,7 @@
   min-height: 100svh;
   height: 100svh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   isolation: isolate;
   overflow: clip;
   background-color: #e79a52;
@@ -299,16 +299,22 @@
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: linear-gradient(90deg, rgb(58 30 18 / 0.5) 0%, rgb(58 30 18 / 0.24) 30%, transparent 58%);
+  background:
+    radial-gradient(90% 70% at 82% 22%, rgb(40 20 10 / 0.42) 0%, transparent 62%),
+    linear-gradient(200deg, rgb(40 20 10 / 0.34) 0%, transparent 45%);
 }
 
 .heroInner {
   position: relative;
   z-index: 3;
-  width: var(--shell);
-  margin: 0 auto;
-  max-width: 46rem;
-  padding-top: 76px;
+  width: calc(100% - 4rem);
+  max-width: 40rem;
+  margin: 0 2rem 0 auto;
+  padding-top: 118px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
 }
 
 .heroEyebrow {
@@ -342,6 +348,7 @@
 .heroCtas {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.9rem;
   margin-top: 2.2rem;
 }
@@ -1313,3 +1320,19 @@
 .chapter:nth-child(6n + 4) { background: linear-gradient(135deg, #e6ece1 0%, #cbdccf 100%); }
 .chapter:nth-child(6n + 5) { background: linear-gradient(135deg, #ece9d6 0%, #d3d6b7 100%); }
 .chapter:nth-child(6n + 6) { background: linear-gradient(135deg, #f7e6d2 0%, #ecceb0 100%); }
+
+/* Mobile: the top-right placement is a desktop composition; on phones the
+   headline returns to a full-width left-aligned block. */
+@media (max-width: 760px) {
+  .heroInner {
+    max-width: 100%;
+    margin: 0 auto;
+    align-items: flex-start;
+    text-align: left;
+    padding-top: 96px;
+  }
+
+  .heroCtas {
+    justify-content: flex-start;
+  }
+}
