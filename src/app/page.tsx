@@ -337,7 +337,11 @@ export default function HomePage() {
             <div className="productGrid reveal">
               {filmKinds.map((film, i) => (
                 <article key={film.title} className="product">
-                  <div className={`productArt tone-${["rose", "gold", "teal", "sage"][i % 4]}`} aria-hidden="true" />
+                  <div
+                    className={`productArt tone-${["rose", "gold", "teal", "sage"][i % 4]}`}
+                    style={{ backgroundImage: `url(${film.img})`, backgroundSize: "cover", backgroundPosition: "center" }}
+                    aria-hidden="true"
+                  />
                   <div className="productBody">
                     <h3 className="productName">{film.title}</h3>
                     <p className="productMeta">{film.blurb}</p>

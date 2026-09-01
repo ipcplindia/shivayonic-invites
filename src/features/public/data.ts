@@ -179,11 +179,11 @@ export const musicKinds: { title: string; blurb: string }[] = [
   { title: "Corporate & Event Music", blurb: "Brand-aligned scores for launches and awards." },
 ];
 
-export const filmKinds: { title: string; blurb: string }[] = [
-  { title: "Wedding Invitation Films", blurb: "Cinematic reveals that carry the whole story." },
-  { title: "Celebration Films", blurb: "Birthdays, anniversaries and milestones, framed beautifully." },
-  { title: "Corporate Films", blurb: "Polished invitation films for the room that matters." },
-  { title: "Devotional Films", blurb: "Reverent, luminous films for sacred occasions." },
+export const filmKinds: { title: string; blurb: string; img: string }[] = [
+  { title: "Wedding Invitation Films", blurb: "Cinematic reveals that carry the whole story.", img: "/films/wedding-invitation-films.webp" },
+  { title: "Celebration Films", blurb: "Birthdays, anniversaries and milestones, framed beautifully.", img: "/films/celebration-films.webp" },
+  { title: "Corporate Films", blurb: "Polished invitation films for the room that matters.", img: "/films/corporate-films.webp" },
+  { title: "Devotional Films", blurb: "Reverent, luminous films for sacred occasions.", img: "/films/devotional-films.webp" },
 ];
 
 export const steps: { title: string; body: string }[] = [
