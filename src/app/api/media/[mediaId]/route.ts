@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { recordSecurityAudit } from "@/auth/audit";
 import { AppAuthError } from "@/auth/errors";
 import { MediaError } from "@/core/media-errors";
-import { mediaRouteError, requireAuthorizedMedia, serializeMedia } from "@/core/media-api";
+import { mediaRouteError, requireAuthorizedMedia, serializeMedia, serializeMediaDetail } from "@/core/media-api";
 import { getObjectStorage } from "@/core/storage-provider";
 import { prisma } from "@/db/client";
 
@@ -12,8 +12,13 @@ type RouteContext = { params: Promise<{ mediaId: string }> };
 export async function GET(request: Request, route: RouteContext) {
   try {
     const { mediaId } = await route.params;
-    const { media } = await requireAuthorizedMedia(request, mediaId, "MEDIA_READ");
-    return NextResponse.json({ media: serializeMedia(media) });
+    const { context } = await requireAuthorizedMedia(request, mediaId, "MEDIA_READ");
+    const media = await prisma.mediaAsset.findFirst({
+      where: { id: mediaId, organizationId: context.organization.id },
+      include: { project: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } },
+    });
+    if (!media) throw new MediaError("MEDIA_NOT_FOUND", 404);
+    return NextResponse.json({ media: serializeMediaDetail(media) });
   } catch (error) {
     return mediaRouteError(error);
   }

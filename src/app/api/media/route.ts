@@ -5,29 +5,36 @@ import { recordSecurityAudit } from "@/auth/audit";
 import { requirePermission } from "@/auth/context";
 import { createMediaInputSchema, createMediaStorageKey, mediaKindForMimeType, validateMediaSize } from "@/core/media";
 import { MediaError } from "@/core/media-errors";
+import { mediaCursorWhere, pageMedia, parseMediaListRequest } from "@/core/media-list";
 import { mediaRouteError, serializeMedia } from "@/core/media-api";
 import { getObjectStorage } from "@/core/storage-provider";
 import { prisma } from "@/db/client";
-
-const mediaStatuses = new Set(["PENDING_UPLOAD", "UPLOADED", "PROCESSING", "READY", "FAILED", "ARCHIVED"]);
+import type { MediaListResponse } from "@/shared/media";
 
 export async function GET(request: Request) {
   try {
     const context = await requirePermission("MEDIA_READ", { headers: request.headers });
     const { searchParams } = new URL(request.url);
-    const projectId = searchParams.get("projectId") ?? undefined;
-    const status = searchParams.get("status") ?? undefined;
-    if (status && !mediaStatuses.has(status)) throw new MediaError("INVALID_MEDIA_INPUT", 400);
+    const { cursor, limit, projectId, status, kind, q } = parseMediaListRequest(searchParams);
     if (projectId) {
       const project = await prisma.project.findFirst({ where: { id: projectId, organizationId: context.organization.id }, select: { id: true } });
       if (!project) throw new MediaError("MEDIA_NOT_FOUND", 404);
     }
     const media = await prisma.mediaAsset.findMany({
-      where: { organizationId: context.organization.id, projectId, ...(status ? { status: status as never } : {}) },
-      orderBy: { createdAt: "desc" },
-      take: 100,
+      where: {
+        organizationId: context.organization.id,
+        projectId,
+        ...(status ? { status: status as never } : {}),
+        ...(kind ? { kind: kind as never } : {}),
+        ...(q ? { originalFilename: { contains: q, mode: "insensitive" } } : {}),
+        ...mediaCursorWhere(cursor),
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit + 1,
     });
-    return NextResponse.json({ media: media.map(serializeMedia) });
+    const page = pageMedia(media, limit);
+    const response: MediaListResponse = { media: page.items.map(serializeMedia), pageInfo: page.pageInfo };
+    return NextResponse.json(response);
   } catch (error) {
     return mediaRouteError(error);
   }

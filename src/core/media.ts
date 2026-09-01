@@ -49,3 +49,20 @@ export function mediaKindForMimeType(mimeType: string): MediaKindValue {
 export function safeDownloadFilename(filename: string) {
   return Array.from(filename, (character) => character.charCodeAt(0) < 32 ? "_" : character).join("").replace(/[\\/:*?"<>|]/g, "_").slice(0, 255) || "media";
 }
+
+export function parseByteRange(header: string | null, totalSize: number) {
+  if (!header) return null;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header);
+  if (!match || totalSize < 1) return undefined;
+  const [, rawStart, rawEnd] = match;
+  if (!rawStart && !rawEnd) return undefined;
+  if (!rawStart) {
+    const suffix = Number(rawEnd);
+    return Number.isSafeInteger(suffix) && suffix > 0 ? { start: Math.max(totalSize - suffix, 0), end: totalSize - 1 } : undefined;
+  }
+  const start = Number(rawStart);
+  const end = rawEnd ? Number(rawEnd) : totalSize - 1;
+  return Number.isSafeInteger(start) && Number.isSafeInteger(end) && start >= 0 && start <= end && start < totalSize
+    ? { start, end: Math.min(end, totalSize - 1) }
+    : undefined;
+}

@@ -15,6 +15,9 @@ describe("LocalObjectStorage", () => {
       await expect(storage.headObject({ storageKey: "org/asset.mp4" })).resolves.toEqual({ sizeBytes: 5 });
       const object = await storage.getObject({ storageKey: "org/asset.mp4" });
       await expect(new Response(object.body).text()).resolves.toBe("media");
+      const range = await storage.getObject({ storageKey: "org/asset.mp4", range: { start: 1, end: 3 } });
+      expect(range.sizeBytes).toBe(3);
+      await expect(new Response(range.body).text()).resolves.toBe("edi");
       await storage.deleteObject({ storageKey: "org/asset.mp4" });
       await expect(storage.headObject({ storageKey: "org/asset.mp4" })).resolves.toBeNull();
     } finally {
