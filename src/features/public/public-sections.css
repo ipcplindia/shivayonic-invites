@@ -1336,3 +1336,10 @@
     justify-content: flex-start;
   }
 }
+
+/* Bounds the sticky hero: it holds and is overlapped by the rising content
+   within this stage, then releases at the stage end so it never reappears
+   behind the footer. */
+.revealStage {
+  position: relative;
+}

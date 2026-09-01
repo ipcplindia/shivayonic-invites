@@ -75,6 +75,8 @@ export default function HomePage() {
     <div className="site" id="top">
       <SiteNav />
 
+      {/* Reveal stage bounds the sticky hero so it releases before the footer. */}
+      <div className="revealStage">
       {/* 01 — HERO */}
       <section className="hero" aria-label="Shivayonic Invites">
         <div className="heroBg" aria-hidden="true" />
@@ -467,6 +469,7 @@ export default function HomePage() {
           </div>
         </section>
       </main>
+      </div>
 
       {/* FOOTER */}
       <footer className="footer">
