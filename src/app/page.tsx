@@ -13,12 +13,11 @@ import {
   featuredProducts,
   festivals,
   filmKinds,
-  instagramItems,
+  socialWorks,
   musicKinds,
   steps,
   visualStyles,
   weddingJourney,
-  youtubeItems,
 } from "@/features/public/data";
 
 const siteUrl = "https://shivayonic.com";
@@ -130,7 +129,7 @@ export default function HomePage() {
                   href={cat.href}
                   className={`tile ${cat.span === "wide" ? "tileWide" : ""} ${cat.span === "tall" ? "tileTall" : ""} ${cat.tone === "cocoa" ? "tileCocoa" : ""}`}
                 >
-                  <span className={`tileArt tone-${cat.tone}`} aria-hidden="true" />
+                  <span className={`tileArt tone-${cat.tone}`} style={{ backgroundImage: `url(${cat.img})` }} aria-hidden="true" />
                   <div className="tileBody">
                     <h3 className="tileTitle">{cat.title}</h3>
                     <p className="tileBlurb">{cat.blurb}</p>
@@ -290,7 +289,7 @@ export default function HomePage() {
               lede={`Featured work from ${contact.youtubeChannel}. Thumbnails first — a film opens only when you choose it.`}
             />
           </div>
-          <SocialRibbon items={youtubeItems} platform="youtube" direction="ltr" duration={52} />
+          <SocialRibbon works={socialWorks} platform="youtube" direction="ltr" duration={64} />
         </section>
 
         {/* 10 — INSTAGRAM SHOWCASE (RIGHT → LEFT) */}
@@ -302,7 +301,7 @@ export default function HomePage() {
               lede={`Follow ${contact.instagramHandle} for vertical cuts and behind-the-scenes.`}
             />
           </div>
-          <SocialRibbon items={instagramItems} platform="instagram" direction="rtl" duration={44} />
+          <SocialRibbon works={socialWorks} platform="instagram" direction="rtl" duration={56} />
         </section>
 
         {/* 11 — ORIGINAL MUSIC */}

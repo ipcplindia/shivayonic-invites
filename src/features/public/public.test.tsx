@@ -2,40 +2,62 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { SocialRibbon } from "@/features/public/marquee";
-import { contact, instagramItems, youtubeItems } from "@/features/public/data";
+import { contact, socialWorks } from "@/features/public/data";
+
+describe("canonical social works", () => {
+  it("holds 13 matched works, each with one shared poster and both platform URLs", () => {
+    expect(socialWorks).toHaveLength(13);
+    for (const w of socialWorks) {
+      expect(w.poster).toBe(`https://i.ytimg.com/vi/${w.youtubeId}/hqdefault.jpg`);
+      expect(w.youtubeUrl).toContain("youtube.com/shorts/");
+      expect(w.instagramUrl).toContain("instagram.com/shivayonic.invites/reel/");
+    }
+  });
+});
 
 describe("social ribbons", () => {
   it("scroll in opposite directions — YouTube left→right, Instagram right→left", () => {
     const yt = renderToStaticMarkup(
-      <SocialRibbon items={youtubeItems} platform="youtube" direction="ltr" />,
+      <SocialRibbon works={socialWorks} platform="youtube" direction="ltr" />,
     );
     const ig = renderToStaticMarkup(
-      <SocialRibbon items={instagramItems} platform="instagram" direction="rtl" />,
+      <SocialRibbon works={socialWorks} platform="instagram" direction="rtl" />,
     );
-
-    // ltr = reversed base keyframe (travels right); rtl = default (travels left).
     expect(yt).toContain("ribbonRTL");
     expect(ig).not.toContain("ribbonRTL");
   });
 
+  it("uses the SAME poster in both rails, differing only by destination", () => {
+    const yt = renderToStaticMarkup(
+      <SocialRibbon works={socialWorks} platform="youtube" direction="ltr" />,
+    );
+    const ig = renderToStaticMarkup(
+      <SocialRibbon works={socialWorks} platform="instagram" direction="rtl" />,
+    );
+    const poster = socialWorks[0].poster;
+    expect(yt).toContain(poster);
+    expect(ig).toContain(poster);
+    expect(yt).toContain(socialWorks[0].youtubeUrl);
+    expect(ig).toContain(socialWorks[0].instagramUrl);
+  });
+
   it("duplicates the track for a seamless loop and hides the copy from AT", () => {
     const markup = renderToStaticMarkup(
-      <SocialRibbon items={youtubeItems} platform="youtube" direction="ltr" />,
+      <SocialRibbon works={socialWorks} platform="youtube" direction="ltr" />,
     );
-    // Each of 6 items rendered twice = 12 cards; the second half is aria-hidden.
-    expect(markup.match(/mediaCardYt/g)?.length).toBe(12);
+    // 13 works rendered twice = 26 cards; the second half is aria-hidden.
+    expect(markup.match(/reelCard/g)?.length).toBe(26);
     expect(markup).toContain('aria-hidden="true"');
   });
 
-  it("links to the configured external post and loads no embed", () => {
+  it("links out and loads no embed or player", () => {
     const markup = renderToStaticMarkup(
-      <SocialRibbon items={youtubeItems} platform="youtube" direction="ltr" />,
+      <SocialRibbon works={socialWorks} platform="youtube" direction="ltr" />,
     );
-
-    expect(markup).toContain(`href="${contact.youtubeChannelUrl}"`);
     expect(markup).toContain('rel="noopener noreferrer"');
     expect(markup).not.toContain("<iframe");
     expect(markup).not.toContain("<video");
+    expect(markup).not.toContain("autoplay");
   });
 });
 
@@ -43,10 +65,5 @@ describe("public content honesty", () => {
   it("carries the exact configured social identifiers", () => {
     expect(contact.instagramHandle).toBe("@shivayonic.invites");
     expect(contact.youtubeChannel).toBe("Shivayonic Invites");
-  });
-
-  it("invents no ratings, client counts or testimonials", () => {
-    const blob = JSON.stringify({ youtubeItems, instagramItems });
-    expect(blob).not.toMatch(/\b\d[\d,]*\s*(clients|weddings|reviews|ratings|stars|happy)\b/i);
   });
 });

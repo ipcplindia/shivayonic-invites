@@ -1,7 +1,7 @@
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, CategoryHero, CTASection, SectionHead } from "@/features/public/sections";
 import { SocialRibbon } from "@/features/public/marquee";
-import { youtubeItems, instagramItems, contact } from "@/features/public/data";
+import { socialWorks, contact } from "@/features/public/data";
 
 export const metadata = {
   title: { absolute: "Our Work | Shivayonic Invites" },
@@ -16,11 +16,11 @@ export default function Page() {
       <CategoryHero eyebrow="Our Work" title="Sample invitations and films" lede="Featured work from our YouTube channel and Instagram. Thumbnails first — a film opens only when you choose it." tone="gold" primary={{ label: "Watch on YouTube", href: contact.youtubeChannelUrl }} secondary={{ label: "Follow on Instagram", href: contact.instagramProfileUrl }} />
       <section className="section">
         <div className="shell"><SectionHead eyebrow="Watch" title="On YouTube" lede={"Featured films from " + contact.youtubeChannel + "."} /></div>
-        <SocialRibbon items={youtubeItems} platform="youtube" direction="ltr" duration={52} />
+        <SocialRibbon works={socialWorks} platform="youtube" direction="ltr" duration={64} />
       </section>
       <section className="section creamSection">
         <div className="shell"><SectionHead eyebrow="Discover" title="On Instagram" lede={"Follow " + contact.instagramHandle + " for reels and behind-the-scenes."} /></div>
-        <SocialRibbon items={instagramItems} platform="instagram" direction="rtl" duration={44} />
+        <SocialRibbon works={socialWorks} platform="instagram" direction="rtl" duration={56} />
       </section>
       <Band variant="cocoa" label="Delivered work">
         <SectionHead eyebrow="Crafted for Real Celebrations" title="Delivered work, coming soon" lede="A gallery of real Shivayonic invitations will live here as approved work is added." />

@@ -60,17 +60,19 @@ export type Category = {
   title: string;
   blurb: string;
   href: string;
+  /** Local optimised artwork under /public/categories. */
+  img: string;
   tone: "rose" | "saffron" | "gold" | "teal" | "sage" | "cocoa";
   span?: "wide" | "tall";
 };
 
 export const categories: Category[] = [
-  { title: "Wedding Invitations", blurb: "From Save the Date to the Pheras — the whole journey, crafted.", href: "/invitations/wedding", tone: "rose", span: "wide" },
-  { title: "Celebrations", blurb: "Birthdays, anniversaries and the milestones between.", href: "/celebrations", tone: "saffron" },
-  { title: "Devotional", blurb: "Pujas, paths and festivals, rendered with reverence.", href: "/devotional", tone: "gold" },
-  { title: "Corporate", blurb: "Launches, conferences and awards, on brand.", href: "/corporate", tone: "teal" },
-  { title: "Invitation Music", blurb: "Original songs written for your occasion.", href: "/music", tone: "cocoa" },
-  { title: "Cinematic Films", blurb: "Invitation films that move people to reply.", href: "/films", tone: "sage", span: "tall" },
+  { title: "Wedding Invitations", blurb: "From Save the Date to the Pheras — the whole journey, crafted.", href: "/invitations/wedding", img: "/categories/wedding.webp", tone: "rose", span: "wide" },
+  { title: "Celebrations", blurb: "Birthdays, anniversaries and the milestones between.", href: "/celebrations", img: "/categories/celebrations.webp", tone: "saffron" },
+  { title: "Devotional", blurb: "Pujas, paths and festivals, rendered with reverence.", href: "/devotional", img: "/categories/devotional.webp", tone: "gold" },
+  { title: "Corporate", blurb: "Launches, conferences and awards, on brand.", href: "/corporate", img: "/categories/corporate.webp", tone: "teal" },
+  { title: "Invitation Music", blurb: "Original songs written for your occasion.", href: "/music", img: "/categories/music.webp", tone: "cocoa" },
+  { title: "Cinematic Films", blurb: "Invitation films that move people to reply.", href: "/films", img: "/categories/films.webp", tone: "sage", span: "tall" },
 ];
 
 export const weddingJourney: { label: string; note: string }[] = [
@@ -136,36 +138,36 @@ export const featuredProducts: Product[] = [
   { name: "Peacock Court", occasion: "Sangeet", style: "Heritage", priceFrom: "₹3,999", tone: "teal" },
 ];
 
-export type SocialItem = {
+export type SocialWork = {
   id: string;
-  title: string;
-  occasion: string;
-  style: string;
-  /** External link opened only on click. No embed loads at page load. */
-  href: string;
+  /** YouTube Shorts video id; drives the canonical poster shared by both rails. */
+  youtubeId: string;
+  youtubeUrl: string;
+  instagramUrl: string;
+  /** One poster per work (the Short's own thumbnail), reused on both platforms. */
+  poster: string;
 };
 
 /**
- * The same sample invitation work lives on both platforms; the two ribbons draw
- * from parallel lists so they read as coordinated, not duplicated. Replace
- * `href` with the real video/Reel URLs once configured.
+ * The 13 matched works. The same video lives as a YouTube Short and an Instagram
+ * Reel, so both rails share one canonical poster (the Short thumbnail); only the
+ * platform label, marquee direction and destination differ. No embeds, no
+ * autoplay — poster cards that open the real post on click.
  */
-export const youtubeItems: SocialItem[] = [
-  { id: "yt-1", title: "A Palace Wedding Film", occasion: "Wedding", style: "Royal Cinematic", href: contact.youtubeChannelUrl },
-  { id: "yt-2", title: "Sangeet Night", occasion: "Sangeet", style: "Modern Luxe", href: contact.youtubeChannelUrl },
-  { id: "yt-3", title: "Haldi Morning", occasion: "Haldi", style: "Floral", href: contact.youtubeChannelUrl },
-  { id: "yt-4", title: "Diwali Greetings", occasion: "Devotional", style: "Heritage", href: contact.youtubeChannelUrl },
-  { id: "yt-5", title: "Brand Launch Teaser", occasion: "Corporate", style: "Minimal Elegant", href: contact.youtubeChannelUrl },
-  { id: "yt-6", title: "First Birthday", occasion: "Birthday", style: "Storybook", href: contact.youtubeChannelUrl },
-];
-
-export const instagramItems: SocialItem[] = [
-  { id: "ig-1", title: "Marigold Reel", occasion: "Wedding", style: "Floral", href: contact.instagramProfileUrl },
-  { id: "ig-2", title: "Mehendi Colours", occasion: "Mehendi", style: "Traditional", href: contact.instagramProfileUrl },
-  { id: "ig-3", title: "Ganesh Chaturthi", occasion: "Devotional", style: "Heritage", href: contact.instagramProfileUrl },
-  { id: "ig-4", title: "Anniversary Note", occasion: "Anniversary", style: "Watercolour", href: contact.instagramProfileUrl },
-  { id: "ig-5", title: "Product Reveal", occasion: "Corporate", style: "Modern Luxe", href: contact.instagramProfileUrl },
-  { id: "ig-6", title: "Baby Shower", occasion: "Godh Bharai", style: "Storybook", href: contact.instagramProfileUrl },
+export const socialWorks: SocialWork[] = [
+  { id: "w1", youtubeId: "N93M7kERy_Y", youtubeUrl: "https://youtube.com/shorts/N93M7kERy_Y", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuAIyey-f4/", poster: "https://i.ytimg.com/vi/N93M7kERy_Y/hqdefault.jpg" },
+  { id: "w2", youtubeId: "XzM-_cadqug", youtubeUrl: "https://youtube.com/shorts/XzM-_cadqug", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuAuxtye1A/", poster: "https://i.ytimg.com/vi/XzM-_cadqug/hqdefault.jpg" },
+  { id: "w3", youtubeId: "zTLablk6oiI", youtubeUrl: "https://youtube.com/shorts/zTLablk6oiI", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuA-uWStux/", poster: "https://i.ytimg.com/vi/zTLablk6oiI/hqdefault.jpg" },
+  { id: "w4", youtubeId: "UhrJrt7xakw", youtubeUrl: "https://youtube.com/shorts/UhrJrt7xakw", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuBJw5ya_L/", poster: "https://i.ytimg.com/vi/UhrJrt7xakw/hqdefault.jpg" },
+  { id: "w5", youtubeId: "LhHEV0cvrzQ", youtubeUrl: "https://youtube.com/shorts/LhHEV0cvrzQ", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuBYT4yoSn/", poster: "https://i.ytimg.com/vi/LhHEV0cvrzQ/hqdefault.jpg" },
+  { id: "w6", youtubeId: "HVjMl2Ky2_w", youtubeUrl: "https://youtube.com/shorts/HVjMl2Ky2_w", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuBmz3S9B_/", poster: "https://i.ytimg.com/vi/HVjMl2Ky2_w/hqdefault.jpg" },
+  { id: "w7", youtubeId: "Euz7zxO0Eiw", youtubeUrl: "https://youtube.com/shorts/Euz7zxO0Eiw", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuB2vkS8O4/", poster: "https://i.ytimg.com/vi/Euz7zxO0Eiw/hqdefault.jpg" },
+  { id: "w8", youtubeId: "gLF5yoARRxQ", youtubeUrl: "https://youtube.com/shorts/gLF5yoARRxQ", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuCrsZST5i/", poster: "https://i.ytimg.com/vi/gLF5yoARRxQ/hqdefault.jpg" },
+  { id: "w9", youtubeId: "l3asgJS-ibI", youtubeUrl: "https://youtube.com/shorts/l3asgJS-ibI", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuDGytyAe1/", poster: "https://i.ytimg.com/vi/l3asgJS-ibI/hqdefault.jpg" },
+  { id: "w10", youtubeId: "SX5GwzQ5U2M", youtubeUrl: "https://youtube.com/shorts/SX5GwzQ5U2M", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuDdflSsYc/", poster: "https://i.ytimg.com/vi/SX5GwzQ5U2M/hqdefault.jpg" },
+  { id: "w11", youtubeId: "1uMzZ5JXXmc", youtubeUrl: "https://youtube.com/shorts/1uMzZ5JXXmc", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcuDqBPygwl/", poster: "https://i.ytimg.com/vi/1uMzZ5JXXmc/hqdefault.jpg" },
+  { id: "w12", youtubeId: "trFAyYd-ItA", youtubeUrl: "https://youtube.com/shorts/trFAyYd-ItA", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcvgkbQSZij/", poster: "https://i.ytimg.com/vi/trFAyYd-ItA/hqdefault.jpg" },
+  { id: "w13", youtubeId: "DClkScuy3es", youtubeUrl: "https://youtube.com/shorts/DClkScuy3es", instagramUrl: "https://www.instagram.com/shivayonic.invites/reel/DcvgvzsSaeN/", poster: "https://i.ytimg.com/vi/DClkScuy3es/hqdefault.jpg" },
 ];
 
 export const musicKinds: { title: string; blurb: string }[] = [

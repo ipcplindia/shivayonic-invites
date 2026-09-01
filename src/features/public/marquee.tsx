@@ -1,28 +1,29 @@
 import { PIcon } from "@/features/public/icons";
-import type { SocialItem } from "@/features/public/data";
+import type { SocialWork } from "@/features/public/data";
 
 /**
- * Social ribbon. Pure CSS: the track is duplicated once and translated -50%, so
- * the loop is seamless with no JS and no snap. Hover and keyboard focus pause it
- * (`animation-play-state` in CSS); reduced-motion and touch fall back to a
- * normal scrollable/swipeable row. No video loads — these are poster links that
- * open the real post only on click.
+ * Social ribbon of vertical Shorts/Reels poster cards.
+ *
+ * Pure CSS marquee: the track is duplicated once and translated -50% for a
+ * seamless, no-JS loop; hover and keyboard focus pause it; reduced-motion and
+ * touch fall back to a scroll/swipe row. Both rails share ONE canonical poster
+ * per work (the Short thumbnail); only the platform badge, direction and
+ * destination differ. No iframe, no embed, no autoplay — the poster opens the
+ * real post on click.
  */
 export function SocialRibbon({
-  items,
+  works,
   platform,
   direction,
-  duration = 46,
+  duration = 60,
 }: {
-  items: SocialItem[];
+  works: SocialWork[];
   platform: "youtube" | "instagram";
   direction: "ltr" | "rtl";
   duration?: number;
 }) {
-  const cardClass = platform === "youtube" ? "mediaCard mediaCardYt" : "mediaCard mediaCardIg";
-  const tone = platform === "youtube" ? "tone-rose" : "tone-teal";
-  // Duplicated so the -50% keyframe lands exactly on a copy boundary.
-  const loop = [...items, ...items];
+  const label = platform === "youtube" ? "Short" : "Reel";
+  const loop = [...works, ...works];
 
   return (
     <div
@@ -30,36 +31,38 @@ export function SocialRibbon({
       style={{ ["--dur" as string]: `${duration}s` }}
       aria-label={`${platform === "youtube" ? "YouTube" : "Instagram"} showcase`}
     >
-      {/* The base keyframe translates left (visual right→left). Reversing it makes
-          the track travel left→right, so `ltr` = reverse. */}
       <div className={direction === "ltr" ? "ribbonTrack ribbonRTL" : "ribbonTrack"}>
-        {loop.map((item, i) => (
-          <a
-            key={item.id + i}
-            className={cardClass}
-            href={item.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-hidden={i >= items.length}
-            tabIndex={i >= items.length ? -1 : undefined}
-          >
-            <div className={`mediaThumb ${tone}`}>
-              <span className="mediaBadge">
-                <PIcon name={platform} size={13} /> {platform === "youtube" ? "YouTube" : "Reel"}
+        {loop.map((work, i) => {
+          const href = platform === "youtube" ? work.youtubeUrl : work.instagramUrl;
+          const dup = i >= works.length;
+          return (
+            <a
+              key={work.id + i}
+              className="reelCard"
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-hidden={dup}
+              tabIndex={dup ? -1 : undefined}
+              aria-label={`${platform === "youtube" ? "Watch this Short on YouTube" : "View this Reel on Instagram"}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="reelPoster"
+                src={work.poster}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+              <span className="reelBadge">
+                <PIcon name={platform} size={13} /> {label}
               </span>
-              <span className="mediaPlay">
-                <PIcon name="play" size={20} />
+              <span className="reelPlay">
+                <PIcon name="play" size={18} />
               </span>
-              {platform === "youtube" ? <span className="mediaDur">1:20</span> : null}
-            </div>
-            <div className="mediaBody">
-              <p className="mediaTitle">{item.title}</p>
-              <p className="mediaMeta">
-                {item.occasion} · {item.style}
-              </p>
-            </div>
-          </a>
-        ))}
+            </a>
+          );
+        })}
       </div>
     </div>
   );
