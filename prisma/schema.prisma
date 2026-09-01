@@ -34,6 +34,25 @@ enum MediaAssetStatus {
   ARCHIVED
 }
 
+enum PublicProductType {
+  INVITATION
+  VIDEO_INVITATION
+  AUDIO_INVITATION
+}
+
+enum PublicProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProductMediaRole {
+  COVER
+  GALLERY
+  VIDEO_PREVIEW
+  AUDIO_PREVIEW
+}
+
 model User {
   id                 String               @id @default(cuid())
   email              String               @unique
@@ -153,9 +172,110 @@ model MediaAsset {
   organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   project          Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdBy        User             @relation("MediaCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  publicProductMedia PublicProductMedia[]
 
   @@index([organizationId, status])
   @@index([projectId])
+}
+
+model PublicCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  parentId  String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  parent    PublicCategory?  @relation("PublicCategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children  PublicCategory[] @relation("PublicCategoryHierarchy")
+  products  PublicProduct[]
+
+  @@index([parentId, active])
+}
+
+model VisualStyle {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  products    PublicProductStyle[]
+}
+
+model PublicProduct {
+  id               String              @id @default(cuid())
+  slug             String              @unique
+  name             String
+  shortDescription String
+  categoryId       String
+  productType      PublicProductType
+  startingPrice    Int?
+  pricingLabel     String?
+  currency         String              @default("INR")
+  status           PublicProductStatus @default(DRAFT)
+  featured         Boolean             @default(false)
+  displayOrder     Int                 @default(0)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  category         PublicCategory      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  styles           PublicProductStyle[]
+  media            PublicProductMedia[]
+  collections      PublicCollectionProduct[]
+
+  @@index([status, featured, displayOrder])
+  @@index([categoryId, status, displayOrder])
+}
+
+model PublicProductStyle {
+  productId String
+  styleId   String
+  product   PublicProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  style     VisualStyle   @relation(fields: [styleId], references: [id], onDelete: Restrict)
+
+  @@id([productId, styleId])
+  @@index([styleId])
+}
+
+model PublicProductMedia {
+  id           String           @id @default(cuid())
+  productId    String
+  mediaAssetId String
+  role         ProductMediaRole
+  altText      String?
+  displayOrder Int              @default(0)
+  product      PublicProduct    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset       @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, mediaAssetId, role])
+  @@index([productId, role, displayOrder])
+}
+
+model PublicCollection {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  name              String
+  shortDescription  String?
+  coverMediaAssetId String?
+  active            Boolean  @default(true)
+  displayOrder      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  products          PublicCollectionProduct[]
+
+  @@index([active, displayOrder])
+}
+
+model PublicCollectionProduct {
+  collectionId String
+  productId    String
+  displayOrder Int               @default(0)
+  collection   PublicCollection  @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product      PublicProduct     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, productId])
+  @@index([productId])
 }
 
 model AuditLog {
