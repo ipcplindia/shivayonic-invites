@@ -300,8 +300,8 @@
   inset: 0;
   z-index: 2;
   background:
-    radial-gradient(90% 70% at 82% 22%, rgb(40 20 10 / 0.42) 0%, transparent 62%),
-    linear-gradient(200deg, rgb(40 20 10 / 0.34) 0%, transparent 45%);
+    radial-gradient(90% 70% at 18% 22%, rgb(40 20 10 / 0.42) 0%, transparent 62%),
+    linear-gradient(160deg, rgb(40 20 10 / 0.34) 0%, transparent 45%);
 }
 
 .heroInner {
@@ -309,7 +309,7 @@
   z-index: 3;
   width: calc(100% - 4rem);
   max-width: 40rem;
-  margin: 0 2rem 0 auto;
+  margin: 0 auto 0 2rem;
   padding-top: 118px;
   display: flex;
   flex-direction: column;
