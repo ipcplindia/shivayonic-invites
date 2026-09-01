@@ -23,12 +23,12 @@ export type NavLink = { label: string; href: string };
 
 export const navLinks: NavLink[] = [
   { label: "Home", href: "#top" },
-  { label: "Wedding", href: "#wedding" },
+  { label: "Wedding", href: "/invitations/wedding" },
   { label: "Celebrations", href: "#celebrations" },
   { label: "Music", href: "#music" },
   { label: "Films", href: "#films" },
-  { label: "Devotional", href: "#devotional" },
-  { label: "Corporate", href: "#corporate" },
+  { label: "Devotional", href: "/devotional" },
+  { label: "Corporate", href: "/corporate" },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -37,21 +37,21 @@ export const searchShortcuts: { group: string; items: NavLink[] }[] = [
   {
     group: "Occasions",
     items: [
-      { label: "Wedding", href: "#wedding" },
-      { label: "Mehendi", href: "#wedding" },
-      { label: "Haldi", href: "#wedding" },
-      { label: "Sangeet", href: "#wedding" },
-      { label: "Birthday", href: "#celebrations" },
-      { label: "Devotional", href: "#devotional" },
-      { label: "Corporate", href: "#corporate" },
+      { label: "Wedding", href: "/invitations/wedding" },
+      { label: "Mehendi", href: "/invitations/wedding/mehendi" },
+      { label: "Haldi", href: "/invitations/wedding/haldi" },
+      { label: "Sangeet", href: "/invitations/wedding/sangeet" },
+      { label: "Birthday", href: "/celebrations" },
+      { label: "Devotional", href: "/devotional" },
+      { label: "Corporate", href: "/corporate" },
     ],
   },
   {
     group: "Craft",
     items: [
-      { label: "Invitation Songs", href: "#music" },
-      { label: "Cinematic Films", href: "#films" },
-      { label: "Visual Styles", href: "#styles" },
+      { label: "Invitation Songs", href: "/music" },
+      { label: "Cinematic Films", href: "/films" },
+      { label: "Visual Styles", href: "/styles" },
     ],
   },
 ];
@@ -65,12 +65,12 @@ export type Category = {
 };
 
 export const categories: Category[] = [
-  { title: "Wedding Invitations", blurb: "From Save the Date to the Pheras — the whole journey, crafted.", href: "#wedding", tone: "rose", span: "wide" },
-  { title: "Celebrations", blurb: "Birthdays, anniversaries and the milestones between.", href: "#celebrations", tone: "saffron" },
-  { title: "Devotional", blurb: "Pujas, paths and festivals, rendered with reverence.", href: "#devotional", tone: "gold" },
-  { title: "Corporate", blurb: "Launches, conferences and awards, on brand.", href: "#corporate", tone: "teal" },
-  { title: "Invitation Music", blurb: "Original songs written for your occasion.", href: "#music", tone: "cocoa" },
-  { title: "Cinematic Films", blurb: "Invitation films that move people to reply.", href: "#films", tone: "sage", span: "tall" },
+  { title: "Wedding Invitations", blurb: "From Save the Date to the Pheras — the whole journey, crafted.", href: "/invitations/wedding", tone: "rose", span: "wide" },
+  { title: "Celebrations", blurb: "Birthdays, anniversaries and the milestones between.", href: "/celebrations", tone: "saffron" },
+  { title: "Devotional", blurb: "Pujas, paths and festivals, rendered with reverence.", href: "/devotional", tone: "gold" },
+  { title: "Corporate", blurb: "Launches, conferences and awards, on brand.", href: "/corporate", tone: "teal" },
+  { title: "Invitation Music", blurb: "Original songs written for your occasion.", href: "/music", tone: "cocoa" },
+  { title: "Cinematic Films", blurb: "Invitation films that move people to reply.", href: "/films", tone: "sage", span: "tall" },
 ];
 
 export const weddingJourney: { label: string; note: string }[] = [

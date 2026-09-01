@@ -2,19 +2,44 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import Link from "next/link";
+
 import { PIcon } from "@/features/public/icons";
-import { navLinks, searchShortcuts } from "@/features/public/data";
+import { searchShortcuts } from "@/features/public/data";
+
+type NavEntry = { label: string; href: string; children?: { label: string; href: string }[] };
+
+const NAV: NavEntry[] = [
+  {
+    label: "Invitations",
+    href: "/invitations",
+    children: [
+      { label: "Wedding", href: "/invitations/wedding" },
+      { label: "Celebrations", href: "/celebrations" },
+      { label: "Devotional", href: "/devotional" },
+      { label: "Corporate", href: "/corporate" },
+      { label: "View all invitations", href: "/invitations" },
+    ],
+  },
+  { label: "Catalogue", href: "/catalogue" },
+  { label: "Styles", href: "/styles" },
+  { label: "Music", href: "/music" },
+  { label: "Films", href: "/films" },
+  { label: "Our Work", href: "/our-work" },
+  { label: "How It Works", href: "/how-it-works" },
+];
 
 /**
  * Public navigation.
  *
- * Transparent over the hero (hard lock — no bar), warm solid once scrolled past
- * it. The search control is the one glass element; its results panel is solid
- * ivory for readability. Search covers only known destinations and says so —
- * there is no public search API to fake.
+ * `solid` renders the warm cream header from the top — for pages without a
+ * full-bleed hero behind the bar. Otherwise the bar is transparent over the
+ * hero and turns solid once scrolled past it. The search control is the one
+ * glass element; its results panel is solid ivory and covers known
+ * destinations only.
  */
-export function SiteNav() {
-  const [scrolled, setScrolled] = useState(false);
+export function SiteNav({ solid = false }: { solid?: boolean }) {
+  const [scrolled, setScrolled] = useState(solid);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -22,11 +47,12 @@ export function SiteNav() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (solid) return;
     const onScroll = () => setScrolled(window.scrollY > window.innerHeight * 0.7);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [solid]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -53,17 +79,33 @@ export function SiteNav() {
   return (
     <header className={scrolled ? "nav navScrolled" : "nav"}>
       <div className="navBar">
-        <a href="#top" className="brand" aria-label="Shivayonic Invites — home">
+        <Link href="/" className="brand" aria-label="Shivayonic Invites — home">
           <span className="brandName">SHIVAYONIC</span>
           <span className="brandSub">Invites</span>
-        </a>
+        </Link>
 
         <nav className="navLinks" aria-label="Primary">
-          {navLinks.map((link) => (
-            <a key={link.href + link.label} href={link.href} className="navLink">
-              {link.label}
-            </a>
-          ))}
+          {NAV.map((entry) =>
+            entry.children ? (
+              <div key={entry.label} className="navGroup">
+                <a href={entry.href} className="navLink navLinkParent">
+                  {entry.label}
+                  <PIcon name="chevronDown" size={13} />
+                </a>
+                <div className="navMenu" role="menu">
+                  {entry.children.map((child) => (
+                    <a key={child.href + child.label} href={child.href} className="navMenuItem" role="menuitem">
+                      {child.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <a key={entry.href} href={entry.href} className="navLink">
+                {entry.label}
+              </a>
+            ),
+          )}
         </nav>
 
         <span className="navSpacer" />
@@ -147,16 +189,30 @@ export function SiteNav() {
             </button>
           </div>
           <nav className="drawerLinks" aria-label="Primary">
-            {navLinks.map((link) => (
-              <a
-                key={link.href + link.label}
-                href={link.href}
-                className="drawerLink"
-                onClick={() => setMenuOpen(false)}
-              >
-                {link.label}
-              </a>
+            {NAV.map((entry) => (
+              <div key={entry.label}>
+                <a href={entry.href} className="drawerLink" onClick={() => setMenuOpen(false)}>
+                  {entry.label}
+                </a>
+                {entry.children ? (
+                  <div className="drawerSub">
+                    {entry.children.map((child) => (
+                      <a
+                        key={child.href + child.label}
+                        href={child.href}
+                        className="drawerSubLink"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {child.label}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             ))}
+            <a href="/contact" className="drawerLink" onClick={() => setMenuOpen(false)}>
+              Contact
+            </a>
           </nav>
         </div>
       ) : null}

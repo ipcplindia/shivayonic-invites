@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 
 import heroImage from "../../public/hero/hero-desktop.webp";
 import "@/features/public/public.css";
@@ -105,9 +106,9 @@ export default function HomePage() {
             <a href="#explore" className="btn btnSaffron">
               Explore Invitations
             </a>
-            <a href="#films" className="btn btnOnDark">
+            <Link href="/films" className="btn btnOnDark">
               <PIcon name="play" size={16} /> Watch Our Work
-            </a>
+            </Link>
           </div>
         </div>
         <a href="#explore" className="heroScroll" aria-label="Scroll to explore">
@@ -162,6 +163,9 @@ export default function HomePage() {
                 </article>
               ))}
             </div>
+            <div style={{ textAlign: "center", marginTop: "2rem" }}>
+              <Link href="/invitations/wedding" className="btn btnGhost">View all wedding invitations</Link>
+            </div>
           </div>
         </section>
 
@@ -188,12 +192,12 @@ export default function HomePage() {
                       </p>
                     ) : null}
                     <div className="productCtas">
-                      <a href="#contact" className="btn btnGhost">
+                      <Link href="/catalogue" className="btn btnGhost">
                         View Details
-                      </a>
-                      <a href="#contact" className="btn btnPrimary">
+                      </Link>
+                      <Link href="/catalogue" className="btn btnPrimary">
                         Customize
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </article>
@@ -268,10 +272,13 @@ export default function HomePage() {
             />
             <div className="styleWrap reveal">
               {visualStyles.map((style) => (
-                <button key={style} type="button" className="styleChip">
+                <Link key={style} href="/styles" className="styleChip">
                   {style}
-                </button>
+                </Link>
               ))}
+            </div>
+            <div style={{ textAlign: "center", marginTop: "2rem" }}>
+              <Link href="/styles" className="btn btnGhost">Explore all styles</Link>
             </div>
           </div>
         </section>
@@ -382,9 +389,9 @@ export default function HomePage() {
               Your celebration doesn&rsquo;t have to look like anyone else&rsquo;s.
             </h2>
             <div className="bespokeCtas">
-              <a href="#contact" className="btn btnSaffron">
+              <Link href="/invitations" className="btn btnSaffron">
                 Customize an Invite
-              </a>
+              </Link>
               <a
                 href={contact.whatsappUrl}
                 className="btn btnOnDark"

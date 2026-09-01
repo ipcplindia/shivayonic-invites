@@ -1,0 +1,633 @@
+/* CELEBRATION IVORY — multi-page primitives (loaded via PageFrame). */
+
+/* Inner pages have a fixed nav but no full-bleed hero behind it everywhere, so
+   the page content clears the bar. */
+.pageMain {
+  padding-top: 76px;
+}
+
+/* -------------------------------------------------------- Category hero */
+
+.catHero {
+  position: relative;
+  min-height: 62svh;
+  display: flex;
+  align-items: flex-end;
+  isolation: isolate;
+  overflow: clip;
+  background-color: #e79a52;
+}
+
+.catHeroArt {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.catHeroArt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(40 20 10 / 0.15) 0%, rgb(40 20 10 / 0.1) 40%, rgb(40 20 10 / 0.62) 100%);
+}
+
+.catHeroInner {
+  position: relative;
+  z-index: 1;
+  width: var(--shell);
+  margin: 0 auto;
+  padding: 3rem 0 3.5rem;
+  color: #fff9f1;
+}
+
+.catHeroEyebrow {
+  color: #ffe0b8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 10px rgb(40 18 8 / 0.5);
+}
+
+.catHeroTitle {
+  margin-top: 0.75rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  line-height: 1.03;
+  letter-spacing: -0.02em;
+  color: #fff9f1;
+  text-shadow: 0 2px 24px rgb(40 18 8 / 0.4);
+  max-width: 18ch;
+}
+
+.catHeroLede {
+  margin-top: 1rem;
+  max-width: 52ch;
+  color: #fdeede;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  text-shadow: 0 1px 12px rgb(40 18 8 / 0.4);
+}
+
+.catHeroCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1.6rem;
+}
+
+/* -------------------------------------------------------- Breadcrumb */
+
+.crumbs {
+  width: var(--shell);
+  margin: 0 auto;
+  padding: 1.1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--umber);
+  font-size: 0.85rem;
+}
+
+.crumbs a:hover {
+  color: var(--saffron);
+}
+
+.crumbSep {
+  color: var(--umber-soft);
+}
+
+.crumbCurrent {
+  color: var(--cocoa);
+  font-weight: 600;
+}
+
+/* -------------------------------------------------------- Editorial split */
+
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+}
+
+.splitFlip {
+  direction: rtl;
+}
+
+.splitFlip > * {
+  direction: ltr;
+}
+
+.splitArt {
+  aspect-ratio: 5 / 4;
+  border-radius: 22px;
+  overflow: hidden;
+  position: relative;
+}
+
+.splitArt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgb(68 36 29 / 0.22));
+}
+
+.splitTitle2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.6vw, 2.7rem);
+  line-height: 1.08;
+  color: var(--cocoa);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.splitBody2 {
+  margin-top: 1rem;
+  max-width: 46ch;
+  color: var(--umber);
+  font-size: 1.05rem;
+}
+
+.splitActions {
+  margin-top: 1.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* -------------------------------------------------------- Category rail */
+
+.chipRail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.chipLink {
+  padding: 0.7rem 1.35rem;
+  border: 1px solid var(--cocoa-line);
+  border-radius: 999px;
+  background: var(--ivory);
+  color: var(--cocoa);
+  font-size: 0.95rem;
+  transition: border-color 0.18s var(--ease), background-color 0.18s var(--ease),
+    transform 0.18s var(--ease);
+}
+
+.chipLink:hover {
+  border-color: var(--gold);
+  background: color-mix(in oklab, var(--gold) 8%, transparent);
+  transform: translateY(-2px);
+}
+
+/* -------------------------------------------------------- Collection grid */
+
+.collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.4rem;
+}
+
+.pcard {
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--ivory);
+  border: 1px solid var(--cocoa-line-soft);
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+
+.pcard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 22px 50px rgb(68 36 29 / 0.14);
+}
+
+.pcardArt {
+  aspect-ratio: 4 / 5;
+  position: relative;
+}
+
+.pcardArt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgb(68 36 29 / 0.26));
+}
+
+.pcardTag {
+  position: absolute;
+  z-index: 1;
+  top: 0.8rem;
+  left: 0.8rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: color-mix(in oklab, var(--ivory) 90%, transparent);
+  color: var(--cocoa);
+}
+
+.pcardBody {
+  padding: 1.1rem 1.2rem 1.35rem;
+}
+
+.pcardName {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--cocoa);
+}
+
+.pcardMeta {
+  margin-top: 0.3rem;
+  color: var(--umber);
+  font-size: 0.85rem;
+}
+
+.pcardPrice {
+  margin-top: 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--cocoa);
+}
+
+.pcardPrice span {
+  color: var(--umber-soft);
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+.pcardCtas {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 0.95rem;
+}
+
+.pcardCtas .btn {
+  flex: 1;
+  justify-content: center;
+  padding: 0.58rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+/* -------------------------------------------------------- Style cards */
+
+.styleCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.1rem;
+}
+
+.styleCard {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--cocoa-line-soft);
+  background: var(--ivory);
+  cursor: pointer;
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.styleCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 42px rgb(68 36 29 / 0.14);
+}
+
+.styleCardArt {
+  aspect-ratio: 4 / 3;
+  position: relative;
+}
+
+.styleCardBody {
+  padding: 0.9rem 1.1rem 1.1rem;
+}
+
+.styleCardName {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--cocoa);
+}
+
+.styleCardNote {
+  margin-top: 0.2rem;
+  color: var(--umber);
+  font-size: 0.82rem;
+}
+
+/* -------------------------------------------------------- CTA section */
+
+.ctaBand {
+  position: relative;
+  padding: clamp(3.5rem, 8vw, 6rem) 0;
+  text-align: center;
+  color: var(--ivory);
+  overflow: hidden;
+}
+
+.ctaBand.ctaCocoa {
+  background: linear-gradient(140deg, #4a2820 0%, #6a3a2c 55%, #8a4a33 100%);
+}
+
+.ctaBand.ctaTeal {
+  background: linear-gradient(140deg, #234e4c 0%, #357c79 100%);
+}
+
+.ctaTitle {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  max-width: 22ch;
+  margin: 0 auto;
+  text-wrap: balance;
+}
+
+.ctaLede {
+  margin: 1rem auto 0;
+  max-width: 48ch;
+  color: color-mix(in oklab, var(--ivory) 82%, transparent);
+}
+
+.ctaActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.9rem;
+  margin-top: 1.8rem;
+}
+
+/* -------------------------------------------------------- Nav dropdown */
+
+.navGroup {
+  position: relative;
+}
+
+.navLinkParent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.navMenu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  translate: -50% 0;
+  min-width: 220px;
+  padding: 0.5rem;
+  border: 1px solid var(--cocoa-line);
+  border-radius: 16px;
+  background: var(--ivory);
+  box-shadow: 0 20px 50px rgb(68 36 29 / 0.18);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.18s var(--ease), transform 0.18s var(--ease), visibility 0.18s;
+}
+
+.navGroup:hover .navMenu,
+.navGroup:focus-within .navMenu {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.navMenuItem {
+  display: block;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  color: var(--cocoa);
+  font-size: 0.9rem;
+  transition: background-color 0.15s var(--ease);
+}
+
+.navMenuItem:hover {
+  background: var(--saffron-tint);
+}
+
+/* Drawer sub-links */
+.drawerSub {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0 0 0.6rem 0.5rem;
+}
+
+.drawerSubLink {
+  padding: 0.5rem 0.5rem;
+  color: var(--umber);
+  font-size: 1rem;
+}
+
+.drawerSubLink:hover {
+  color: var(--saffron);
+}
+
+/* -------------------------------------------------------- Product page */
+
+.productHero {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+.productGallery {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.productMain {
+  aspect-ratio: 4 / 5;
+  border-radius: 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.productThumbs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.7rem;
+}
+
+.productThumb {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid var(--cocoa-line-soft);
+}
+
+.productInfo {
+  position: sticky;
+  top: 96px;
+}
+
+.productLabel {
+  color: var(--saffron);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.productTitle {
+  margin-top: 0.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+  color: var(--cocoa);
+  letter-spacing: -0.015em;
+}
+
+.productPriceLg {
+  margin-top: 0.9rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--cocoa);
+}
+
+.productPriceLg span {
+  color: var(--umber-soft);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.productActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.4rem;
+}
+
+.productNote {
+  margin-top: 1.1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--cocoa-line-soft);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--cream) 45%, transparent);
+  color: var(--umber);
+  font-size: 0.85rem;
+}
+
+.included {
+  margin-top: 1.6rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.includedItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--cocoa);
+  font-size: 0.95rem;
+}
+
+.includedItem .tick {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--saffron-tint);
+  color: var(--saffron);
+}
+
+.styleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.stylePill {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--cocoa-line);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--cocoa);
+  background: var(--ivory);
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease), background-color 0.15s var(--ease);
+}
+
+.stylePill:hover {
+  border-color: var(--teal);
+  background: var(--teal-tint);
+}
+
+/* -------------------------------------------------------- FAQ */
+
+.faqList {
+  max-width: 60rem;
+  margin: 0 auto;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.faqItem {
+  border: 1px solid var(--cocoa-line-soft);
+  border-radius: 14px;
+  background: var(--ivory);
+  overflow: hidden;
+}
+
+.faqItem summary {
+  padding: 1.1rem 1.3rem;
+  font-weight: 600;
+  color: var(--cocoa);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.faqItem summary::-webkit-details-marker {
+  display: none;
+}
+
+.faqItem summary::after {
+  content: "+";
+  color: var(--saffron);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.faqItem[open] summary::after {
+  content: "–";
+}
+
+.faqAnswer {
+  padding: 0 1.3rem 1.2rem;
+  color: var(--umber);
+  max-width: 68ch;
+}
+
+/* -------------------------------------------------------- Responsive */
+
+@media (max-width: 1024px) {
+  .productHero,
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .productInfo {
+    position: static;
+  }
+
+  .splitFlip {
+    direction: ltr;
+  }
+}
+
+@media (max-width: 760px) {
+  .catHero {
+    min-height: 56svh;
+  }
+
+  .catHeroTitle {
+    max-width: 100%;
+  }
+}
