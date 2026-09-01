@@ -494,18 +494,42 @@
 }
 
 .chapter {
+  position: relative;
   scroll-snap-align: start;
   flex: 0 0 clamp(150px, 22vw, 190px);
   padding: 1.4rem 1.25rem;
-  border: 1px solid var(--cocoa-line-soft);
+  border: 1px solid color-mix(in oklab, var(--gold) 30%, transparent);
   border-radius: 16px;
-  background: var(--ivory);
-  transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
+  /* Warm champagne–rose metallic sheen. */
+  background:
+    linear-gradient(135deg, #fbeede 0%, #f4dcc0 38%, #ecc9b6 66%, #e8bfae 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
+  overflow: hidden;
+  transition: border-color 0.2s var(--ease), transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+
+/* Fine grain over the gradient for a brushed-metal texture. */
+.chapter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.14;
+  mix-blend-mode: overlay;
+}
+
+.chapter > * {
+  position: relative;
+  z-index: 1;
 }
 
 .chapter:hover {
   border-color: var(--gold);
   transform: translateY(-3px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), 0 14px 30px rgb(68 36 29 / 0.14);
 }
 
 .chapterNum {
@@ -1266,4 +1290,17 @@
 .tileArt[style] {
   background-size: cover;
   background-position: center;
+}
+
+/* Category tiles now carry photographic artwork — force white text for
+   readability over any image, with a slightly stronger bottom scrim. */
+.tile .tileTitle,
+.tile .tileBlurb,
+.tile .tileArrow {
+  color: #fff9f1 !important;
+  text-shadow: 0 1px 12px rgb(30 14 6 / 0.55);
+}
+
+.tileArt::after {
+  background: linear-gradient(180deg, rgb(30 14 6 / 0.08) 0%, rgb(30 14 6 / 0.22) 42%, rgb(30 14 6 / 0.66) 100%);
 }
