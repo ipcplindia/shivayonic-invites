@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-
-import heroImage from "../../public/hero/hero-desktop.webp";
 import "@/features/public/public.css";
 import "@/features/public/public-sections.css";
 import { PIcon } from "@/features/public/icons";
@@ -81,14 +78,15 @@ export default function HomePage() {
       {/* 01 — HERO */}
       <section className="hero" aria-label="Shivayonic Invites">
         <div className="heroBg" aria-hidden="true" />
-        <Image
-          src={heroImage}
+        {/* Served directly from /public and loaded eagerly at high priority, so
+            the hero is cached and always present — no optimizer round-trip. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero/hero-desktop.webp"
           alt="A royal ivory-and-gold wedding pavilion at golden sunset, framed by peach and rose flowers over a reflective marble floor"
           className="heroImg"
-          fill
-          priority
-          sizes="100vw"
-          placeholder="blur"
+          fetchPriority="high"
+          decoding="async"
         />
         <div className="heroScrim" />
         <div className="heroInner">
