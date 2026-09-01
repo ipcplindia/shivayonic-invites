@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { URLSearchParams } from "node:url";
 
 import type { CatalogueFilters, CatalogueListResponse, PublicCategory, PublicCategorySummary, PublicCollection, PublicProductDetail, PublicProductSummary, PublicProductType, VisualStyle } from "@/shared/catalogue";
 
