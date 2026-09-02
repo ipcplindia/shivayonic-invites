@@ -10,7 +10,7 @@ import { getServerConfig } from "@/config/env";
 type Runtime = { NODE_ENV?: string; VERCEL_ENV?: string; PRODUCTION_SETUP_TOKEN?: string };
 type SetupResult = { owner: boolean; organization: boolean; cors: boolean; changed: boolean };
 
-function tokenMatches(request: Request, expected: string) {
+export function matchesBearerToken(request: Request, expected: string) {
   const authorization = request.headers.get("authorization") ?? "";
   const provided = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
   const actualBytes = Buffer.from(provided);
@@ -69,7 +69,7 @@ export async function handleProductionSetup(
   if (runtime.NODE_ENV !== "production" || runtime.VERCEL_ENV !== "production" || !runtime.PRODUCTION_SETUP_TOKEN) {
     return Response.json({ ok: false }, { status: 404 });
   }
-  if (!tokenMatches(request, runtime.PRODUCTION_SETUP_TOKEN)) {
+  if (!matchesBearerToken(request, runtime.PRODUCTION_SETUP_TOKEN)) {
     return Response.json({ ok: false }, { status: 401 });
   }
   try {
