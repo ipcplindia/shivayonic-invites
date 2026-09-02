@@ -2,11 +2,21 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { handleProductionSetup } from "@/core/production-setup";
+import { handleProductionSetup, productionS3CorsRule } from "@/core/production-setup";
 
 const production = { NODE_ENV: "production", VERCEL_ENV: "production", PRODUCTION_SETUP_TOKEN: "correct-token" };
 
 describe("temporary production setup authorization", () => {
+  it("uses the exact narrow S3 browser CORS rule", () => {
+    expect(productionS3CorsRule).toEqual({
+      AllowedOrigins: ["https://www.shivayonic.com"],
+      AllowedMethods: ["PUT", "GET", "HEAD"],
+      AllowedHeaders: ["*"],
+      ExposeHeaders: ["ETag", "Content-Length", "Content-Range", "Accept-Ranges"],
+      MaxAgeSeconds: 3600,
+    });
+  });
+
   it("does not execute without the setup token", async () => {
     const execute = vi.fn();
     const response = await handleProductionSetup(new Request("https://example.com/api/internal/production-setup", { method: "POST" }), production, execute);

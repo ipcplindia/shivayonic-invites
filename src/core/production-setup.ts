@@ -2,13 +2,25 @@ import "server-only";
 
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
-import { GetBucketCorsCommand, PutBucketCorsCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetBucketCorsCommand, PutBucketCorsCommand, S3Client, type CORSRule } from "@aws-sdk/client-s3";
 
 import { bootstrapOwner } from "@/auth/bootstrap-owner";
 import { getServerConfig } from "@/config/env";
 
 type Runtime = { NODE_ENV?: string; VERCEL_ENV?: string; PRODUCTION_SETUP_TOKEN?: string };
 type SetupResult = { owner: boolean; organization: boolean; cors: boolean; changed: boolean };
+
+/**
+ * The production browser uses signed S3 PUTs. Keep this S3 CORS rule narrow:
+ * the public www origin and the three operations the media transport uses.
+ */
+export const productionS3CorsRule = {
+  AllowedOrigins: ["https://www.shivayonic.com"],
+  AllowedMethods: ["PUT", "GET", "HEAD"],
+  AllowedHeaders: ["*"],
+  ExposeHeaders: ["ETag", "Content-Length", "Content-Range", "Accept-Ranges"],
+  MaxAgeSeconds: 3600,
+} satisfies CORSRule;
 
 export function matchesBearerToken(request: Request, expected: string) {
   const authorization = request.headers.get("authorization") ?? "";
@@ -31,27 +43,16 @@ export async function executeProductionSetup(): Promise<SetupResult> {
     },
   });
   const bucket = config.OBJECT_STORAGE_BUCKET!;
-  const origins = [
-    "https://shivayonic-invites-bice.vercel.app",
-    "https://shivayonic.com",
-    "https://www.shivayonic.com",
-  ];
   await client.send(new PutBucketCorsCommand({
     Bucket: bucket,
     CORSConfiguration: {
-      CORSRules: [{
-        AllowedOrigins: origins,
-        AllowedMethods: ["PUT", "GET", "HEAD"],
-        AllowedHeaders: ["*"],
-        ExposeHeaders: ["ETag", "Content-Length", "Content-Range", "Accept-Ranges"],
-        MaxAgeSeconds: 3600,
-      }],
+      CORSRules: [productionS3CorsRule],
     },
   }));
   const cors = await client.send(new GetBucketCorsCommand({ Bucket: bucket }));
   const configured = cors.CORSRules?.some((rule) =>
-    origins.every((origin) => rule.AllowedOrigins?.includes(origin))
-      && ["PUT", "GET", "HEAD"].every((method) => rule.AllowedMethods?.includes(method)),
+    productionS3CorsRule.AllowedOrigins.every((origin) => rule.AllowedOrigins?.includes(origin))
+      && productionS3CorsRule.AllowedMethods.every((method) => rule.AllowedMethods?.includes(method)),
   ) ?? false;
   return {
     owner: bootstrap.owner,
