@@ -375,7 +375,7 @@ export default function HomePage() {
               Your celebration doesn&rsquo;t have to look like anyone else&rsquo;s.
             </h2>
             <div className="bespokeCtas">
-              <Link href="/invitations" className="btn btnSaffron">
+              <Link href="/customise" className="btn btnSaffron">
                 Customize an Invite
               </Link>
               <a

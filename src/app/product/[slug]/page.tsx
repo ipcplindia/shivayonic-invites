@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, Breadcrumb, CTASection, MiniFaq, ProcessBand, ProductCard, SectionHead } from "@/features/public/sections";
@@ -124,9 +125,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
               {view.description}
             </p>
             <div className="productActions">
-              <a href={whatsappFor(view.name)} className="btn btnSaffron" target="_blank" rel="noopener noreferrer">
+              <Link href="/customise/weddings-celebrations" className="btn btnSaffron">
                 Customize This Invite
-              </a>
+              </Link>
               <a href="/contact" className="btn btnGhost">
                 Contact us
               </a>

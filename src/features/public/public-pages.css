@@ -1236,3 +1236,340 @@
 .filmCards .styleCardArt {
   aspect-ratio: 4 / 5;
 }
+
+/* -------------------------------------------------------- Brief cards */
+
+.briefGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-top: 2.75rem;
+}
+
+@media (max-width: 820px) { .briefGrid { grid-template-columns: 1fr; } }
+
+.briefCard {
+  display: flex;
+  flex-direction: column;
+  background: #fffdfa;
+  border: 1px solid var(--cocoa-line);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--e1);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.briefCard:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--e3);
+}
+
+.briefArt {
+  aspect-ratio: 16 / 7;
+  position: relative;
+}
+
+.briefArt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgb(68 36 29 / 0.3));
+}
+
+.briefBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 1.6rem 1.7rem 1.8rem;
+}
+
+.briefNo {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--saffron-ink);
+}
+
+.briefName {
+  margin-top: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1.15;
+  color: var(--cocoa);
+  letter-spacing: -0.01em;
+}
+
+.briefBlurb {
+  flex: 1;
+  margin-top: 0.6rem;
+  color: var(--umber);
+  font-size: 0.97rem;
+  line-height: 1.55;
+}
+
+.briefActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+}
+
+/* -------------------------------------------------------- Enquiry form extras */
+
+.field select {
+  font: inherit;
+  color: var(--cocoa);
+  background: var(--ivory);
+  border: 1px solid var(--cocoa-line);
+  border-radius: var(--r-sm);
+  padding: 0.75rem 0.9rem;
+  min-height: 46px;
+}
+
+.field select:focus {
+  outline: 2px solid var(--saffron);
+  outline-offset: 1px;
+}
+
+.checkField {
+  border: 1px solid var(--cocoa-line);
+  border-radius: var(--r-md);
+  padding: 1.1rem 1.2rem 1.25rem;
+  background: color-mix(in oklab, var(--cream) 26%, transparent);
+}
+
+.checkField legend {
+  padding: 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--umber);
+}
+
+.checkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 0.55rem 1.1rem;
+  margin-top: 0.5rem;
+}
+
+.checkItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.92rem;
+  color: var(--cocoa);
+  cursor: pointer;
+  min-height: 30px;
+}
+
+.checkItem input {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  accent-color: var(--saffron);
+  cursor: pointer;
+}
+
+.formActionsSplit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.formActionsSplit .btn { flex: 1 1 220px; }
+
+.formFoot {
+  grid-column: 1 / -1;
+  margin-top: 0.85rem;
+  text-align: center;
+  color: var(--umber-soft);
+  font-size: 0.84rem;
+}
+
+.formThanksNote {
+  margin-top: 0.9rem;
+  color: var(--umber-soft);
+  font-size: 0.88rem;
+}
+
+.formThanksActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.offlineNote {
+  max-width: 62ch;
+}
+
+/* -------------------------------------------------------- Long client brief */
+
+.briefForm { margin-top: 2.5rem; }
+
+.briefProgress { margin-bottom: 1.5rem; }
+
+.briefProgressBar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cocoa-line);
+  overflow: hidden;
+}
+
+.briefProgressBar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), var(--saffron));
+  transition: width 0.35s var(--ease);
+}
+
+.briefProgressText {
+  margin-top: 0.55rem;
+  color: var(--umber-soft);
+  font-size: 0.82rem;
+}
+
+.briefSteps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.briefStep {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--cocoa-line);
+  border-radius: 999px;
+  background: var(--ivory);
+  color: var(--umber);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background-color 0.18s var(--ease), color 0.18s var(--ease);
+}
+
+.briefStep:hover { border-color: var(--gold); color: var(--cocoa); }
+
+.briefStepOn {
+  background: var(--cocoa);
+  border-color: var(--cocoa);
+  color: var(--ivory);
+}
+
+.briefStepNo {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+}
+
+.briefRestored {
+  margin-bottom: 1.5rem;
+  padding: 0.8rem 1.1rem;
+  border: 1px solid var(--gold-line);
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--gold) 8%, transparent);
+  color: var(--cocoa);
+  font-size: 0.88rem;
+}
+
+.briefRestored button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--saffron-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.briefSectionTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  color: var(--cocoa);
+  letter-spacing: -0.015em;
+}
+
+.briefSectionBlurb {
+  margin-top: 0.6rem;
+  margin-bottom: 1.75rem;
+  max-width: 62ch;
+  color: var(--umber);
+}
+
+.briefSubhead {
+  grid-column: 1 / -1;
+  margin-top: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--gold-line);
+  color: var(--saffron-ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.briefNav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 2.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--cocoa-line-soft);
+}
+
+.briefReview { max-width: 70ch; }
+
+.briefSummary {
+  margin-top: 1.5rem;
+  max-height: 380px;
+  overflow: auto;
+  padding: 1.2rem 1.4rem;
+  background: color-mix(in oklab, var(--cream) 34%, transparent);
+  border: 1px solid var(--cocoa-line);
+  border-radius: var(--r-md);
+  color: var(--cocoa);
+  font-size: 0.86rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.briefWarn {
+  margin-top: 1.25rem;
+  padding: 0.9rem 1.15rem;
+  border: 1px solid var(--rose);
+  border-radius: var(--r-sm);
+  background: var(--rose-tint);
+  color: var(--cocoa);
+  font-size: 0.9rem;
+}
+
+.briefSend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+.briefSend .btn:disabled,
+.briefNav .btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+@media (max-width: 620px) {
+  .briefSend .btn,
+  .briefNav .btn { flex: 1 1 100%; }
+  .briefNav { flex-wrap: wrap; }
+}

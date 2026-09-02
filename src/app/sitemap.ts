@@ -27,6 +27,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/faq",
     "/catalogue",
     "/plans",
+    "/customise",
     "/partners",
     "/privacy",
     "/terms",
