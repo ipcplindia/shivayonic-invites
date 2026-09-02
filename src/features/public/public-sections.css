@@ -147,7 +147,7 @@
   width: min(420px, 86vw);
   padding: 0.75rem;
   border: 1px solid var(--cocoa-line);
-  border-radius: 18px;
+  border-radius: var(--r-md);
   background: var(--ivory);
   box-shadow: 0 24px 60px rgb(68 36 29 / 0.18);
 }
@@ -157,7 +157,7 @@
   height: 44px;
   padding: 0 0.9rem;
   border: 1px solid var(--cocoa-line);
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   background: #fff;
   color: var(--cocoa);
   font: inherit;
@@ -407,14 +407,14 @@
   min-height: 240px;
   padding: 1.5rem;
   border: 1px solid var(--cocoa-line-soft);
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   overflow: hidden;
   transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
 }
 
 .tile:hover {
   transform: translateY(-4px);
-  box-shadow: 0 18px 44px rgb(68 36 29 / 0.12);
+  box-shadow: var(--e3);
 }
 
 .tileWide {
@@ -511,7 +511,7 @@
   flex: 0 0 clamp(150px, 22vw, 190px);
   padding: 1.4rem 1.25rem;
   border: 1px solid color-mix(in oklab, var(--gold) 30%, transparent);
-  border-radius: 16px;
+  border-radius: var(--r-md);
   /* Each card a distinct light tint, all close to the cream section behind. */
   background: linear-gradient(135deg, #fbeede 0%, #f4dcc0 40%, #ecc9b6 100%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
@@ -571,7 +571,7 @@
 
 .celebCard {
   padding: 1.5rem;
-  border-radius: 18px;
+  border-radius: var(--r-md);
   background: var(--ivory);
   border: 1px solid var(--cocoa-line-soft);
 }
@@ -625,7 +625,7 @@
   gap: 1px;
   background: var(--cocoa-line);
   border: 1px solid var(--cocoa-line);
-  border-radius: 18px;
+  border-radius: var(--r-md);
   overflow: hidden;
 }
 
@@ -682,7 +682,7 @@
 .product {
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   overflow: hidden;
   background: var(--ivory);
   border: 1px solid var(--cocoa-line-soft);
@@ -691,7 +691,7 @@
 
 .product:hover {
   transform: translateY(-5px);
-  box-shadow: 0 22px 50px rgb(68 36 29 / 0.14);
+  box-shadow: var(--e3);
 }
 
 .productArt {
@@ -758,7 +758,7 @@
 .splitCard {
   padding: 1.6rem;
   border: 1px solid color-mix(in oklab, var(--ivory) 16%, transparent);
-  border-radius: 18px;
+  border-radius: var(--r-md);
   background: color-mix(in oklab, var(--ivory) 5%, transparent);
 }
 
@@ -856,7 +856,7 @@
   gap: 1rem;
   padding: 1.25rem 1.4rem;
   border: 1px solid var(--cocoa-line);
-  border-radius: 16px;
+  border-radius: var(--r-md);
   background: var(--ivory);
   transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
 }
@@ -872,7 +872,7 @@
   width: 46px;
   height: 46px;
   flex: none;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   background: var(--cream);
   color: var(--cocoa);
 }
@@ -936,7 +936,7 @@
   scroll-snap-align: start;
   flex: 0 0 auto;
   display: block;
-  border-radius: 16px;
+  border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--cocoa-line-soft);
   background: var(--ivory);
@@ -945,7 +945,7 @@
 
 .mediaCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 18px 40px rgb(68 36 29 / 0.14);
+  box-shadow: var(--e3);
 }
 
 .mediaCardYt {
@@ -1250,18 +1250,18 @@
   flex: 0 0 auto;
   width: clamp(150px, 20vw, 208px);
   aspect-ratio: 9 / 16;
-  border-radius: 18px;
+  border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--cocoa-line-soft);
   background: var(--cream);
-  box-shadow: 0 10px 30px rgb(68 36 29 / 0.1);
+  box-shadow: var(--e1);
   scroll-snap-align: start;
   transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
 }
 
 .reelCard:hover {
   transform: translateY(-5px);
-  box-shadow: 0 20px 44px rgb(68 36 29 / 0.18);
+  box-shadow: var(--e3);
 }
 
 .reelPoster {

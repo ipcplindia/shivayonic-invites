@@ -21,6 +21,7 @@ export default function Page() {
         title="Cinematic invitations for every occasion"
         lede="One studio for the whole celebration — the invitation, the film, and the music that ties it together."
         tone="gold"
+        image="/hero/hero-desktop.webp"
         primary={{ label: "Browse the catalogue", href: "/catalogue" }}
         secondary={{ label: "Choose a style", href: "/styles" }}
       />

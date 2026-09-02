@@ -12,12 +12,23 @@
   --cream-deep: #f0dcc2;
   --cocoa: #44241d;
   --umber: #765b50;
-  --umber-soft: #9a8579;
+  --umber-soft: #806659;
   --saffron: #e98a32;
   --rose: #c94d68;
   --gold: #c89a49;
   --teal: #357c79;
   --sage: #a7b99a;
+
+  /*
+   * Ink variants. The brand hues are tuned for FILLS, where they sit under
+   * dark text — as small text on ivory they fall to ~2.5:1, well under AA.
+   * These darkened twins carry every label, eyebrow and numeral that must
+   * actually be read, so the palette stays warm without going illegible.
+   */
+  --saffron-ink: #a85610; /* 5.0:1 on ivory */
+  --gold-ink: #a97c2a; /* 3.6:1 — large display numerals only */
+  --rose-ink: #a83350;
+  --teal-ink: #2b6360;
 
   --gold-line: color-mix(in oklab, var(--gold) 42%, transparent);
   --cocoa-line: color-mix(in oklab, var(--cocoa) 12%, transparent);
@@ -25,6 +36,19 @@
   --rose-tint: color-mix(in oklab, var(--rose) 10%, transparent);
   --saffron-tint: color-mix(in oklab, var(--saffron) 12%, transparent);
   --teal-tint: color-mix(in oklab, var(--teal) 10%, transparent);
+
+  /* One elevation ramp, so nothing invents its own ad-hoc shadow. Warm-tinted
+     rather than neutral grey — a cool shadow on ivory reads as dirt. */
+  --e1: 0 1px 2px rgb(68 36 29 / 0.05), 0 2px 8px -4px rgb(68 36 29 / 0.08);
+  --e2: 0 2px 4px rgb(68 36 29 / 0.05), 0 12px 28px -12px rgb(68 36 29 / 0.16);
+  --e3: 0 4px 8px rgb(68 36 29 / 0.06), 0 28px 56px -24px rgb(68 36 29 / 0.26);
+  --e-gold: 0 4px 10px rgb(120 80 20 / 0.08), 0 30px 64px -28px rgb(120 80 20 / 0.42);
+
+  /* Radius ramp — cards, media and pills stay in step across every page. */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
 
   --font-display: var(--font-serif-festive), "Iowan Old Style", Georgia, serif;
   --font-body: var(--font-sans-ui), ui-sans-serif, system-ui, sans-serif;
@@ -93,19 +117,23 @@
 .eyebrow {
   display: inline-block;
   margin: 0 0 1rem;
-  color: var(--saffron);
+  color: var(--saffron-ink);
   font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.32em;
+  font-weight: 700;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
+  /* Uppercase tracking pads the right edge; pull it back so the label stays
+     optically centred under a centred title. */
+  text-indent: 0.28em;
 }
 
 .sectionTitle {
   font-family: var(--font-display);
-  font-size: clamp(1.95rem, 4.6vw, 3.15rem);
-  line-height: 1.06;
-  letter-spacing: -0.02em;
+  font-size: clamp(2rem, 4.6vw, 3.3rem);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
   text-wrap: balance;
+  font-optical-sizing: auto;
 }
 
 .sectionLede {
@@ -150,43 +178,56 @@
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.55rem;
-  padding: 0.85rem 1.6rem;
+  padding: 0.85rem 1.7rem;
+  min-height: 46px;
   border: 1px solid transparent;
   border-radius: 999px;
-  font-size: 0.95rem;
+  font-size: 0.94rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
   cursor: pointer;
+  white-space: nowrap;
   transition: transform 0.18s var(--ease), background-color 0.18s var(--ease),
-    border-color 0.18s var(--ease), color 0.18s var(--ease);
+    border-color 0.18s var(--ease), color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
 }
 
 .btn:hover {
   transform: translateY(-1px);
 }
 
+.btn:active {
+  transform: translateY(0);
+}
+
 .btnPrimary {
   background: var(--cocoa);
   color: var(--ivory);
+  box-shadow: var(--e1);
 }
 
 .btnPrimary:hover {
   background: #58312a;
+  box-shadow: var(--e2);
 }
 
 .btnSaffron {
-  background: var(--saffron);
-  color: #3a1e08;
+  background: linear-gradient(180deg, #f0983f 0%, var(--saffron) 100%);
+  color: #381d07;
+  box-shadow: 0 1px 2px rgb(120 60 10 / 0.16), 0 10px 22px -12px rgb(200 110 30 / 0.7);
 }
 
 .btnSaffron:hover {
-  background: #f0983f;
+  background: linear-gradient(180deg, #f5a453 0%, #ea8f38 100%);
+  box-shadow: 0 2px 4px rgb(120 60 10 / 0.18), 0 16px 30px -12px rgb(200 110 30 / 0.8);
 }
 
 .btnGhost {
   border-color: var(--cocoa-line);
   color: var(--cocoa);
+  background: transparent;
 }
 
 .btnGhost:hover {

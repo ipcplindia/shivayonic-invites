@@ -253,9 +253,16 @@ export function CTASection({
 
 /* ---------------------------------------------------------- Plans */
 
+/** Shared across every level, so the cards can stay quiet about specifics. */
+const planIncludes = [
+  "A personal creative consultation",
+  "Your chosen visual style",
+  "Delivery by WhatsApp and email",
+];
+
 export function PlansSection({ id, showHead = true }: { id?: string; showHead?: boolean }) {
   return (
-    <section className="section creamSection plansBand" id={id}>
+    <section className="section plansBand" id={id}>
       <div className="shell">
         {showHead ? (
           <SectionHead
@@ -264,35 +271,69 @@ export function PlansSection({ id, showHead = true }: { id?: string; showHead?: 
             lede="Pick the level of service that fits your occasion. To learn exactly what each includes, just get in touch — we will walk you through it."
           />
         ) : null}
+
         <div className="plans reveal">
           {plans.map((plan, i) => (
             <article key={plan.key} className={`planCard${plan.featured ? " planFeatured" : ""}`}>
-              <span className={`planTop tone-${plan.tone}`} aria-hidden="true" />
-              {plan.featured ? <span className="planBadge">Most chosen</span> : null}
-              <span className="planNum" aria-hidden="true">
-                {String(i + 1).padStart(2, "0")}
+              <span className={`planRail tone-${plan.tone}`} aria-hidden="true" />
+
+              <header className="planHead">
+                <h3 className="planName">{plan.name}</h3>
+                {plan.featured ? <span className="planBadge">Most chosen</span> : null}
+              </header>
+
+              {/*
+                The tiers cannot list their contents, so the ladder carries the
+                sense of scale instead — four rungs, filled to this tier's rank.
+                Decorative only; the name and price do the real telling.
+              */}
+              <span className="planLadder" aria-hidden="true">
+                {plans.map((_, rung) => (
+                  <span key={rung} className={rung <= i ? "rung rungOn" : "rung"} />
+                ))}
               </span>
-              <h3 className="planName">{plan.name}</h3>
-              {plan.price ? (
-                <p className="planPrice">{plan.price}</p>
-              ) : (
-                <p className="planPriceAsk">{plan.priceNote}</p>
-              )}
-              {plan.price ? <span className="planGst">{plan.priceNote}</span> : null}
-              <span className="planDivider" aria-hidden="true" />
+
+              <div className="planPriceBlock">
+                {plan.price ? (
+                  <>
+                    <p className="planPrice">{plan.price}</p>
+                    <span className="planGst">{plan.priceNote}</span>
+                  </>
+                ) : (
+                  <p className="planPriceAsk">{plan.priceNote}</p>
+                )}
+              </div>
+
               <p className="planTagline">{plan.tagline}</p>
+
               <a
                 href={contact.whatsappUrl}
-                className={`btn ${plan.featured ? "btnSaffron" : "btnPrimary"} planBtn`}
+                className={`btn ${plan.featured ? "btnSaffron" : "btnGhost"} planBtn`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 Get in touch
               </a>
+              <span className="planReassure">No advance to talk to us</span>
             </article>
           ))}
         </div>
-        <p className="plansFoot">All prices are inclusive of GST. What each level includes is shared personally — just get in touch.</p>
+
+        <div className="planIncludes reveal">
+          <span className="planIncludesLabel">Every level includes</span>
+          <ul className="planIncludesList">
+            {planIncludes.map((item) => (
+              <li key={item}>
+                <span className="planTick" aria-hidden="true">
+                  <PIcon name="check" size={12} />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="plansFoot">All prices are inclusive of GST.</p>
       </div>
     </section>
   );

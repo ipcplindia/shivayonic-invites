@@ -37,6 +37,7 @@ export default async function Page({
         title="The full collection"
         lede="Published invitation designs across every occasion. Message us to personalise any of them."
         tone="gold"
+        image="/products/diwali-nights.webp"
         primary={{ label: "Talk to us", href: "/contact" }}
       />
       <Band>

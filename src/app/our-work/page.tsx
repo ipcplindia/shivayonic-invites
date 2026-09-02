@@ -13,7 +13,7 @@ export const metadata = {
 export default function Page() {
   return (
     <PageFrame>
-      <CategoryHero eyebrow="Our Work" title="Sample invitations and films" lede="Featured work from our YouTube channel and Instagram. Thumbnails first — a film opens only when you choose it." tone="gold" primary={{ label: "Watch on YouTube", href: contact.youtubeChannelUrl }} secondary={{ label: "Follow on Instagram", href: contact.instagramProfileUrl }} />
+      <CategoryHero eyebrow="Our Work" title="Sample invitations and films" lede="Featured work from our YouTube channel and Instagram. Thumbnails first — a film opens only when you choose it." tone="gold" image="/products/reception-gala.webp" primary={{ label: "Watch on YouTube", href: contact.youtubeChannelUrl }} secondary={{ label: "Follow on Instagram", href: contact.instagramProfileUrl }} />
       <section className="section">
         <div className="shell"><SectionHead eyebrow="Watch" title="On YouTube" lede={"Featured films from " + contact.youtubeChannel + "."} /></div>
         <SocialRibbon works={socialWorks} platform="youtube" direction="ltr" duration={64} />

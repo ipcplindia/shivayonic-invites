@@ -22,6 +22,7 @@ export default async function Page() {
         title="One occasion, many ways to tell it"
         lede="Pick a visual direction — the same event can be royal and cinematic, or soft and hand-drawn."
         tone="teal"
+        image="/products/mehendi-night.webp"
         primary={{ label: "Browse invitations", href: "/invitations" }}
       />
       <Band>
