@@ -148,7 +148,7 @@ export const faqs: { q: string; a: string }[] = [
   },
   {
     q: "How long does delivery take?",
-    a: "Most invitations are delivered within 1–4 days depending on the occasion and level of detail. Bespoke films and music may take a little longer; we confirm timelines when we speak.",
+    a: "Most digital invitations are delivered within 1–4 days depending on the occasion and level of detail. Bespoke invitation films and original music run on a separate, longer timeline that we confirm with you before we begin.",
   },
   {
     q: "Can I customise the design and music?",

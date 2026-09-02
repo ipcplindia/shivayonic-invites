@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 
 import { PIcon } from "@/features/public/icons";
 import type { ToneName } from "@/features/public/pages";
-import { priceLabel, toneForProduct } from "@/features/public/catalogue-data";
+import { toneForProduct } from "@/features/public/catalogue-data";
+import { contact, plans } from "@/features/public/data";
 import type { PublicProductSummary } from "@/shared/catalogue";
 
 /** Small shared bits reused across the public pages. */
@@ -167,7 +168,6 @@ export function ChipRail({ items }: { items: { label: string; href: string }[] }
 /* ---------------------------------------------------------- Product card */
 
 export function ProductCard({ product }: { product: PublicProductSummary }) {
-  const price = priceLabel(product);
   const style = product.styles[0]?.name ?? product.category.name;
   return (
     <article className="pcard">
@@ -177,11 +177,6 @@ export function ProductCard({ product }: { product: PublicProductSummary }) {
       <div className="pcardBody">
         <h3 className="pcardName">{product.name}</h3>
         <p className="pcardMeta">{style}</p>
-        {price ? (
-          <p className="pcardPrice">
-            {price} <span>starting</span>
-          </p>
-        ) : null}
         <div className="pcardCtas">
           <a href={`/product/${product.slug}`} className="btn btnGhost">
             View
@@ -250,6 +245,47 @@ export function CTASection({
             </a>
           ) : null}
         </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------- Plans */
+
+export function PlansSection({ id }: { id?: string }) {
+  return (
+    <section className="section creamSection" id={id}>
+      <div className="shell">
+        <SectionHead
+          eyebrow="Choose Your Level"
+          title="One package for the whole celebration"
+          lede="Pick the level of service that fits your occasion. To learn exactly what each includes, just get in touch — we will walk you through it."
+        />
+        <div className="plans reveal">
+          {plans.map((plan) => (
+            <article key={plan.key} className={`planCard${plan.featured ? " planFeatured" : ""}`}>
+              <span className={`planAccent tone-${plan.tone}`} aria-hidden="true" />
+              <h3 className="planName">{plan.name}</h3>
+              {plan.price ? (
+                <p className="planPrice">
+                  {plan.price} <span>{plan.priceNote}</span>
+                </p>
+              ) : (
+                <p className="planPriceAsk">{plan.priceNote}</p>
+              )}
+              <p className="planTagline">{plan.tagline}</p>
+              <a
+                href={contact.whatsappUrl}
+                className={`btn ${plan.featured ? "btnSaffron" : "btnGhost"}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Get in touch
+              </a>
+            </article>
+          ))}
+        </div>
+        <p className="plansFoot">All prices are inclusive of GST.</p>
       </div>
     </section>
   );

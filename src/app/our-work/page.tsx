@@ -1,5 +1,5 @@
 import { PageFrame } from "@/features/public/page-frame";
-import { Band, CategoryHero, CTASection, SectionHead } from "@/features/public/sections";
+import { CategoryHero, CTASection, SectionHead } from "@/features/public/sections";
 import { SocialRibbon } from "@/features/public/marquee";
 import { socialWorks, contact } from "@/features/public/data";
 
@@ -22,12 +22,6 @@ export default function Page() {
         <div className="shell"><SectionHead eyebrow="Discover" title="On Instagram" lede={"Follow " + contact.instagramHandle + " for reels and behind-the-scenes."} /></div>
         <SocialRibbon works={socialWorks} platform="instagram" direction="rtl" duration={56} />
       </section>
-      <Band variant="cocoa" label="Delivered work">
-        <SectionHead eyebrow="Crafted for Real Celebrations" title="Delivered work, coming soon" lede="A gallery of real Shivayonic invitations will live here as approved work is added." />
-        <div className="deliveredSlot reveal">
-          {[0,1,2,3].map((i) => (<div key={i} className="deliveredEmpty">Approved delivered work will appear here.</div>))}
-        </div>
-      </Band>
       <CTASection title="Like what you see?" primary={{ label: "Chat on WhatsApp", href: contact.whatsappUrl, external: true }} secondary={{ label: "Browse invitations", href: "/invitations" }} />
     </PageFrame>
   );

@@ -6,6 +6,7 @@ import "@/features/public/public-pages.css";
 import { PIcon } from "@/features/public/icons";
 import { SiteNav } from "@/features/public/site-nav";
 import { SiteFooter } from "@/features/public/site-footer";
+import { PlansSection } from "@/features/public/sections";
 import { SocialRibbon } from "@/features/public/marquee";
 import {
   categories,
@@ -187,11 +188,6 @@ export default function HomePage() {
                     <p className="productMeta">
                       {product.occasion} · {product.style}
                     </p>
-                    {product.priceFrom ? (
-                      <p className="productPrice">
-                        {product.priceFrom} <span>starting</span>
-                      </p>
-                    ) : null}
                     <div className="productCtas">
                       <Link href={`/product/${product.slug}`} className="btn btnGhost">
                         View Details
@@ -353,23 +349,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 13 — DELIVERED WORK (honest empty slot) */}
-        <section className="section creamSection">
-          <div className="shell">
-            <SectionHead
-              eyebrow="Crafted for Real Celebrations"
-              title="Delivered work, coming soon"
-              lede="A gallery of real Shivayonic invitations will live here as approved work is added."
-            />
-            <div className="deliveredSlot reveal" aria-label="Delivered work gallery — awaiting media">
-              {Array.from({ length: 4 }, (_, i) => (
-                <div key={i} className="deliveredEmpty">
-                  Approved delivered work will appear here.
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* 13 — SERVICE PLANS */}
+        <PlansSection id="plans" />
 
         {/* 14 — HOW IT WORKS */}
         <section className="section">

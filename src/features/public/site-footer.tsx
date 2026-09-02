@@ -24,9 +24,11 @@ export function SiteFooter() {
           <FooterCol
             title="Help"
             links={[
+              ["Plans", "/plans"],
               ["How It Works", "/how-it-works"],
               ["Catalogue", "/catalogue"],
               ["Our Work", "/our-work"],
+              ["Become a Seller", "/sell"],
               ["About", "/about"],
               ["Contact", "/contact"],
               ["FAQ", "/faq"],

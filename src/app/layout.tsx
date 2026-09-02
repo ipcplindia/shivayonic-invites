@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { Fraunces, Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 
 import "@/styles/global.css";
+import { Analytics } from "@/features/public/analytics";
+import { SITE_URL } from "@/features/public/site";
 
 /**
  * Two families on a real contrast axis: a high-contrast editorial serif for
@@ -37,6 +39,7 @@ const displayFestive = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "Shivayonic Command Center", template: "%s · Shivayonic Command Center" },
   description: "Private operating platform for Shivayonic Invites.",
   robots: { index: false, follow: false },
@@ -48,7 +51,10 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       lang="en"
       className={`${displaySerif.variable} ${uiSans.variable} ${technicalMono.variable} ${displayFestive.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

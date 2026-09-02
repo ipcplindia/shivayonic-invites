@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, Breadcrumb, CTASection, ProductCard, SectionHead } from "@/features/public/sections";
 import { PIcon } from "@/features/public/icons";
-import { getProduct, listProducts, priceLabel, toneForProduct } from "@/features/public/catalogue-data";
+import { getProduct, listProducts, toneForProduct } from "@/features/public/catalogue-data";
 import { featuredBySlug, featuredProducts, whatsappFor } from "@/features/public/data";
 import type { PublicProductSummary } from "@/shared/catalogue";
 import type { ToneName } from "@/features/public/pages";
@@ -20,7 +20,6 @@ type ProductView = {
   categoryName: string;
   styleName: string;
   description: string;
-  price?: string;
   image?: string;
   tone: ToneName;
   styles: string[];
@@ -70,7 +69,6 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       categoryName: product.category.name,
       styleName: product.styles[0]?.name ?? product.category.name,
       description: product.shortDescription,
-      price: priceLabel(product),
       tone: toneForProduct(product) as ToneName,
       styles: product.styles.map((s) => s.name),
     };
@@ -85,7 +83,6 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       categoryName: featured.occasion,
       styleName: featured.style,
       description: featured.blurb,
-      price: featured.priceFrom,
       image: featured.img,
       tone: featured.tone as ToneName,
       styles: [featured.style],
@@ -126,11 +123,6 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             <p className="splitBody2" style={{ marginTop: "0.6rem", maxWidth: "44ch" }}>
               {view.description}
             </p>
-            {view.price ? (
-              <p className="productPriceLg">
-                {view.price} <span>starting</span>
-              </p>
-            ) : null}
             <div className="productActions">
               <a href={whatsappFor(view.name)} className="btn btnSaffron" target="_blank" rel="noopener noreferrer">
                 Customize This Invite
@@ -191,7 +183,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             <h3 className="legalHeading">Delivery</h3>
             <p className="legalBody">
               Once the final details are confirmed, your invitation is typically delivered within 1–4 days,
-              through WhatsApp and email.
+              through WhatsApp and email. Bespoke invitation films and original music follow a separate
+              timeline we confirm with you.
             </p>
           </div>
         </div>
@@ -223,11 +216,6 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                   <p className="productMeta">
                     {p.occasion} · {p.style}
                   </p>
-                  {p.priceFrom ? (
-                    <p className="productPrice">
-                      {p.priceFrom} <span>starting</span>
-                    </p>
-                  ) : null}
                   <div className="productCtas">
                     <a href={`/product/${p.slug}`} className="btn btnGhost">
                       View Details

@@ -12,7 +12,7 @@ export const contact = {
   youtubeChannel: "Shivayonic Invites",
   // PLACEHOLDER links — point at search until the exact URLs are configured.
   instagramProfileUrl: "https://www.instagram.com/shivayonic.invites/",
-  youtubeChannelUrl: "https://www.youtube.com/results?search_query=Shivayonic+Invites",
+  youtubeChannelUrl: "https://www.youtube.com/@SHIVAYONICINVITES",
   whatsappNumber: "+91 99900 99990",
   whatsappUrl:
     "https://wa.me/919990099990?text=" +
@@ -136,7 +136,6 @@ export type Product = {
   name: string;
   occasion: string;
   style: string;
-  priceFrom?: string;
   img?: string;
   tone: Category["tone"];
   /** One-line premium description for the product page. */
@@ -144,15 +143,37 @@ export type Product = {
 };
 
 export const featuredProducts: Product[] = [
-  { slug: "diwali-nights", name: "Diwali Nights", occasion: "Diwali", style: "Heritage", priceFrom: "₹4,999", img: "/products/diwali-nights.webp", tone: "rose", blurb: "A warm, lamp-lit Diwali invitation with gold-leaf detailing and a heritage soul." },
-  { slug: "birthday-bash", name: "Birthday Bash", occasion: "Birthday", style: "Storybook", priceFrom: "₹3,499", img: "/products/birthday-bash.webp", tone: "gold", blurb: "A playful, storybook birthday invite built to make everyone smile at first glance." },
-  { slug: "mehendi-night", name: "Mehendi Night", occasion: "Mehendi", style: "Floral", priceFrom: "₹2,499", img: "/products/mehendi-night.webp", tone: "saffron", blurb: "Henna greens and marigold golds — a floral mehendi invitation full of colour and song." },
-  { slug: "reception-gala", name: "Reception Gala", occasion: "Reception", style: "Modern Luxe", priceFrom: "₹3,999", img: "/products/reception-gala.webp", tone: "teal", blurb: "A modern-luxe reception invitation with clean type and a grand, welcoming glow." },
+  { slug: "diwali-nights", name: "Diwali Nights", occasion: "Diwali", style: "Heritage", img: "/products/diwali-nights.webp", tone: "rose", blurb: "A warm, lamp-lit Diwali invitation with gold-leaf detailing and a heritage soul." },
+  { slug: "birthday-bash", name: "Birthday Bash", occasion: "Birthday", style: "Storybook", img: "/products/birthday-bash.webp", tone: "gold", blurb: "A playful, storybook birthday invite built to make everyone smile at first glance." },
+  { slug: "mehendi-night", name: "Mehendi Night", occasion: "Mehendi", style: "Floral", img: "/products/mehendi-night.webp", tone: "saffron", blurb: "Henna greens and marigold golds — a floral mehendi invitation full of colour and song." },
+  { slug: "reception-gala", name: "Reception Gala", occasion: "Reception", style: "Modern Luxe", img: "/products/reception-gala.webp", tone: "teal", blurb: "A modern-luxe reception invitation with clean type and a grand, welcoming glow." },
 ];
 
 export function featuredBySlug(slug: string): Product | undefined {
   return featuredProducts.find((p) => p.slug === slug);
 }
+
+/**
+ * Service plans. Price is the ONLY place any figure is shown on the site.
+ * What each tier includes is intentionally not listed — customers get in touch
+ * to learn that. The bespoke tier shows no number by design.
+ */
+export type Plan = {
+  key: string;
+  name: string;
+  price: string | null;
+  priceNote: string;
+  tagline: string;
+  tone: Category["tone"];
+  featured?: boolean;
+};
+
+export const plans: Plan[] = [
+  { key: "silver", name: "Silver", price: "₹70,000", priceNote: "inclusive of GST", tagline: "A beautiful start to your celebration.", tone: "sage" },
+  { key: "gold", name: "Gold", price: "₹1,10,000", priceNote: "inclusive of GST", tagline: "More craft, more of the celebration covered.", tone: "gold", featured: true },
+  { key: "platinum", name: "Platinum", price: "₹1,70,000", priceNote: "inclusive of GST", tagline: "Our fullest cinematic treatment.", tone: "teal" },
+  { key: "customise", name: "Customise It All", price: null, priceNote: "Get in touch to find out the exact price.", tagline: "Built entirely around your vision.", tone: "rose" },
+];
 
 export type SocialWork = {
   id: string;
