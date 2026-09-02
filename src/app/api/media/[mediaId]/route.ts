@@ -56,7 +56,12 @@ export async function PATCH(request: Request, route: RouteContext) {
     const { context, media } = await requireAuthorizedMedia(request, mediaId, "MEDIA_WRITE");
     const parsed = updateMediaInputSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) throw new MediaError("INVALID_MEDIA_INPUT", 400);
-    const updated = await prisma.mediaAsset.update({ where: { id: media.id }, data: parsed.data, include: { project: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } } });
+    const metadata = {
+      ...(parsed.data.displayTitle !== undefined ? { displayTitle: parsed.data.displayTitle } : {}),
+      ...(parsed.data.altText !== undefined ? { altText: parsed.data.altText } : {}),
+      ...(parsed.data.description !== undefined ? { description: parsed.data.description } : {}),
+    };
+    const updated = await prisma.mediaAsset.update({ where: { id: media.id }, data: metadata, include: { project: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } } });
     await recordSecurityAudit({ action: "MEDIA_METADATA_UPDATED", organizationId: context.organization.id, actorUserId: context.user.id, entityType: "MediaAsset", entityId: media.id });
     return NextResponse.json({ media: serializeMediaDetail(updated) });
   } catch (error) { return mediaRouteError(error); }
