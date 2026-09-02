@@ -1,5 +1,5 @@
 import { PageFrame } from "@/features/public/page-frame";
-import { Band, Breadcrumb, CategoryHero, CTASection, SectionHead } from "@/features/public/sections";
+import { Band, Breadcrumb, CategoryHero, CTASection, MiniFaq, ProcessBand, PromiseBand, SectionHead } from "@/features/public/sections";
 import { filmKinds, contact } from "@/features/public/data";
 
 export const metadata = {
@@ -32,6 +32,9 @@ export default function Page() {
           ))}
         </div>
       </Band>
+      <PromiseBand variant="cream" />
+      <ProcessBand />
+      <MiniFaq variant="cream" />
       <CTASection title="Let us film your invitation" tone="cocoa" primary={{ label: "Chat on WhatsApp", href: contact.whatsappUrl, external: true }} secondary={{ label: "Explore music", href: "/music" }} />
     </PageFrame>
   );

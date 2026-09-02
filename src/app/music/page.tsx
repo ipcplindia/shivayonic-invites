@@ -1,5 +1,5 @@
 import { PageFrame } from "@/features/public/page-frame";
-import { Band, Breadcrumb, CategoryHero, CTASection, EditorialSplit } from "@/features/public/sections";
+import { Band, Breadcrumb, CategoryHero, CTASection, EditorialSplit, MiniFaq, ProcessBand } from "@/features/public/sections";
 import { musicKinds, contact } from "@/features/public/data";
 
 export const metadata = {
@@ -21,6 +21,8 @@ export default function Page() {
           ))}
         </div>
       </Band>
+      <ProcessBand variant="cream" />
+      <MiniFaq />
       <CTASection title="Let us score your celebration" primary={{ label: "Chat on WhatsApp", href: contact.whatsappUrl, external: true }} secondary={{ label: "How it works", href: "/how-it-works" }} />
     </PageFrame>
   );

@@ -1,5 +1,5 @@
 import { PageFrame } from "@/features/public/page-frame";
-import { Band, Breadcrumb, CategoryHero, CTASection, SectionHead, StyleCard } from "@/features/public/sections";
+import { Band, Breadcrumb, CategoryHero, CTASection, MiniFaq, ProcessBand, SectionHead, StyleCard } from "@/features/public/sections";
 import { listStyles } from "@/features/public/catalogue-data";
 import { contact } from "@/features/public/data";
 import type { ToneName } from "@/features/public/pages";
@@ -39,6 +39,8 @@ export default async function Page() {
           </p>
         )}
       </Band>
+      <ProcessBand variant="cream" />
+      <MiniFaq />
       <CTASection
         title="Not sure which style fits?"
         lede="Tell us the occasion and mood; we will suggest a direction."

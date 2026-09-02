@@ -1,5 +1,5 @@
 import { PageFrame } from "@/features/public/page-frame";
-import { Band, Breadcrumb, CategoryHero, CTASection, EditorialSplit, PlansSection, SectionHead } from "@/features/public/sections";
+import { Band, CategoryHero, CrumbBar, CTASection, EditorialSplit, PlansSection, SectionHead } from "@/features/public/sections";
 import { contact } from "@/features/public/data";
 
 export const metadata = {
@@ -27,9 +27,7 @@ export default function Page() {
         primary={{ label: "Talk to us", href: "/contact" }}
       />
 
-      <Band>
-        <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "Plans" }]} />
-      </Band>
+      <CrumbBar trail={[{ label: "Home", href: "/" }, { label: "Plans" }]} />
 
       <PlansSection showHead={false} />
 

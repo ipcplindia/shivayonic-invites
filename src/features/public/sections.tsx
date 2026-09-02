@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 
 import { PIcon } from "@/features/public/icons";
 import type { ToneName } from "@/features/public/pages";
+import { faqs } from "@/features/public/pages";
 import { toneForProduct } from "@/features/public/catalogue-data";
-import { contact, plans } from "@/features/public/data";
+import { contact, plans, steps } from "@/features/public/data";
 import type { PublicProductSummary } from "@/shared/catalogue";
 
 /** Small shared bits reused across the public pages. */
@@ -294,6 +295,95 @@ export function PlansSection({ id, showHead = true }: { id?: string; showHead?: 
         <p className="plansFoot">All prices are inclusive of GST. What each level includes is shared personally — just get in touch.</p>
       </div>
     </section>
+  );
+}
+
+/* ---------------------------------------------------------- Slim breadcrumb bar */
+
+/** Breadcrumb without a full section's padding — avoids tall empty strips. */
+export function CrumbBar({ trail }: { trail: { label: string; href?: string }[] }) {
+  return (
+    <div className="crumbBar">
+      <Breadcrumb trail={trail} />
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------- Process band */
+
+const processStepBlurbs = [
+  "Pick a design, an occasion or a creative direction — or just tell us your idea.",
+  "Send your names, dates, photographs and any references over WhatsApp or email.",
+  "Our team personalises the invitation, music and film around your celebration.",
+  "Approve the final direction, then receive your invitation, ready to share.",
+];
+
+export function ProcessBand({ variant = "cream" }: { variant?: "cream" | "cocoa" }) {
+  return (
+    <Band variant={variant} label="How it works">
+      <SectionHead
+        eyebrow="How It Works"
+        title="From first idea to shared invitation"
+        lede="A simple, guided process — personal at every step, and quicker than you would expect."
+      />
+      <div className="processGrid reveal">
+        {steps.map((s, i) => (
+          <article key={s.title} className="processStep">
+            <span className="processNum" aria-hidden="true">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <h3 className="processTitle">{s.title}</h3>
+            <p className="processBody">{processStepBlurbs[i] ?? s.body}</p>
+          </article>
+        ))}
+      </div>
+    </Band>
+  );
+}
+
+/* ---------------------------------------------------------- Promise band */
+
+const brandPromises = [
+  { title: "One studio, everything covered", body: "Invitation, film and original music come from a single team, so the whole celebration feels of a piece." },
+  { title: "Personalised, never templated", body: "Every design is built around your names, your occasion and the visual world you choose." },
+  { title: "Delivered ready to share", body: "Final files arrive digitally by WhatsApp and email, sized and ready for your guests." },
+];
+
+export function PromiseBand({ variant }: { variant?: "cream" | "cocoa" }) {
+  return (
+    <Band variant={variant} label="Why Shivayonic">
+      <SectionHead
+        eyebrow="Why Shivayonic"
+        title="Craft you can feel in every detail"
+        lede="What stays the same, whatever you choose."
+      />
+      <div className="promiseGrid reveal">
+        {brandPromises.map((p) => (
+          <article key={p.title} className="promiseCard">
+            <h3 className="promiseTitle">{p.title}</h3>
+            <p className="promiseBody">{p.body}</p>
+          </article>
+        ))}
+      </div>
+    </Band>
+  );
+}
+
+/* ---------------------------------------------------------- Mini FAQ */
+
+export function MiniFaq({ count = 4, variant }: { count?: number; variant?: "cream" | "cocoa" }) {
+  return (
+    <Band variant={variant} label="Common questions">
+      <SectionHead eyebrow="Good to Know" title="Common questions" />
+      <div className="faqList reveal" style={{ marginTop: "2rem" }}>
+        {faqs.slice(0, count).map((f) => (
+          <details key={f.q} className="faqItem">
+            <summary>{f.q}</summary>
+            <p className="faqAnswer">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </Band>
   );
 }
 

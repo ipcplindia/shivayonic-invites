@@ -7,6 +7,9 @@ import {
   CTASection,
   ChipRail,
   EditorialSplit,
+  MiniFaq,
+  ProcessBand,
+  PromiseBand,
   SectionHead,
   StyleCard,
 } from "@/features/public/sections";
@@ -100,6 +103,12 @@ export async function CategoryPage({
           </div>
         </Band>
       ) : null}
+
+      <PromiseBand />
+
+      <ProcessBand variant="cream" />
+
+      <MiniFaq />
 
       <CTASection
         title="Ready to make yours?"

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { PageFrame } from "@/features/public/page-frame";
-import { Band, Breadcrumb, CTASection, ProductCard, SectionHead } from "@/features/public/sections";
+import { Band, Breadcrumb, CTASection, MiniFaq, ProcessBand, ProductCard, SectionHead } from "@/features/public/sections";
 import { PIcon } from "@/features/public/icons";
 import { getProduct, listProducts, toneForProduct } from "@/features/public/catalogue-data";
 import { featuredBySlug, featuredProducts, whatsappFor } from "@/features/public/data";
@@ -230,6 +230,10 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           </div>
         </Band>
       )}
+
+      <ProcessBand variant="cream" />
+
+      <MiniFaq />
 
       <CTASection
         title={`Make ${view.name} yours`}
