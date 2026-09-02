@@ -30,38 +30,43 @@ async function main() {
     },
   });
   let user = await prisma.user.findUnique({ where: { email } });
+  let created = false;
 
   if (!user) {
     const result = await auth.api.signUpEmail({ body: { email, name, password } });
     user = await prisma.user.findUnique({ where: { id: result.user.id } });
+    created = true;
   }
 
   if (!user) throw new Error("Bootstrap user could not be created.");
 
-  const organization = await prisma.organization.upsert({
-    where: { slug: organizationSlug },
-    update: { name: organizationName },
-    create: { name: organizationName, slug: organizationSlug },
-  });
+  const organization = await prisma.organization.findUnique({ where: { slug: organizationSlug } })
+    ?? await prisma.organization.create({ data: { name: organizationName, slug: organizationSlug } });
 
+  const existingMembership = await prisma.organizationMember.findUnique({
+    where: { userId_organizationId: { userId: user.id, organizationId: organization.id } },
+    select: { role: true },
+  });
   await prisma.organizationMember.upsert({
     where: { userId_organizationId: { userId: user.id, organizationId: organization.id } },
     update: { role: "OWNER" },
     create: { userId: user.id, organizationId: organization.id, role: "OWNER" },
   });
 
-  await prisma.auditLog.create({
-    data: {
-      action: "ADMIN_BOOTSTRAPPED",
-      organizationId: organization.id,
-      actorUserId: user.id,
-      entityType: "OrganizationMember",
-      entityId: user.id,
-      metadata: { organizationSlug, email },
-    },
-  });
+  if (created || !existingMembership || existingMembership.role !== "OWNER") {
+    await prisma.auditLog.create({
+      data: {
+        action: "ADMIN_BOOTSTRAPPED",
+        organizationId: organization.id,
+        actorUserId: user.id,
+        entityType: "OrganizationMember",
+        entityId: user.id,
+        metadata: { organizationSlug },
+      },
+    });
+  }
 
-  console.log(`Bootstrap complete for ${email} in organization ${organizationSlug}.`);
+  console.log("Bootstrap complete.");
 }
 
 main()

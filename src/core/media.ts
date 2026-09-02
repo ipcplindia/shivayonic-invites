@@ -46,6 +46,11 @@ export function mediaKindForMimeType(mimeType: string): MediaKindValue {
   return getMediaRule(mimeType).kind;
 }
 
+/** Direct S3 uploads are verified from object storage at confirm time. */
+export function canConfirmMediaUpload(status: string, storageDriver: "local" | "s3") {
+  return status === "UPLOADED" || (storageDriver === "s3" && status === "PENDING_UPLOAD");
+}
+
 export function safeDownloadFilename(filename: string) {
   return Array.from(filename, (character) => character.charCodeAt(0) < 32 ? "_" : character).join("").replace(/[\\/:*?"<>|]/g, "_").slice(0, 255) || "media";
 }

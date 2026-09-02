@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createMediaStorageKey, mediaKindForMimeType, parseByteRange, validateMediaSize } from "./media";
+import { canConfirmMediaUpload, createMediaStorageKey, mediaKindForMimeType, parseByteRange, validateMediaSize } from "./media";
 import { serializeMedia, serializeMediaDetail } from "./media-serializer";
 
 describe("media rules", () => {
@@ -20,6 +20,15 @@ describe("byte ranges", () => {
     expect(parseByteRange("bytes=8-99", 10)).toEqual({ start: 8, end: 9 });
     expect(parseByteRange("bytes=10-11", 10)).toBeUndefined();
     expect(parseByteRange("bytes=0-1,3-4", 10)).toBeUndefined();
+  });
+});
+
+describe("upload confirmation", () => {
+  it("allows only verified S3 pending uploads or locally uploaded media", () => {
+    expect(canConfirmMediaUpload("PENDING_UPLOAD", "s3")).toBe(true);
+    expect(canConfirmMediaUpload("PENDING_UPLOAD", "local")).toBe(false);
+    expect(canConfirmMediaUpload("UPLOADED", "local")).toBe(true);
+    expect(canConfirmMediaUpload("READY", "s3")).toBe(false);
   });
 });
 
