@@ -169,9 +169,9 @@ export type Plan = {
 };
 
 export const plans: Plan[] = [
-  { key: "silver", name: "Silver", price: "₹70,000", priceNote: "inclusive of GST", tagline: "A beautiful start to your celebration.", tone: "sage" },
-  { key: "gold", name: "Gold", price: "₹1,10,000", priceNote: "inclusive of GST", tagline: "More craft, more of the celebration covered.", tone: "gold", featured: true },
-  { key: "platinum", name: "Platinum", price: "₹1,70,000", priceNote: "inclusive of GST", tagline: "Our fullest cinematic treatment.", tone: "teal" },
+  { key: "silver", name: "Silver", price: "₹50,000", priceNote: "inclusive of GST", tagline: "A beautiful start to your celebration.", tone: "sage" },
+  { key: "gold", name: "Gold", price: "₹75,000", priceNote: "inclusive of GST", tagline: "More craft, more of the celebration covered.", tone: "gold", featured: true },
+  { key: "platinum", name: "Platinum", price: "₹1,00,000", priceNote: "inclusive of GST", tagline: "Our fullest cinematic treatment.", tone: "teal" },
   { key: "customise", name: "Customise It All", price: null, priceNote: "Get in touch to find out the exact price.", tagline: "Built entirely around your vision.", tone: "rose" },
 ];
 
