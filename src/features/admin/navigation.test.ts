@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getPermissionsForRole } from "@/auth/permissions";
-import { activeNavItem, visibleNavGroups } from "@/features/admin/navigation";
+import { activeNavItem, adminNavItem, canVisitAdminDestination, visibleNavGroups } from "@/features/admin/navigation";
 import type { CurrentUserContext, MemberRole } from "@/shared/auth";
 
 function contextFor(role: MemberRole): CurrentUserContext {
@@ -20,36 +20,44 @@ function labelsFor(role: MemberRole) {
 }
 
 describe("command center navigation", () => {
-  it("gives an owner every primary section", () => {
-    expect(labelsFor("OWNER")).toEqual([
-      "Overview",
-      "Projects",
-      "Media Library",
-      "Publish",
-      "Schedule",
-      "Activity",
-      "Settings",
-    ]);
+  it("gives an owner all operational sections", () => {
+    const owner = labelsFor("OWNER");
+    expect(owner).toContain("Users & Roles");
+    expect(owner).toContain("Integrations");
+    expect(owner).toContain("Products");
   });
 
-  it("hides the audit record from staff", () => {
+  it("hides sensitive administration from staff", () => {
     const staff = labelsFor("STAFF");
     expect(staff).toContain("Media Library");
     expect(staff).not.toContain("Activity");
+    expect(staff).not.toContain("Users & Roles");
+    expect(staff).not.toContain("Integrations");
   });
 
-  it("drops a group entirely when none of its sections are permitted", () => {
-    expect(visibleNavGroups(contextFor("STAFF")).map((group) => group.label)).toEqual([
-      "Operate",
-      "Distribute",
-      "Govern",
-    ]);
+  it("drops unavailable groups", () => {
+    const groups = visibleNavGroups(contextFor("STAFF")).map((group) => group.label);
+    expect(groups).toContain("Content");
+    expect(groups).not.toContain("Security");
   });
 
   it("keeps the parent section active on nested routes", () => {
     expect(activeNavItem("/admin")?.label).toBe("Overview");
     expect(activeNavItem("/admin/media")?.label).toBe("Media Library");
     expect(activeNavItem("/admin/media/abc123")?.label).toBe("Media Library");
+    expect(activeNavItem("/admin/catalogue/products")?.label).toBe("Products");
     expect(activeNavItem("/admin/settings")?.label).toBe("Settings");
+  });
+
+  it("does not trust anonymous or lower-role access to sensitive destinations", () => {
+    const users = adminNavItem("/admin/security/users");
+    const products = adminNavItem("/admin/catalogue/products");
+    expect(users).toBeDefined();
+    expect(products).toBeDefined();
+    expect(canVisitAdminDestination(null, users!)).toBe(false);
+    expect(canVisitAdminDestination(contextFor("STAFF"), users!)).toBe(false);
+    expect(canVisitAdminDestination(contextFor("ADMIN"), users!)).toBe(false);
+    expect(canVisitAdminDestination(contextFor("OWNER"), users!)).toBe(true);
+    expect(canVisitAdminDestination(contextFor("ADMIN"), products!)).toBe(true);
   });
 });

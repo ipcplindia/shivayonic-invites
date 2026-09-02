@@ -22,13 +22,13 @@ describe("command palette", () => {
     const owner = commandsFor(contextFor("OWNER")).map((command) => command.label);
     const staff = commandsFor(contextFor("STAFF")).map((command) => command.label);
 
-    expect(owner).toContain("Activity");
-    expect(staff).not.toContain("Activity");
+    expect(owner).toContain("Audit Log");
+    expect(staff).not.toContain("Audit Log");
     expect(staff).toContain("Media Library");
   });
 
   it("labels destinations whose backend capability is not connected", () => {
-    const publish = commandsFor(contextFor("OWNER")).find((c) => c.label === "Publish");
+    const publish = commandsFor(contextFor("OWNER")).find((c) => c.label === "Social Studio");
     const media = commandsFor(contextFor("OWNER")).find((c) => c.label === "Media Library");
 
     expect(publish?.hint).toBe("Soon");
@@ -40,7 +40,7 @@ describe("command palette", () => {
 
     expect(filterCommands(commands, "  MEDIA ").map((c) => c.label)).toEqual(["Media Library"]);
     expect(filterCommands(commands, "")).toHaveLength(commands.length);
-    expect(filterCommands(commands, "customers")).toHaveLength(0);
+    expect(filterCommands(commands, "customers").map((command) => command.label)).toEqual(["Customers"]);
   });
 
   it("renders as a native dialog, so focus trapping and Escape are the platform's", () => {

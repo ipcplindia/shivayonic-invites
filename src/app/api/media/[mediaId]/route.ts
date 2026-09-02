@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { recordSecurityAudit } from "@/auth/audit";
 import { AppAuthError } from "@/auth/errors";
+import { hasPermission, permissionPolicy } from "@/auth/permissions";
 import { MediaError } from "@/core/media-errors";
 import { mediaRouteError, requireAuthorizedMedia, serializeMedia, serializeMediaDetail } from "@/core/media-api";
 import { getObjectStorage } from "@/core/storage-provider";
@@ -36,7 +37,9 @@ export async function DELETE(request: Request, route: RouteContext) {
       return NextResponse.json({ media: serializeMedia(archived) });
     }
     if (mode !== "delete") throw new MediaError("INVALID_MEDIA_INPUT", 400);
-    if (context.role !== "OWNER") throw new AppAuthError("ROLE_NOT_ALLOWED", 403);
+    if (!hasPermission(context, permissionPolicy.canHardDeleteMedia)) {
+      throw new AppAuthError("ROLE_NOT_ALLOWED", 403);
+    }
     await getObjectStorage().deleteObject({ storageKey: media.storageKey });
     await prisma.mediaAsset.delete({ where: { id: media.id } });
     await recordSecurityAudit({ action: "MEDIA_DELETED", organizationId: context.organization.id, actorUserId: context.user.id, entityType: "MediaAsset", entityId: media.id });

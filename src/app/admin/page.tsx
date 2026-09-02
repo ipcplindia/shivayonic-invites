@@ -14,6 +14,7 @@ import {
 } from "@/components/ui";
 import { can } from "@/features/access";
 import { RecentMedia } from "@/features/media/media-client";
+import { prisma } from "@/db/client";
 
 export const metadata: Metadata = { title: "Overview" };
 
@@ -23,6 +24,11 @@ export const metadata: Metadata = { title: "Overview" };
  */
 export default async function OverviewPage() {
   const context = await getCurrentUserContext();
+  const [mediaCount, projectCount, productCount] = await Promise.all([
+    prisma.mediaAsset.count({ where: { organizationId: context.organization.id } }),
+    prisma.project.count({ where: { organizationId: context.organization.id } }),
+    prisma.publicProduct.count(),
+  ]);
 
   const quickActions: Array<{ href: string; label: string; icon: IconName; hint: string }> = [
     ...(can(context, "MEDIA_READ")
@@ -59,6 +65,13 @@ export default async function OverviewPage() {
         title={`Good to see you, ${context.user.name.split(" ")[0]}`}
         lede={`${context.organization.name} — the state of the studio: what is held, what is ready, and what is still waiting on an integration.`}
       />
+
+      <section className={styles.overviewCounts} aria-label="Operational counts">
+        <CountCard label="Media" value={mediaCount} detail="Registered masters" />
+        <CountCard label="Projects" value={projectCount} detail="Organization projects" />
+        <CountCard label="Catalogue" value={productCount} detail="Public products" />
+        <CountCard label="Leads / Orders" value={null} detail="Not connected yet" />
+      </section>
 
       <div className={styles.columns}>
         <div className={styles.stack}>
@@ -106,6 +119,10 @@ export default async function OverviewPage() {
       </div>
     </>
   );
+}
+
+function CountCard({ label, value, detail }: { label: string; value: number | null; detail: string }) {
+  return <Card as="article"><div className={styles.countCard}><span className={styles.countLabel}>{label}</span><strong className={styles.countValue}>{value ?? "—"}</strong><span className={styles.countDetail}>{detail}</span></div></Card>;
 }
 
 function StatusRow({ name, state }: { name: string; state: "live" | "partial" | "planned" }) {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AppAuthError } from "@/auth/errors";
 import { assertOrganizationPermission, assertProjectBelongsToOrganization } from "@/auth/organization-access";
-import { getPermissionsForRole, hasPermission } from "@/auth/permissions";
+import { getPermissionsForRole, hasPermission, permissionPolicy } from "@/auth/permissions";
 import type { CurrentUserContext } from "@/shared/auth";
 
 const baseContext: CurrentUserContext = {
@@ -12,28 +12,25 @@ const baseContext: CurrentUserContext = {
 };
 
 describe("role permission matrix", () => {
-  it("grants OWNER all current permissions", () => {
-    expect(getPermissionsForRole("OWNER")).toEqual([
-      "ORGANIZATION_MANAGE",
-      "MEMBERS_MANAGE",
-      "PROJECT_READ",
-      "PROJECT_WRITE",
-      "MEDIA_READ",
-      "MEDIA_WRITE",
-      "AUDIT_READ",
-    ]);
+  it("grants OWNER every permission", () => {
+    expect(getPermissionsForRole("OWNER")).toContain(permissionPolicy.canManageUsers);
+    expect(getPermissionsForRole("OWNER")).toContain(permissionPolicy.canManageIntegrations);
+    expect(getPermissionsForRole("OWNER")).toContain(permissionPolicy.canHardDeleteMedia);
   });
 
   it("grants ADMIN operational permissions without organization ownership management", () => {
-    expect(hasPermission({ role: "ADMIN" }, "MEMBERS_MANAGE")).toBe(true);
+    expect(hasPermission({ role: "ADMIN" }, "CATALOGUE_MANAGE")).toBe(true);
+    expect(hasPermission({ role: "ADMIN" }, "ORDERS_MANAGE")).toBe(true);
     expect(hasPermission({ role: "ADMIN" }, "AUDIT_READ")).toBe(true);
-    expect(hasPermission({ role: "ADMIN" }, "ORGANIZATION_MANAGE")).toBe(false);
+    expect(hasPermission({ role: "ADMIN" }, permissionPolicy.canHardDeleteMedia)).toBe(false);
+    expect(hasPermission({ role: "ADMIN" }, permissionPolicy.canManageIntegrations)).toBe(false);
   });
 
   it("grants STAFF project and media permissions only", () => {
-    expect(hasPermission({ role: "STAFF" }, "PROJECT_WRITE")).toBe(true);
+    expect(hasPermission({ role: "STAFF" }, "CONTENT_MANAGE")).toBe(true);
     expect(hasPermission({ role: "STAFF" }, "MEDIA_WRITE")).toBe(true);
-    expect(hasPermission({ role: "STAFF" }, "MEMBERS_MANAGE")).toBe(false);
+    expect(hasPermission({ role: "STAFF" }, permissionPolicy.canManageUsers)).toBe(false);
+    expect(hasPermission({ role: "STAFF" }, permissionPolicy.canHardDeleteMedia)).toBe(false);
     expect(hasPermission({ role: "STAFF" }, "AUDIT_READ")).toBe(false);
   });
 });

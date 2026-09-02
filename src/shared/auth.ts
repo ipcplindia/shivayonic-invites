@@ -4,11 +4,21 @@ export type MemberRole = (typeof memberRoles)[number];
 export const permissions = [
   "ORGANIZATION_MANAGE",
   "MEMBERS_MANAGE",
+  "USERS_MANAGE",
+  "INTEGRATIONS_MANAGE",
   "PROJECT_READ",
   "PROJECT_WRITE",
   "MEDIA_READ",
   "MEDIA_WRITE",
+  "MEDIA_HARD_DELETE",
+  "CONTENT_MANAGE",
+  "CATALOGUE_MANAGE",
+  "CUSTOMERS_VIEW",
+  "ORDERS_MANAGE",
+  "PUBLISH_CONTENT",
+  "ANALYTICS_VIEW",
   "AUDIT_READ",
+  "SECURITY_VIEW",
 ] as const;
 
 export type Permission = (typeof permissions)[number];

@@ -22,11 +22,21 @@ export const metadata: Metadata = { title: "Settings" };
 const permissionCopy: Record<Permission, string> = {
   ORGANIZATION_MANAGE: "Change organization settings and connected integrations.",
   MEMBERS_MANAGE: "Invite people, change their role, and remove access.",
+  USERS_MANAGE: "Manage users and role assignments.",
+  INTEGRATIONS_MANAGE: "Manage server-held service integrations.",
   PROJECT_READ: "Open projects and see the work attached to them.",
   PROJECT_WRITE: "Create and edit projects, and prepare them for publication.",
   MEDIA_READ: "Browse the media library and open master metadata.",
   MEDIA_WRITE: "Upload new masters and archive existing ones.",
+  MEDIA_HARD_DELETE: "Permanently delete stored master files.",
+  CONTENT_MANAGE: "Prepare website content and editorial records.",
+  CATALOGUE_MANAGE: "Manage products, categories, styles and plans.",
+  CUSTOMERS_VIEW: "View customer enquiries and submitted briefs.",
+  ORDERS_MANAGE: "Manage the operational order pipeline.",
+  PUBLISH_CONTENT: "Prepare and publish approved content.",
+  ANALYTICS_VIEW: "View connected business and channel reporting.",
   AUDIT_READ: "Read the organization's audit record.",
+  SECURITY_VIEW: "Review security sessions and events.",
 };
 
 export default async function SettingsPage() {

@@ -23,7 +23,7 @@ describe("Sidebar", () => {
 
     expect(markup).toContain("SHIVAYONIC");
     expect(markup).toContain("Media Library");
-    expect(markup).toContain("Activity");
+    expect(markup).toContain("Audit Log");
     expect(markup).toContain("Shivayonic Invites");
     expect(markup).toContain('href="/admin/media"');
   });
@@ -34,7 +34,7 @@ describe("Sidebar", () => {
     );
 
     expect(markup).toContain("Media Library");
-    expect(markup).not.toContain('href="/admin/activity"');
+    expect(markup).not.toContain('href="/admin/security/audit"');
   });
 
   it("marks the current section for assistive technology", () => {
