@@ -59,24 +59,40 @@ Production config now rejects local storage, non-HTTPS auth/app URLs, non-HTTPS 
 
 ## Database and live proof status
 
-- Prisma format, validate, and client generation pass locally.
-- `prisma migrate status` could not connect because this worktree has no production `DATABASE_URL`; no migration was applied.
-- No Vercel project/session, production database credentials, object-storage credentials, or OWNER credentials were present in the local environment.
-- Therefore no production login/logout proof, real media lifecycle, range proof, archive/delete cleanup, or production migration may be claimed. No test asset was uploaded.
+- Vercel project `shivayonic/shivayonic-invites` was linked from the dedicated worktree. Production URL: `https://www.shivayonic.com`.
+- Vercel production environment supplied a usable Prisma Postgres connection. `prisma migrate deploy` initially failed because the repository had no baseline migration before `20260831100000_task02_auth`.
+- Added `20260830000000_initial_admin_media_foundation`, marked the failed `20260831100000_task02_auth` attempt rolled back, and redeployed the full chain.
+- Production database is now up to date with 4 migrations applied.
+- Vercel production environment is still missing production S3 variables and OWNER bootstrap variables, so OWNER login/logout and live media lifecycle proofs remain blocked.
+- No test asset was uploaded because no production S3-compatible bucket/provider credentials are configured.
+
+## Final live proof
+
+| Area | Result | Notes |
+| --- | --- | --- |
+| Production DB migration | PASS | Applied `20260830000000_initial_admin_media_foundation`, `20260831100000_task02_auth`, `20260901000000_task03_media_library`, `20260901150000_public_catalogue`. |
+| OWNER bootstrap | BLOCKED | Missing `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_NAME`, `ADMIN_BOOTSTRAP_PASSWORD`, `ADMIN_BOOTSTRAP_ORG_NAME`, `ADMIN_BOOTSTRAP_ORG_SLUG`. |
+| Production storage | BLOCKED | Missing `OBJECT_STORAGE_DRIVER`, `OBJECT_STORAGE_ENDPOINT`, `OBJECT_STORAGE_BUCKET`, `OBJECT_STORAGE_ACCESS_KEY_ID`, `OBJECT_STORAGE_SECRET_ACCESS_KEY`, `OBJECT_STORAGE_REGION`, `OBJECT_STORAGE_FORCE_PATH_STYLE`. |
+| Direct upload proof | BLOCKED | Requires production S3 variables and CORS. |
+| Media lifecycle | BLOCKED | Requires OWNER bootstrap/login and production S3 variables. |
+| Cleanup | NOT REQUIRED | No media test object or row was created. |
+| Public regression | PARTIAL PASS | `/`, `/catalogue`, `/login`, `/api/health` return 200; `/admin` redirects; `/api/media` returns 401 without auth; public products API currently returns an empty product list, so no product detail page can be verified. |
+| Environment status matrix | PARTIAL | Required auth/database/token names are present in Vercel; S3 and bootstrap names are missing. Vercel CLI masks `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and `TOKEN_ENCRYPTION_KEY` as `[SENSITIVE]` when pulled locally. |
 
 ## Verification
 
 - `prisma format`: pass
 - `prisma validate`: pass
 - `prisma generate`: pass
-- `prisma migrate status`: blocked — no reachable configured database
+- `prisma migrate status`: pass — production schema up to date
 - `npm run typecheck`: pass
 - `npm run lint`: pass
 - `npm test`: pass — 18 files, 119 tests
-- Production build with safe placeholder production configuration: pass
+- Production build with pulled Vercel env: blocked locally because Vercel secret placeholders are loaded as `[SENSITIVE]`.
+- Production build with safe placeholder production configuration: pass — 39 routes generated
 
 ## Task 2 blockers
 
 1. Configure and verify production S3-compatible provider variables in Vercel.
-2. Provide an authorized production migration path and run `prisma migrate deploy`.
+2. Configure one-time OWNER bootstrap variables in Vercel, without pasting secrets into chat.
 3. Run the bootstrap script once from a secure environment, then verify live OWNER login/logout and media lifecycle with a disposable engineering asset.
