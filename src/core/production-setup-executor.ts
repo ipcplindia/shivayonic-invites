@@ -3,7 +3,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/db/client";
-import { executeProductionSetup, matchesBearerToken } from "@/core/production-setup";
+import { executeProductionSetup } from "@/core/production-setup";
 
 const EXECUTOR_IDENTIFIER = "internal:shivayonic:production-setup-executor";
 const EXECUTOR_LOCK = "shivayonic.production-setup-executor";
@@ -12,8 +12,8 @@ const EXECUTOR_EXPIRY_MS = 60 * 60 * 1_000;
 type Runtime = {
   NODE_ENV?: string;
   VERCEL_ENV?: string;
+  VERCEL_URL?: string;
   PRODUCTION_SETUP_EXECUTOR_ENABLED?: string;
-  PRODUCTION_SETUP_EXECUTOR_TOKEN?: string;
 };
 type SetupResult = Awaited<ReturnType<typeof executeProductionSetup>>;
 type ExecutorStatus = "RUNNING" | "SUCCEEDED" | "FAILED";
@@ -33,11 +33,19 @@ export function isProductionExecutorRuntime(runtime: Runtime) {
   return runtime.NODE_ENV === "production" && runtime.VERCEL_ENV === "production";
 }
 
+export function isCurrentVercelDeploymentRequest(request: Request, runtime: Runtime = process.env) {
+  if (!runtime.VERCEL_URL) return false;
+  try {
+    return new URL(request.url).hostname.toLowerCase() === runtime.VERCEL_URL.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
 export function executorRequestAllowed(request: Request, runtime: Runtime = process.env) {
   return isProductionExecutorRuntime(runtime)
     && runtime.PRODUCTION_SETUP_EXECUTOR_ENABLED === "true"
-    && !!runtime.PRODUCTION_SETUP_EXECUTOR_TOKEN
-    && matchesBearerToken(request, runtime.PRODUCTION_SETUP_EXECUTOR_TOKEN);
+    && isCurrentVercelDeploymentRequest(request, runtime);
 }
 
 function createExecutorStore(): ExecutorStore {
@@ -103,8 +111,8 @@ export async function handleProductionSetupExecutor(
   if (!isProductionExecutorRuntime(runtime) || runtime.PRODUCTION_SETUP_EXECUTOR_ENABLED !== "true") {
     return Response.json({ ok: false }, { status: 404 });
   }
-  if (!runtime.PRODUCTION_SETUP_EXECUTOR_TOKEN || !executorRequestAllowed(request, runtime)) {
-    return Response.json({ ok: false }, { status: 401 });
+  if (!executorRequestAllowed(request, runtime)) {
+    return Response.json({ ok: false }, { status: 404 });
   }
 
   try {

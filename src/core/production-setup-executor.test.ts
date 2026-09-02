@@ -5,6 +5,7 @@ vi.mock("server-only", () => ({}));
 import {
   executorRequestAllowed,
   handleProductionSetupExecutor,
+  isCurrentVercelDeploymentRequest,
   isProductionExecutorRuntime,
   runProductionSetupExecutor,
   type ExecutorStore,
@@ -13,14 +14,13 @@ import {
 const runtime = {
   NODE_ENV: "production",
   VERCEL_ENV: "production",
+  VERCEL_URL: "shivayonic-invites-example-shivayonic.vercel.app",
   PRODUCTION_SETUP_EXECUTOR_ENABLED: "true",
-  PRODUCTION_SETUP_EXECUTOR_TOKEN: "temporary-executor-token",
 };
 
-function request(token = runtime.PRODUCTION_SETUP_EXECUTOR_TOKEN) {
-  return new Request("https://example.test/api/internal/production-setup-executor", {
+function request(host = runtime.VERCEL_URL) {
+  return new Request(`https://${host}/api/internal/production-setup-executor`, {
     method: "POST",
-    headers: { authorization: `Bearer ${token}` },
   });
 }
 
@@ -37,19 +37,22 @@ describe("production setup executor", () => {
     expect(isProductionExecutorRuntime(runtime)).toBe(true);
   });
 
-  it("rejects non-production and disabled executor requests", async () => {
+  it("rejects non-production, disabled, and public-domain requests", async () => {
     const nonProduction = await handleProductionSetupExecutor(request(), { ...runtime, NODE_ENV: "test" });
     const disabled = await handleProductionSetupExecutor(request(), { ...runtime, PRODUCTION_SETUP_EXECUTOR_ENABLED: "false" });
+    const publicDomain = await handleProductionSetupExecutor(request("www.shivayonic.com"), runtime);
     expect(nonProduction.status).toBe(404);
     expect(disabled.status).toBe(404);
+    expect(publicDomain.status).toBe(404);
   });
 
-  it("requires a distinct executor token", async () => {
-    expect(executorRequestAllowed(request("wrong"), runtime)).toBe(false);
-    const missing = await handleProductionSetupExecutor(request(), { ...runtime, PRODUCTION_SETUP_EXECUTOR_TOKEN: undefined });
-    const invalid = await handleProductionSetupExecutor(request("wrong"), runtime);
-    expect(missing.status).toBe(401);
-    expect(invalid.status).toBe(401);
+  it("accepts only the server-provided current deployment hostname", async () => {
+    expect(isCurrentVercelDeploymentRequest(request(), runtime)).toBe(true);
+    expect(executorRequestAllowed(request(), runtime)).toBe(true);
+    expect(isCurrentVercelDeploymentRequest(request("shivayonic.com"), runtime)).toBe(false);
+    expect(isCurrentVercelDeploymentRequest(request(), { ...runtime, VERCEL_URL: undefined })).toBe(false);
+    const response = await handleProductionSetupExecutor(request(), runtime, async () => ({ status: "SUCCEEDED" }));
+    expect(response.status).toBe(200);
   });
 
   it("runs shared setup exactly twice in sequence and persists success", async () => {
@@ -104,12 +107,12 @@ describe("production setup executor", () => {
     expect([first.status, second.status].sort()).toEqual(["RUNNING", "SUCCEEDED"]);
   });
 
-  it("sanitizes failures and never includes the executor token", async () => {
-    const result = await runProductionSetupExecutor(store(), async () => { throw new Error("temporary-executor-token"); });
+  it("sanitizes failures without setup-secret material", async () => {
+    const result = await runProductionSetupExecutor(store(), async () => { throw new Error("PRODUCTION_SETUP_TOKEN"); });
     expect(result).toEqual({ status: "FAILED" });
     const response = await handleProductionSetupExecutor(request(), runtime, async () => result);
     const body = await response.text();
     expect(response.status).toBe(500);
-    expect(body).not.toContain(runtime.PRODUCTION_SETUP_EXECUTOR_TOKEN);
+    expect(body).not.toContain("PRODUCTION_SETUP_TOKEN");
   });
 });
