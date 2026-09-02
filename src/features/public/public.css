@@ -208,6 +208,14 @@
   border-color: #fff;
 }
 
+/* `.site a { color: inherit }` outranks the plain `.btn*` color rules on link
+   buttons, so anchors need their own higher-specificity colors — without this,
+   ivory-on-cocoa buttons render with inherited cocoa text and look empty. */
+.site a.btnPrimary { color: var(--ivory); }
+.site a.btnSaffron { color: #3a1e08; }
+.site a.btnGhost { color: var(--cocoa); }
+.site a.btnOnDark { color: var(--cocoa); }
+
 /* --------------------------------------------------------------- Reveal */
 
 .reveal {

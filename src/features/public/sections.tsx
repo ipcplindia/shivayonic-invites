@@ -252,31 +252,37 @@ export function CTASection({
 
 /* ---------------------------------------------------------- Plans */
 
-export function PlansSection({ id }: { id?: string }) {
+export function PlansSection({ id, showHead = true }: { id?: string; showHead?: boolean }) {
   return (
-    <section className="section creamSection" id={id}>
+    <section className="section creamSection plansBand" id={id}>
       <div className="shell">
-        <SectionHead
-          eyebrow="Choose Your Level"
-          title="One package for the whole celebration"
-          lede="Pick the level of service that fits your occasion. To learn exactly what each includes, just get in touch — we will walk you through it."
-        />
+        {showHead ? (
+          <SectionHead
+            eyebrow="Choose Your Level"
+            title="One package for the whole celebration"
+            lede="Pick the level of service that fits your occasion. To learn exactly what each includes, just get in touch — we will walk you through it."
+          />
+        ) : null}
         <div className="plans reveal">
-          {plans.map((plan) => (
+          {plans.map((plan, i) => (
             <article key={plan.key} className={`planCard${plan.featured ? " planFeatured" : ""}`}>
-              <span className={`planAccent tone-${plan.tone}`} aria-hidden="true" />
+              <span className={`planTop tone-${plan.tone}`} aria-hidden="true" />
+              {plan.featured ? <span className="planBadge">Most chosen</span> : null}
+              <span className="planNum" aria-hidden="true">
+                {String(i + 1).padStart(2, "0")}
+              </span>
               <h3 className="planName">{plan.name}</h3>
               {plan.price ? (
-                <p className="planPrice">
-                  {plan.price} <span>{plan.priceNote}</span>
-                </p>
+                <p className="planPrice">{plan.price}</p>
               ) : (
                 <p className="planPriceAsk">{plan.priceNote}</p>
               )}
+              {plan.price ? <span className="planGst">{plan.priceNote}</span> : null}
+              <span className="planDivider" aria-hidden="true" />
               <p className="planTagline">{plan.tagline}</p>
               <a
                 href={contact.whatsappUrl}
-                className={`btn ${plan.featured ? "btnSaffron" : "btnGhost"}`}
+                className={`btn ${plan.featured ? "btnSaffron" : "btnPrimary"} planBtn`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -285,7 +291,7 @@ export function PlansSection({ id }: { id?: string }) {
             </article>
           ))}
         </div>
-        <p className="plansFoot">All prices are inclusive of GST.</p>
+        <p className="plansFoot">All prices are inclusive of GST. What each level includes is shared personally — just get in touch.</p>
       </div>
     </section>
   );

@@ -38,7 +38,7 @@ export function SellerForm() {
         <h2 className="sectionTitle">Thank you</h2>
         <p className="sectionLede" style={{ margin: "1rem auto 0" }}>
           We have opened WhatsApp with your details filled in — just press send. Our team will review your
-          interest in becoming a Shivayonic seller and reach out to you soon.
+          interest in becoming a Shivayonic dealer / distributor and reach out to you soon.
         </p>
         <div style={{ marginTop: "2rem" }}>
           <Link href="/" className="btn btnGhost">
@@ -60,7 +60,7 @@ export function SellerForm() {
           return v ? `${label}: ${v}` : null;
         };
         const body = [
-          "Hello Shivayonic Invites, I would like to become a seller.",
+          "Hello Shivayonic Invites, my company would like to become a dealer / distributor partner.",
           "",
           line("name", "Name"),
           line("organisation", "Organisation"),

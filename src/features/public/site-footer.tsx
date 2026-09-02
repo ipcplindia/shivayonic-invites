@@ -28,7 +28,7 @@ export function SiteFooter() {
               ["How It Works", "/how-it-works"],
               ["Catalogue", "/catalogue"],
               ["Our Work", "/our-work"],
-              ["Become a Seller", "/sell"],
+              ["Partners & Dealers", "/partners"],
               ["About", "/about"],
               ["Contact", "/contact"],
               ["FAQ", "/faq"],

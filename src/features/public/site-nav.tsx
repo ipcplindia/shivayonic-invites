@@ -27,7 +27,7 @@ const NAV: NavEntry[] = [
   { label: "Films", href: "/films" },
   { label: "Our Work", href: "/our-work" },
   { label: "Plans", href: "/plans" },
-  { label: "Sell With Us", href: "/sell" },
+  { label: "Partners", href: "/partners" },
 ];
 
 /**
