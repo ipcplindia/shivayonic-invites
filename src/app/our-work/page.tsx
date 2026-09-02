@@ -2,6 +2,7 @@ import { PageFrame } from "@/features/public/page-frame";
 import { CategoryHero, CTASection, SectionHead } from "@/features/public/sections";
 import { SocialRibbon } from "@/features/public/marquee";
 import { socialWorks, contact } from "@/features/public/data";
+import { PublishedWork } from "@/features/public/published-work";
 
 export const metadata = {
   title: { absolute: "Our Work | Shivayonic Invites" },
@@ -22,6 +23,7 @@ export default function Page() {
         <div className="shell"><SectionHead eyebrow="Discover" title="On Instagram" lede={"Follow " + contact.instagramHandle + " for reels and behind-the-scenes."} /></div>
         <SocialRibbon works={socialWorks} platform="instagram" direction="rtl" duration={56} />
       </section>
+      <PublishedWork placement="OUR_WORK_GRID" title="Published from the studio" />
       <CTASection title="Like what you see?" primary={{ label: "Chat on WhatsApp", href: contact.whatsappUrl, external: true }} secondary={{ label: "Browse invitations", href: "/invitations" }} />
     </PageFrame>
   );

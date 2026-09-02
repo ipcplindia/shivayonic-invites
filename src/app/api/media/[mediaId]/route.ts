@@ -4,6 +4,7 @@ import { recordSecurityAudit } from "@/auth/audit";
 import { AppAuthError } from "@/auth/errors";
 import { hasPermission, permissionPolicy } from "@/auth/permissions";
 import { MediaError } from "@/core/media-errors";
+import { updateMediaInputSchema } from "@/core/media";
 import { mediaRouteError, requireAuthorizedMedia, serializeMedia, serializeMediaDetail } from "@/core/media-api";
 import { getObjectStorage } from "@/core/storage-provider";
 import { prisma } from "@/db/client";
@@ -47,4 +48,16 @@ export async function DELETE(request: Request, route: RouteContext) {
   } catch (error) {
     return mediaRouteError(error);
   }
+}
+
+export async function PATCH(request: Request, route: RouteContext) {
+  try {
+    const { mediaId } = await route.params;
+    const { context, media } = await requireAuthorizedMedia(request, mediaId, "MEDIA_WRITE");
+    const parsed = updateMediaInputSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) throw new MediaError("INVALID_MEDIA_INPUT", 400);
+    const updated = await prisma.mediaAsset.update({ where: { id: media.id }, data: parsed.data, include: { project: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } } });
+    await recordSecurityAudit({ action: "MEDIA_METADATA_UPDATED", organizationId: context.organization.id, actorUserId: context.user.id, entityType: "MediaAsset", entityId: media.id });
+    return NextResponse.json({ media: serializeMediaDetail(updated) });
+  } catch (error) { return mediaRouteError(error); }
 }

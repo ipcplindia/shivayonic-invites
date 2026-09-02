@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { ConfirmDialog, Inspector } from "@/components/overlay";
-import { Button, LinkButton, Skeleton, StatusBadge } from "@/components/ui";
+import { Button, Input, LinkButton, Skeleton, StatusBadge } from "@/components/ui";
 import { can } from "@/features/access";
 import {
   MediaApiError,
   archiveMedia,
   deleteMedia,
   fetchMediaDetail,
+  updateMediaMetadata,
 } from "@/features/media/media-api";
 import styles from "@/features/media/media.module.css";
 import {
@@ -58,6 +59,8 @@ export function MediaInspector({
   const [confirm, setConfirm] = useState<"archive" | "delete" | null>(null);
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [editingMetadata, setEditingMetadata] = useState(false);
+  const [metadata, setMetadata] = useState({ displayTitle: "", altText: "", description: "" });
 
   useEffect(() => {
     if (!mediaId) return;
@@ -66,7 +69,7 @@ export function MediaInspector({
     setActionError("");
 
     fetchMediaDetail(mediaId, controller.signal)
-      .then((media) => setState({ phase: "ready", media }))
+      .then((media) => { setMetadata({ displayTitle: media.displayTitle ?? "", altText: media.altText ?? "", description: media.description ?? "" }); setState({ phase: "ready", media }); })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         const known = error instanceof MediaApiError;
@@ -114,6 +117,17 @@ export function MediaInspector({
   const canArchive = can(context, "MEDIA_WRITE") && media?.status !== "ARCHIVED";
   // The delete route requires an organization owner; the server re-checks it.
   const canDelete = context.role === "OWNER";
+  const canEditMetadata = can(context, "MEDIA_WRITE") && state.phase === "ready";
+
+  async function saveMetadata() {
+    if (!mediaId) return;
+    setPending(true); setActionError("");
+    try {
+      const updated = await updateMediaMetadata(mediaId, metadata);
+      setState({ phase: "ready", media: updated }); setEditingMetadata(false);
+    } catch (error) { setActionError(error instanceof MediaApiError ? error.message : "Metadata could not be saved."); }
+    finally { setPending(false); }
+  }
 
   return (
     <>
@@ -198,6 +212,9 @@ export function MediaInspector({
               <>
                 <Field label="Project" value={projectLabel(media)} />
                 <Field label="Uploaded by" value={media.creator.name ?? "Unknown"} />
+                <Field label="Display title" value={media.displayTitle ?? "Not set"} />
+                <Field label="Alt text" value={media.altText ?? "Not set"} />
+                <Field label="Description" value={media.description ?? "Not set"} />
               </>
             ) : state.phase === "loading" ? (
               <div className={styles.detailSkeleton} aria-busy="true">
@@ -207,6 +224,18 @@ export function MediaInspector({
             ) : (
               <Field label="Project" value={projectLabel(media)} />
             )}
+
+            {canEditMetadata ? (
+              <section>
+                <Button size="sm" onClick={() => setEditingMetadata((value) => !value)} disabled={pending}>{editingMetadata ? "Cancel metadata edit" : "Edit metadata"}</Button>
+                {editingMetadata ? <form onSubmit={(event) => { event.preventDefault(); void saveMetadata(); }}>
+                  <Input label="Display title" value={metadata.displayTitle} maxLength={500} onChange={(event) => setMetadata({ ...metadata, displayTitle: event.target.value })} />
+                  <Input label="Alt text" value={metadata.altText} maxLength={500} onChange={(event) => setMetadata({ ...metadata, altText: event.target.value })} />
+                  <label>Description<textarea value={metadata.description} maxLength={4000} onChange={(event) => setMetadata({ ...metadata, description: event.target.value })} /></label>
+                  <Button type="submit" size="sm" variant="primary" disabled={pending}>Save metadata</Button>
+                </form> : null}
+              </section>
+            ) : null}
 
             {media.status === "FAILED" ? (
               <p className={styles.inspectorNote}>

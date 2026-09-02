@@ -1,6 +1,7 @@
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, Breadcrumb, CategoryHero, CTASection, MiniFaq, ProcessBand, PromiseBand, SectionHead } from "@/features/public/sections";
 import { filmKinds, contact } from "@/features/public/data";
+import { PublishedWork } from "@/features/public/published-work";
 
 export const metadata = {
   title: { absolute: "Cinematic Invitation Films | Shivayonic Invites" },
@@ -32,6 +33,7 @@ export default function Page() {
           ))}
         </div>
       </Band>
+      <PublishedWork placement="FILMS_FEATURED" title="Featured films" />
       <PromiseBand variant="cream" />
       <ProcessBand />
       <MiniFaq variant="cream" />

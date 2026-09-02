@@ -5,6 +5,7 @@ import type {
   CompleteMediaResponse,
   MediaAssetDetail,
   MediaListResponse,
+  UpdateMediaRequest,
 } from "@/shared/media";
 
 /**
@@ -103,6 +104,13 @@ export function archiveMedia(mediaId: string) {
 /** Permanent, and the server permits it for an organization owner only. */
 export function deleteMedia(mediaId: string) {
   return request<void>(`/api/media/${mediaId}?mode=delete`, { method: "DELETE" });
+}
+
+/** Copy only; storage identity, media type, and lifecycle stay server-owned. */
+export function updateMediaMetadata(mediaId: string, input: UpdateMediaRequest) {
+  return request<{ media: MediaAssetDetail }>(`/api/media/${mediaId}`, {
+    method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input),
+  }).then((body) => body.media);
 }
 
 /**

@@ -34,6 +34,19 @@ enum MediaAssetStatus {
   ARCHIVED
 }
 
+enum WebsitePublicationStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+}
+
+enum WebsitePlacement {
+  HOMEPAGE_FEATURED
+  OUR_WORK_GRID
+  FILMS_FEATURED
+  MUSIC_SHOWCASE
+}
+
 enum PublicProductType {
   INVITATION
   VIDEO_INVITATION
@@ -115,15 +128,16 @@ model Verification {
 }
 
 model Organization {
-  id          String               @id @default(cuid())
-  name        String
-  slug        String               @unique
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  memberships OrganizationMember[]
-  projects    Project[]
-  mediaAssets MediaAsset[]
-  auditLogs   AuditLog[]
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  memberships         OrganizationMember[]
+  projects            Project[]
+  mediaAssets         MediaAsset[]
+  websitePublications WebsitePublication[]
+  auditLogs           AuditLog[]
 }
 
 model OrganizationMember {
@@ -153,29 +167,59 @@ model Project {
 }
 
 model MediaAsset {
-  id                 String               @id @default(cuid())
-  organizationId     String
-  projectId          String?
-  kind               MediaKind
-  status             MediaAssetStatus     @default(PENDING_UPLOAD)
-  originalFilename   String
-  storageKey         String               @unique
-  mimeType           String
-  sizeBytes          BigInt
-  width              Int?
-  height             Int?
-  durationMs         Int?
-  createdByUserId    String
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  archivedAt         DateTime?
-  organization       Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  project            Project?             @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  createdBy          User                 @relation("MediaCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  publicProductMedia PublicProductMedia[]
+  id                  String               @id @default(cuid())
+  organizationId      String
+  projectId           String?
+  kind                MediaKind
+  status              MediaAssetStatus     @default(PENDING_UPLOAD)
+  originalFilename    String
+  storageKey          String               @unique
+  mimeType            String
+  sizeBytes           BigInt
+  width               Int?
+  height              Int?
+  durationMs          Int?
+  displayTitle        String?
+  altText             String?
+  description         String?
+  createdByUserId     String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  archivedAt          DateTime?
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project             Project?             @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdBy           User                 @relation("MediaCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  publicProductMedia  PublicProductMedia[]
+  websitePublications WebsitePublication[]
 
   @@index([organizationId, status])
   @@index([projectId])
+}
+
+model WebsitePublication {
+  id              String                   @id @default(cuid())
+  organizationId  String
+  mediaAssetId    String
+  placement       WebsitePlacement
+  status          WebsitePublicationStatus @default(DRAFT)
+  title           String?
+  description     String?
+  altText         String?
+  category        String?
+  slug            String?
+  sortOrder       Int                      @default(0)
+  publishedAt     DateTime?
+  unpublishedAt   DateTime?
+  createdByUserId String
+  updatedByUserId String
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset      MediaAsset               @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, mediaAssetId, placement])
+  @@index([organizationId, status, placement, sortOrder])
+  @@index([mediaAssetId])
 }
 
 model PublicCategory {

@@ -27,6 +27,18 @@ export const createMediaInputSchema = z.object({
 });
 export type CreateMediaInput = z.infer<typeof createMediaInputSchema>;
 
+const optionalCopy = z.string().trim().max(500).optional();
+export const updateMediaInputSchema = z.object({
+  displayTitle: optionalCopy,
+  altText: optionalCopy,
+  description: z.string().trim().max(4_000).optional(),
+}).refine((value) => Object.values(value).some((item) => item !== undefined), "At least one metadata field is required.")
+  .transform((value) => ({
+    displayTitle: value.displayTitle === undefined ? undefined : value.displayTitle || null,
+    altText: value.altText === undefined ? undefined : value.altText || null,
+    description: value.description === undefined ? undefined : value.description || null,
+  }));
+
 export function getMediaRule(mimeType: string) {
   const rule = mediaRules[mimeType as SupportedMediaMimeType];
   if (!rule) throw new MediaError("MEDIA_TYPE_NOT_ALLOWED", 415);

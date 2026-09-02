@@ -3,6 +3,7 @@ import type { MediaAssetDetail, MediaAssetSummary, MediaKind, MediaStatus } from
 type SerializedMediaInput = {
   id: string; projectId: string | null; kind: string; status: string; originalFilename: string; mimeType: string; sizeBytes: bigint;
   width: number | null; height: number | null; durationMs: number | null; createdAt: Date; updatedAt: Date; archivedAt: Date | null;
+  displayTitle?: string | null; altText?: string | null; description?: string | null;
 };
 
 export function serializeMedia(media: SerializedMediaInput): MediaAssetSummary {
@@ -10,6 +11,7 @@ export function serializeMedia(media: SerializedMediaInput): MediaAssetSummary {
     id: media.id, projectId: media.projectId, kind: media.kind as MediaKind, status: media.status as MediaStatus,
     originalFilename: media.originalFilename, mimeType: media.mimeType, sizeBytes: media.sizeBytes.toString(),
     width: media.width, height: media.height, durationMs: media.durationMs,
+    displayTitle: media.displayTitle, altText: media.altText, description: media.description,
     createdAt: media.createdAt.toISOString(), updatedAt: media.updatedAt.toISOString(), archivedAt: media.archivedAt?.toISOString() ?? null,
   };
 }

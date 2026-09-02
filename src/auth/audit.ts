@@ -16,7 +16,12 @@ export type SecurityAuditAction =
   | "MEDIA_UPLOAD_FAILED"
   | "MEDIA_READY"
   | "MEDIA_ARCHIVED"
-  | "MEDIA_DELETED";
+  | "MEDIA_DELETED"
+  | "MEDIA_METADATA_UPDATED"
+  | "WEBSITE_PUBLICATION_CREATED"
+  | "WEBSITE_PUBLICATION_UPDATED"
+  | "WEBSITE_PUBLICATION_PUBLISHED"
+  | "WEBSITE_PUBLICATION_UNPUBLISHED";
 
 export async function recordSecurityAudit(input: {
   action: SecurityAuditAction;

@@ -4,6 +4,7 @@ export type MediaStatus = "PENDING_UPLOAD" | "UPLOADED" | "PROCESSING" | "READY"
 export type MediaAssetSummary = {
   id: string; projectId: string | null; kind: MediaKind; status: MediaStatus; originalFilename: string; mimeType: string; sizeBytes: string;
   width: number | null; height: number | null; durationMs: number | null; createdAt: string; updatedAt: string; archivedAt: string | null;
+  displayTitle?: string | null; altText?: string | null; description?: string | null;
 };
 
 export type MediaAssetDetail = MediaAssetSummary & {
@@ -19,3 +20,4 @@ export type CreateMediaRequest = { originalFilename: string; mimeType: string; s
 export type CreateMediaResponse = { media: MediaAssetSummary; upload: { url: string; method?: "PUT"; headers: Record<string, string>; expiresAt?: string } };
 export type CompleteMediaResponse = { media: MediaAssetSummary };
 export type ArchiveMediaResponse = { media: MediaAssetSummary };
+export type UpdateMediaRequest = { displayTitle?: string; altText?: string; description?: string };

@@ -1,6 +1,7 @@
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, Breadcrumb, CategoryHero, CTASection, EditorialSplit, MiniFaq, ProcessBand } from "@/features/public/sections";
 import { artFor, musicKinds, contact } from "@/features/public/data";
+import { PublishedWork } from "@/features/public/published-work";
 
 export const metadata = {
   title: { absolute: "Original Invitation Music | Shivayonic Invites" },
@@ -21,6 +22,7 @@ export default function Page() {
           ))}
         </div>
       </Band>
+      <PublishedWork placement="MUSIC_SHOWCASE" title="Published music" />
       <ProcessBand variant="cream" />
       <MiniFaq />
       <CTASection title="Let us score your celebration" primary={{ label: "Chat on WhatsApp", href: contact.whatsappUrl, external: true }} secondary={{ label: "How it works", href: "/how-it-works" }} />

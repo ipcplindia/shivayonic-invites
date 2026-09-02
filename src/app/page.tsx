@@ -8,6 +8,7 @@ import { SiteNav } from "@/features/public/site-nav";
 import { SiteFooter } from "@/features/public/site-footer";
 import { PlansSection } from "@/features/public/sections";
 import { SocialRibbon } from "@/features/public/marquee";
+import { PublishedWork } from "@/features/public/published-work";
 import {
   categories,
   contact,
@@ -119,6 +120,7 @@ export default function HomePage() {
       </section>
 
       <main className="siteMain">
+        <PublishedWork placement="HOMEPAGE_FEATURED" title="Featured from the studio" />
         {/* 02 — EXPLORE OUR WORLD */}
         <section className="section" id="explore">
           <div className="shell">
