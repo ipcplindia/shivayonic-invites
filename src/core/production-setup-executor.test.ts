@@ -7,6 +7,7 @@ import {
   handleProductionSetupExecutor,
   isCurrentVercelDeploymentRequest,
   isProductionExecutorRuntime,
+  requestAllowsFailedRetry,
   runProductionSetupExecutor,
   type ExecutorStore,
 } from "@/core/production-setup-executor";
@@ -18,8 +19,8 @@ const runtime = {
   PRODUCTION_SETUP_EXECUTOR_ENABLED: "true",
 };
 
-function request(host = runtime.VERCEL_URL) {
-  return new Request(`https://${host}/api/internal/production-setup-executor`, {
+function request(host = runtime.VERCEL_URL, retryFailed = false) {
+  return new Request(`https://${host}/api/internal/production-setup-executor${retryFailed ? "?retry=failed" : ""}`, {
     method: "POST",
   });
 }
@@ -82,6 +83,23 @@ describe("production setup executor", () => {
     const result = await runProductionSetupExecutor(store("SUCCEEDED"), execute);
     expect(result).toEqual({ status: "SUCCEEDED" });
     expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("retries only an explicitly requested failed state", async () => {
+    expect(requestAllowsFailedRetry(request())).toBe(false);
+    expect(requestAllowsFailedRetry(request(runtime.VERCEL_URL, true))).toBe(true);
+    const failed = store("FAILED");
+    const execute = vi.fn(async () => cleanSetup);
+    const blocked = await runProductionSetupExecutor(failed, execute);
+    expect(blocked).toEqual({ status: "FAILED" });
+    expect(execute).not.toHaveBeenCalled();
+
+    const retryStore: ExecutorStore = {
+      claim: vi.fn().mockResolvedValue("NOT_STARTED"),
+      finish: vi.fn().mockResolvedValue(undefined),
+    };
+    await runProductionSetupExecutor(retryStore, execute, true);
+    expect(retryStore.claim).toHaveBeenCalledWith(true);
   });
 
   it("allows concurrent callers to claim only one execution", async () => {

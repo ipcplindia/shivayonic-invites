@@ -18,7 +18,7 @@ type Runtime = {
 type SetupResult = Awaited<ReturnType<typeof executeProductionSetup>>;
 type ExecutorStatus = "RUNNING" | "SUCCEEDED" | "FAILED";
 export type ExecutorStore = {
-  claim(): Promise<ExecutorStatus | "NOT_STARTED">;
+  claim(retryFailed: boolean): Promise<ExecutorStatus | "NOT_STARTED">;
   finish(status: Exclude<ExecutorStatus, "RUNNING">): Promise<void>;
 };
 
@@ -48,10 +48,18 @@ export function executorRequestAllowed(request: Request, runtime: Runtime = proc
     && isCurrentVercelDeploymentRequest(request, runtime);
 }
 
+export function requestAllowsFailedRetry(request: Request) {
+  try {
+    return new URL(request.url).searchParams.get("retry") === "failed";
+  } catch {
+    return false;
+  }
+}
+
 function createExecutorStore(): ExecutorStore {
   let verificationId: string | undefined;
   return {
-    async claim() {
+    async claim(retryFailed) {
       return prisma.$transaction(async (transaction) => {
         await transaction.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${EXECUTOR_LOCK}))`);
         const existing = await transaction.verification.findFirst({
@@ -59,7 +67,16 @@ function createExecutorStore(): ExecutorStore {
           orderBy: { createdAt: "desc" },
           select: { id: true, value: true },
         });
-        if (existing) return existing.value as ExecutorStatus;
+        if (existing) {
+          if (existing.value !== "FAILED" || !retryFailed) return existing.value as ExecutorStatus;
+          verificationId = existing.id;
+          await transaction.verification.update({
+            where: { id: existing.id },
+            data: { value: "RUNNING", expiresAt: new Date(Date.now() + EXECUTOR_EXPIRY_MS) },
+          });
+          console.info(JSON.stringify({ event: "production_setup_executor_failed_retry_claimed" }));
+          return "NOT_STARTED" as const;
+        }
 
         const created = await transaction.verification.create({
           data: {
@@ -83,8 +100,9 @@ function createExecutorStore(): ExecutorStore {
 export async function runProductionSetupExecutor(
   store: ExecutorStore = createExecutorStore(),
   execute: () => Promise<SetupResult> = executeProductionSetup,
+  retryFailed = false,
 ): Promise<ProductionSetupExecutorResult> {
-  const claimed = await store.claim();
+  const claimed = await store.claim(retryFailed);
   if (claimed !== "NOT_STARTED") return { status: claimed };
 
   try {
@@ -106,7 +124,8 @@ export async function runProductionSetupExecutor(
 export async function handleProductionSetupExecutor(
   request: Request,
   runtime: Runtime = process.env,
-  run: () => Promise<ProductionSetupExecutorResult> = runProductionSetupExecutor,
+  run: (retryFailed: boolean) => Promise<ProductionSetupExecutorResult> = (retryFailed) =>
+    runProductionSetupExecutor(undefined, undefined, retryFailed),
 ) {
   if (!isProductionExecutorRuntime(runtime) || runtime.PRODUCTION_SETUP_EXECUTOR_ENABLED !== "true") {
     return Response.json({ ok: false }, { status: 404 });
@@ -116,7 +135,7 @@ export async function handleProductionSetupExecutor(
   }
 
   try {
-    const result = await run();
+    const result = await run(requestAllowsFailedRetry(request));
     return Response.json({ ok: result.status === "SUCCEEDED", ...result }, { status: result.status === "FAILED" ? 500 : 200 });
   } catch {
     return Response.json({ ok: false, status: "FAILED" }, { status: 500 });
