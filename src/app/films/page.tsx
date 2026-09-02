@@ -16,12 +16,12 @@ export default function Page() {
       <Band>
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "Films" }]} />
         <SectionHead eyebrow="Films" title="What we craft" />
-        <div className="styleCards reveal">
+        <div className="styleCards filmCards reveal">
           {filmKinds.map((f, i) => (
             <div key={f.title} className="styleCard">
               <span
-                className={"styleCardArt tone-" + (["gold","rose","teal","sage"][i % 4])}
-                style={{ backgroundImage: `url(${f.img})`, backgroundSize: "cover", backgroundPosition: "center" }}
+                className={"styleCardArt hasPhoto tone-" + (["gold","rose","teal","sage"][i % 4])}
+                style={{ backgroundImage: `url(${f.img})` }}
                 aria-hidden="true"
               />
               <div className="styleCardBody">

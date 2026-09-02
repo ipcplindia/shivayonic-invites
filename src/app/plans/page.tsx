@@ -23,7 +23,7 @@ export default function Page() {
         title="Choose the level that fits your celebration"
         lede="Four simple levels of service. To keep it personal, what each one includes is shared when you get in touch — no fine print, just a conversation."
         tone="gold"
-        image="/categories/wedding.webp"
+        image="/categories/celebrations.webp"
         primary={{ label: "Talk to us", href: "/contact" }}
       />
 
@@ -53,6 +53,7 @@ export default function Page() {
           title="Tell us about your celebration"
           body="Share the occasion, the dates and the feeling you are after. We will suggest the level that fits and walk you through exactly what it includes — with no obligation."
           tone="rose"
+          image="/products/reception-gala.webp"
           action={{ label: "See how it works", href: "/how-it-works" }}
         />
       </Band>

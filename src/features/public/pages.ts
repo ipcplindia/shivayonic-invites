@@ -35,7 +35,7 @@ export const categoryConfigs: Record<string, CategoryConfig> = {
     title: "Every celebration along the journey",
     lede: "From the first Save the Date to the last reception toast — cinematic invitations, films and music for each function of the wedding.",
     tone: "rose",
-    heroImage: "/categories/wedding.webp",
+    heroImage: "/hero/hero-desktop.webp",
     intro: {
       title: "One wedding, told beautifully at every step",
       body: "Each function has its own mood. We craft a coherent suite — invitation, film and music — so the whole celebration feels of a piece, from Roka to Reception.",

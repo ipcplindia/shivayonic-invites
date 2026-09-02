@@ -154,6 +154,30 @@ export function featuredBySlug(slug: string): Product | undefined {
 }
 
 /**
+ * Every approved artwork on the site, used as a fallback so no card ever
+ * renders as a bare gradient. Catalogue records carry no local art yet, so a
+ * stable hash of the slug picks one — the same product always shows the same
+ * image rather than shuffling between renders.
+ */
+export const artPool: string[] = [
+  "/products/diwali-nights.webp",
+  "/products/mehendi-night.webp",
+  "/products/reception-gala.webp",
+  "/products/birthday-bash.webp",
+  "/categories/celebrations.webp",
+  "/categories/devotional.webp",
+  "/categories/corporate.webp",
+  "/categories/music.webp",
+  "/categories/films.webp",
+];
+
+export function artFor(key: string): string {
+  let hash = 0;
+  for (let i = 0; i < key.length; i += 1) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  return artPool[hash % artPool.length];
+}
+
+/**
  * Service plans. Price is the ONLY place any figure is shown on the site.
  * What each tier includes is intentionally not listed — customers get in touch
  * to learn that. The bespoke tier shows no number by design.

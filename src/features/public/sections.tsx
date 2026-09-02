@@ -4,7 +4,7 @@ import { PIcon } from "@/features/public/icons";
 import type { ToneName } from "@/features/public/pages";
 import { faqs } from "@/features/public/pages";
 import { toneForProduct } from "@/features/public/catalogue-data";
-import { contact, plans, steps } from "@/features/public/data";
+import { artFor, contact, featuredBySlug, plans, steps } from "@/features/public/data";
 import type { PublicProductSummary } from "@/shared/catalogue";
 
 /** Small shared bits reused across the public pages. */
@@ -123,6 +123,7 @@ export function EditorialSplit({
   title,
   body,
   tone,
+  image,
   flip = false,
   action,
 }: {
@@ -130,12 +131,17 @@ export function EditorialSplit({
   title: string;
   body: string;
   tone: ToneName;
+  image?: string;
   flip?: boolean;
   action?: { label: string; href: string };
 }) {
   return (
     <div className={flip ? "split splitFlip reveal" : "split reveal"}>
-      <span className={`splitArt tone-${tone}`} aria-hidden="true" />
+      <span
+        className={`splitArt tone-${tone}${image ? " hasPhoto" : ""}`}
+        style={image ? { backgroundImage: `url(${image})` } : undefined}
+        aria-hidden="true"
+      />
       <div>
         {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
         <h2 className="splitTitle2">{title}</h2>
@@ -172,7 +178,12 @@ export function ProductCard({ product }: { product: PublicProductSummary }) {
   const style = product.styles[0]?.name ?? product.category.name;
   return (
     <article className="pcard">
-      <a href={`/product/${product.slug}`} className={`pcardArt tone-${toneForProduct(product)}`} aria-label={product.name}>
+      <a
+        href={`/product/${product.slug}`}
+        className={`pcardArt tone-${toneForProduct(product)} hasPhoto`}
+        style={{ backgroundImage: `url(${featuredBySlug(product.slug)?.img ?? artFor(product.slug)})` }}
+        aria-label={product.name}
+      >
         <span className="pcardTag">{product.category.name}</span>
       </a>
       <div className="pcardBody">
@@ -203,10 +214,24 @@ export function CollectionGrid({ products }: { products: PublicProductSummary[] 
 
 /* ---------------------------------------------------------- Style card */
 
-export function StyleCard({ name, note, tone }: { name: string; note: string; tone: ToneName }) {
+export function StyleCard({
+  name,
+  note,
+  tone,
+  image,
+}: {
+  name: string;
+  note: string;
+  tone: ToneName;
+  image?: string;
+}) {
   return (
     <div className="styleCard">
-      <span className={`styleCardArt tone-${tone}`} aria-hidden="true" />
+      <span
+        className={`styleCardArt tone-${tone}${image ? " hasPhoto" : ""}`}
+        style={image ? { backgroundImage: `url(${image})` } : undefined}
+        aria-hidden="true"
+      />
       <div className="styleCardBody">
         <p className="styleCardName">{name}</p>
         <p className="styleCardNote">{note}</p>

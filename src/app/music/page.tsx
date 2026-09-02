@@ -1,6 +1,6 @@
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, Breadcrumb, CategoryHero, CTASection, EditorialSplit, MiniFaq, ProcessBand } from "@/features/public/sections";
-import { musicKinds, contact } from "@/features/public/data";
+import { artFor, musicKinds, contact } from "@/features/public/data";
 
 export const metadata = {
   title: { absolute: "Original Invitation Music | Shivayonic Invites" },
@@ -17,7 +17,7 @@ export default function Page() {
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "Music" }]} />
         <div style={{ display: "grid", gap: "clamp(3rem,7vw,5rem)" }}>
           {musicKinds.map((m, i) => (
-            <EditorialSplit key={m.title} title={m.title} body={m.blurb} tone={(["gold","rose","teal","saffron","sage"] as const)[i % 5]} flip={i % 2 === 1} />
+            <EditorialSplit key={m.title} title={m.title} body={m.blurb} tone={(["gold","rose","teal","saffron","sage"] as const)[i % 5]} image={artFor(m.title)} flip={i % 2 === 1} />
           ))}
         </div>
       </Band>

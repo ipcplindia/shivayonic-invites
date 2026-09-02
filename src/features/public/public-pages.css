@@ -937,11 +937,13 @@
   min-height: 104px;
 }
 
+/* Set light and open rather than bold: at this size weight reads as shouting,
+   while a thin face with a touch of positive tracking reads as considered. */
 .planPrice {
-  font-size: clamp(2.1rem, 2.7vw, 2.6rem);
-  font-weight: 700;
+  font-size: clamp(2.15rem, 2.7vw, 2.7rem);
+  font-weight: 300;
   color: var(--cocoa);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.005em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -1198,4 +1200,39 @@
   color: var(--umber);
   font-size: 0.97rem;
   line-height: 1.55;
+}
+
+/* -------------------------------------------------------- Photo-backed art boxes */
+
+/*
+ * Where real artwork is present the tone gradient is only a loading ground, so
+ * the decorative lattice must step aside — it belongs to the empty state.
+ */
+.hasPhoto {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.splitArt.hasPhoto::before,
+.styleCardArt.hasPhoto::before {
+  content: none;
+}
+
+.splitArt.hasPhoto::after {
+  background: linear-gradient(180deg, transparent 58%, rgb(68 36 29 / 0.28));
+}
+
+.styleCardArt.hasPhoto::after {
+  background: linear-gradient(180deg, transparent 55%, rgb(68 36 29 / 0.3));
+}
+
+/* Film artwork is shot 4:5, so its cards keep the portrait frame rather than
+   cropping the composition into the 4:3 style-card default. */
+.filmCards {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+.filmCards .styleCardArt {
+  aspect-ratio: 4 / 5;
 }
