@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 import { PIcon } from "@/features/public/icons";
+import { fillFormPdf } from "@/features/public/fill-form-pdf";
 import type { ClientForm, FormItem } from "@/features/public/client-forms";
 
 /**
@@ -16,22 +17,18 @@ import type { ClientForm, FormItem } from "@/features/public/client-forms";
  *  - progress is saved to the browser as you type, because nobody completes a
  *    brief this size in one sitting and losing it would be unforgivable;
  *  - it is walked one section at a time rather than as a single endless page;
- *  - only answered fields are sent, and if the result is too long to survive a
- *    WhatsApp or mailto URL we say so and hand over a file instead of silently
- *    truncating the answers.
+ *  - sending produces the real PDF with the answers written into it, rather than
+ *    a wall of text, so the studio receives the same document it already works
+ *    from. On a phone it is shared straight into WhatsApp or mail; elsewhere it
+ *    downloads and the message opens alongside it.
  */
 
 const WHATSAPP = "919990099990";
 const EMAIL = "ipcplindia@gmail.com";
-/*
- * Measured against the ENCODED length, since that is what actually travels in
- * the URL. Outlook and several mobile mail clients truncate a mailto around
- * 2000 characters, so warn below that rather than at it.
- */
-const URL_SAFE_ENCODED = 1800;
 
 type Values = Record<string, string | string[]>;
 
+/** Full plain-text answers — used only if the PDF cannot be produced. */
 function summarise(form: ClientForm, values: Values): string {
   const out: string[] = [`SHIVAYONIC — ${form.name} (Form ${form.formNo})`, ""];
   for (const section of form.sections) {
@@ -57,6 +54,9 @@ export function ClientFormView({ form }: { form: ClientForm }) {
   const [values, setValues] = useState<Values>({});
   const [restored, setRestored] = useState(false);
   const [done, setDone] = useState<"whatsapp" | "email" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sharedFile, setSharedFile] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
 
   // Restore any draft, then keep it in step with what is typed.
@@ -115,25 +115,110 @@ export function ClientFormView({ form }: { form: ClientForm }) {
   };
 
   const summary = summarise(form, values);
-  const tooLongForUrl = encodeURIComponent(summary).length > URL_SAFE_ENCODED;
 
-  const download = () => {
-    const blob = new Blob([summary], { type: "text/plain;charset=utf-8" });
+  /** Pull an identifying answer by the tail of its field name. */
+  const answerLike = (needle: string) => {
+    const key = Object.keys(values).find((k) => k.includes(needle));
+    const v = key ? values[key] : undefined;
+    return typeof v === "string" ? v.trim() : "";
+  };
+
+  /*
+   * The PDF carries the answers, so the message only has to say what is attached
+   * and who it is from — short enough to survive any mail client or wa.me link.
+   */
+  const coveringNote = (unprintable: { label: string; value: string }[]) => {
+    const lines = [
+      "Hello Shivayonic Invites — my completed client form is attached.",
+      "",
+      `Form ${form.formNo} · ${form.name}`,
+    ];
+    const name = answerLike("_client_name_");
+    const mobile = answerLike("_client_mobile_");
+    const email = answerLike("_client_email_");
+    if (name) lines.push(`Name: ${name}`);
+    if (mobile) lines.push(`Mobile: ${mobile}`);
+    if (email) lines.push(`Email: ${email}`);
+    if (unprintable.length) {
+      lines.push(
+        "",
+        "These answers use characters the PDF form cannot print, so they are written here instead:",
+        ...unprintable.map((u) => `${u.label}: ${u.value}`),
+      );
+    }
+    return lines.join("\n");
+  };
+
+  const saveBlob = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `shivayonic-brief-${form.slug}.txt`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const send = (channel: "whatsapp" | "email") => {
-    const url =
-      channel === "whatsapp"
-        ? `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(summary)}`
-        : `mailto:${EMAIL}?subject=${encodeURIComponent(`Shivayonic brief — ${form.name}`)}&body=${encodeURIComponent(summary)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-    setDone(channel);
+  /** Download the completed PDF on its own. */
+  const downloadPdf = async () => {
+    setBusy(true);
+    setSendError(null);
+    try {
+      const { blob, fileName } = await fillFormPdf(form, values);
+      saveBlob(blob, fileName);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Could not build the PDF.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const send = async (channel: "whatsapp" | "email") => {
+    setBusy(true);
+    setSendError(null);
+    try {
+      const { blob, fileName, unprintable } = await fillFormPdf(form, values);
+      const text = coveringNote(unprintable);
+      const file = new File([blob], fileName, { type: "application/pdf" });
+
+      // On a phone this hands the PDF straight to WhatsApp or mail, already
+      // attached. Desktop browsers cannot attach a file to a link, so there the
+      // PDF downloads and the message opens beside it.
+      if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], text, title: `Shivayonic — ${form.name}` });
+          setSharedFile(true);
+          setDone(channel);
+          return;
+        } catch (err) {
+          // A cancelled share is the user's choice, not a failure.
+          if (err instanceof Error && err.name === "AbortError") return;
+        }
+      }
+
+      saveBlob(blob, fileName);
+      setSharedFile(false);
+      const url =
+        channel === "whatsapp"
+          ? `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`
+          : `mailto:${EMAIL}?subject=${encodeURIComponent(`Shivayonic client form ${form.formNo} — ${form.shortName}`)}&body=${encodeURIComponent(text)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      setDone(channel);
+    } catch (err) {
+      // Never strand the answers: fall back to sending them as text.
+      setSendError(
+        err instanceof Error
+          ? `${err.message} Your answers were sent as text instead.`
+          : "Could not build the PDF. Your answers were sent as text instead.",
+      );
+      const url =
+        channel === "whatsapp"
+          ? `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(summary)}`
+          : `mailto:${EMAIL}?subject=${encodeURIComponent(`Shivayonic brief — ${form.name}`)}&body=${encodeURIComponent(summary)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      setDone(channel);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const clearDraft = () => {
@@ -152,20 +237,23 @@ export function ClientFormView({ form }: { form: ClientForm }) {
         </span>
         <h2 className="sectionTitle">Almost there</h2>
         <p className="sectionLede" style={{ margin: "1rem auto 0" }}>
-          {done === "whatsapp"
-            ? "We have opened WhatsApp with your brief filled in — press send and it reaches our team."
-            : "We have opened your email app with the brief filled in — press send and it reaches our team."}
+          {sharedFile
+            ? "Your completed form has been handed to the app you chose — press send there and it reaches our team."
+            : done === "whatsapp"
+              ? "Your completed form has downloaded and WhatsApp is open. Attach the PDF to the message, then press send."
+              : "Your completed form has downloaded and your email app is open. Attach the PDF to the message, then press send."}
         </p>
         <p className="formThanksNote">
           Nothing has been submitted until you send that message. Your answers stay saved in this browser
           until you clear them.
         </p>
+        {sendError ? <p className="briefWarn">{sendError}</p> : null}
         <div className="formThanksActions">
           <button type="button" className="btn btnGhost" onClick={() => setDone(null)}>
-            Back to the brief
+            Back to the form
           </button>
-          <button type="button" className="btn btnGhost" onClick={download}>
-            Download a copy
+          <button type="button" className="btn btnGhost" disabled={busy} onClick={downloadPdf}>
+            {busy ? "Preparing…" : "Download the PDF again"}
           </button>
           <Link href="/" className="btn btnPrimary">
             Return home
@@ -228,46 +316,39 @@ export function ClientFormView({ form }: { form: ClientForm }) {
               : `You have answered ${answered} of ${total}. Blank questions are simply left out; we will cover them when we speak.`}
           </p>
 
-          {answered > 0 ? <pre className="briefSummary">{summary}</pre> : null}
-
-          {tooLongForUrl ? (
-            <p className="briefWarn">
-              This brief is now longer than a WhatsApp or email link can safely carry. Download it and attach
-              the file instead — that way nothing gets cut off.
-            </p>
+          {answered > 0 ? (
+            <>
+              <p className="briefSummaryLabel">What will be written into the form</p>
+              <pre className="briefSummary">{summary}</pre>
+            </>
           ) : null}
 
-          {/* Past the URL limit the file becomes the reliable route, so it leads. */}
+          {sendError ? <p className="briefWarn">{sendError}</p> : null}
+
           <div className="briefSend">
             <button
               type="button"
-              className={tooLongForUrl ? "btn btnSaffron" : "btn btnGhost"}
-              disabled={!answered}
-              onClick={download}
-            >
-              Download as a file
-            </button>
-            <button
-              type="button"
-              className={tooLongForUrl ? "btn btnGhost" : "btn btnSaffron"}
-              disabled={!answered}
+              className="btn btnSaffron"
+              disabled={!answered || busy}
               onClick={() => send("whatsapp")}
             >
-              <PIcon name="whatsapp" size={17} /> Send on WhatsApp
+              <PIcon name="whatsapp" size={17} /> {busy ? "Preparing…" : "Send on WhatsApp"}
             </button>
             <button
               type="button"
-              className={tooLongForUrl ? "btn btnGhost" : "btn btnPrimary"}
-              disabled={!answered}
+              className="btn btnPrimary"
+              disabled={!answered || busy}
               onClick={() => send("email")}
             >
-              Send by email
+              {busy ? "Preparing…" : "Send by email"}
+            </button>
+            <button type="button" className="btn btnGhost" disabled={!answered || busy} onClick={downloadPdf}>
+              {busy ? "Preparing…" : "Download the PDF"}
             </button>
           </div>
           <p className="formFoot">
-            {tooLongForUrl
-              ? "Download the file and attach it to a WhatsApp message or email — that way every answer arrives intact."
-              : "WhatsApp and email both open with your answers already filled in — you just press send."}
+            Your answers are written into the real Shivayonic form and sent as a PDF. On a phone it attaches
+            itself; on a computer it downloads and you attach it to the message.
           </p>
         </div>
       ) : (

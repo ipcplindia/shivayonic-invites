@@ -98,6 +98,7 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
         <Link href="/" className="brand" aria-label="Shivayonic Invites — home">
           <span className="brandName">SHIVAYONIC</span>
           <span className="brandSub">Invites</span>
+          <span className="brandUnit">A unit of Bholenath Productions</span>
         </Link>
 
         <nav className="navLinks" aria-label="Primary">

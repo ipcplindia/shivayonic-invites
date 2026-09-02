@@ -8,7 +8,11 @@ export function SiteFooter() {
         <div className="footerTop">
           <div>
             <p className="footerBrandName">SHIVAYONIC INVITES</p>
-            <p className="footerBrandSub">By Bholenath Productions &amp; Shivayonic Music</p>
+            <span className="footerBrandRule" aria-hidden="true" />
+            <p className="footerBrandUnit">A unit of Bholenath Productions</p>
+            <p className="footerBrandSub">
+              Cinematic invitations and celebration films, with original music by Shivayonic Music.
+            </p>
           </div>
           <FooterCol
             title="Explore"

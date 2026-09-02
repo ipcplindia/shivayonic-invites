@@ -1579,3 +1579,12 @@
   .briefNav .btn { flex: 1 1 100%; }
   .briefNav { flex-wrap: wrap; }
 }
+
+.briefSummaryLabel {
+  margin-top: 1.75rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--saffron-ink);
+}
