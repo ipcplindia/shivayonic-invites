@@ -37,8 +37,8 @@ export function SellerForm() {
         </span>
         <h2 className="sectionTitle">Thank you</h2>
         <p className="sectionLede" style={{ margin: "1rem auto 0" }}>
-          Your details are in. Our team will review your interest in becoming a Shivayonic seller and reach out
-          to you soon.
+          We have opened WhatsApp with your details filled in — just press send. Our team will review your
+          interest in becoming a Shivayonic seller and reach out to you soon.
         </p>
         <div style={{ marginTop: "2rem" }}>
           <Link href="/" className="btn btnGhost">
@@ -54,6 +54,28 @@ export function SellerForm() {
       className="formWrap reveal"
       onSubmit={(e) => {
         e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        const line = (k: string, label: string) => {
+          const v = (data.get(k) as string)?.trim();
+          return v ? `${label}: ${v}` : null;
+        };
+        const body = [
+          "Hello Shivayonic Invites, I would like to become a seller.",
+          "",
+          line("name", "Name"),
+          line("organisation", "Organisation"),
+          line("email", "Email"),
+          line("mobile", "Mobile"),
+          line("gstn", "GSTN"),
+          line("country", "Country"),
+          line("state", "State"),
+          line("pin", "PIN"),
+          line("address", "Address"),
+          line("about", "About"),
+        ]
+          .filter((l) => l !== null)
+          .join("\n");
+        window.open(`https://wa.me/919990099990?text=${encodeURIComponent(body)}`, "_blank", "noopener,noreferrer");
         setSubmitted(true);
       }}
     >
