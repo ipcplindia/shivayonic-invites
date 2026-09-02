@@ -12,7 +12,7 @@ import {
   categories,
   contact,
   corporate,
-  familyCelebrations,
+  celebrationTiles,
   featuredProducts,
   festivals,
   filmKinds,
@@ -206,17 +206,28 @@ export default function HomePage() {
         {/* 05 — LIFE & FAMILY CELEBRATIONS */}
         <section className="section creamSection" id="celebrations">
           <div className="shell">
-            <SectionHead
-              eyebrow="Life & Family"
-              title="For every milestone worth marking"
-              lede="The small ceremonies and the big ones — announced with the same care."
-            />
-            <div className="celebGrid reveal">
-              {familyCelebrations.map((item) => (
-                <article key={item.title} className="celebCard">
-                  <h3 className="celebTitle">{item.title}</h3>
-                  <p className="celebBlurb">{item.blurb}</p>
-                </article>
+            {/* Compact head: the tiles below carry the section, so the type
+                stays out of their way. */}
+            <div className="sectionHead sectionHeadTight reveal">
+              <span className="eyebrow">Life &amp; Family</span>
+              <h2 className="sectionTitle">For every milestone worth marking</h2>
+              <p className="sectionLede">
+                The small ceremonies and the big ones — announced with the same care.
+              </p>
+            </div>
+            <div className="celebTiles reveal">
+              {celebrationTiles.map((tile) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={tile.slug}
+                  className="celebTile"
+                  src={`/celebrations/${tile.slug}.webp`}
+                  alt={tile.alt}
+                  width={1090}
+                  height={400}
+                  loading="lazy"
+                  decoding="async"
+                />
               ))}
             </div>
           </div>

@@ -93,7 +93,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   const otherFeatured = featuredProducts.filter((p) => p.slug !== slug);
   const artStyle = view.image
-    ? { backgroundImage: `url(${view.image})`, backgroundSize: "cover", backgroundPosition: "center" }
+    ? { backgroundImage: `url(${view.image})`, backgroundSize: "cover", backgroundPosition: "center 30%" }
     : undefined;
 
   return (

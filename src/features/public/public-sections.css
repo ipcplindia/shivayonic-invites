@@ -12,6 +12,8 @@
 }
 
 .navBar {
+  position: relative;
+  z-index: 1;
   width: calc(100% - 2rem);
   margin: 0 auto;
   display: flex;
@@ -26,6 +28,32 @@
   border-bottom-color: var(--cocoa-line-soft);
 }
 
+/*
+ * Over a hero the bar is transparent and its text must be light. The colours
+ * below need the extra `.site` to outrank `.site a { color: inherit }` — without
+ * it every nav anchor inherits cocoa and disappears against dark photography.
+ */
+.site .brand,
+.site .navLink {
+  color: #fff9f1;
+}
+
+.site .navScrolled .brand,
+.site .navScrolled .navLink,
+.site .navScrolled .navIcon {
+  color: var(--cocoa);
+}
+
+/* A short scrim so the bar stays readable over bright artwork too. */
+.nav:not(.navScrolled)::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 132px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgb(30 14 6 / 0.42) 0%, rgb(30 14 6 / 0.16) 55%, transparent 100%);
+}
+
 .brand {
   display: flex;
   flex-direction: column;
@@ -34,12 +62,6 @@
   transition: color 0.4s var(--ease);
   min-height: 44px;
   justify-content: center;
-}
-
-.navScrolled .brand,
-.navScrolled .navLink,
-.navScrolled .navIcon {
-  color: var(--cocoa);
 }
 
 .brandName {
@@ -563,36 +585,45 @@
   font-size: 0.85rem;
 }
 
-.celebGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+/*
+ * Celebration title tiles. The artwork carries its own lettering, so the tiles
+ * are shown plain — no caption and no link.
+ *
+ * Flex rather than grid: there are thirteen of them, so a grid would leave a
+ * lone tile stranded at the start of the last row. Wrapping and centring keeps
+ * every row balanced whatever the count, with one gap value throughout.
+ */
+.celebTiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1rem;
 }
 
-.celebCard {
-  padding: 1.5rem;
+.celebTile {
+  flex: 0 1 calc((100% - 2rem) / 3);
+  min-width: 260px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 2180 / 800;
+  object-fit: cover;
   border-radius: var(--r-md);
-  background: var(--ivory);
   border: 1px solid var(--cocoa-line-soft);
+  box-shadow: var(--e1);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
 }
 
-.celebCard:nth-child(4n + 1) {
-  background: var(--rose-tint);
-}
-.celebCard:nth-child(4n + 3) {
-  background: var(--saffron-tint);
+.celebTile:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--e2);
 }
 
-.celebTitle {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  color: var(--cocoa);
+@media (max-width: 1000px) {
+  .celebTile { flex-basis: calc((100% - 1rem) / 2); }
 }
 
-.celebBlurb {
-  margin-top: 0.4rem;
-  color: var(--umber);
-  font-size: 0.9rem;
+@media (max-width: 640px) {
+  .celebTile { flex-basis: 100%; min-width: 0; }
 }
 
 .festWrap {
@@ -1367,4 +1398,30 @@
    behind the footer. */
 .revealStage {
   position: relative;
+}
+
+/*
+ * Tight variant of the section head: used where the artwork below is the point,
+ * so the type steps back. Wider measure lets the title and lede each sit on one
+ * or two lines instead of three, freeing vertical space for the tiles.
+ */
+.sectionHeadTight {
+  max-width: 62ch;
+  margin-bottom: 2.25rem;
+}
+
+.sectionHeadTight .eyebrow {
+  margin-bottom: 0.6rem;
+}
+
+.sectionHeadTight .sectionTitle {
+  font-size: clamp(1.6rem, 3vw, 2.35rem);
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.sectionHeadTight .sectionLede {
+  margin-top: 0.6rem;
+  max-width: 62ch;
+  font-size: clamp(0.95rem, 1.15vw, 1.02rem);
 }

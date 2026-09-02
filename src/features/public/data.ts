@@ -97,15 +97,25 @@ export const weddingJourney: { label: string; note: string }[] = [
   { label: "Invitation Songs", note: "Your story, scored" },
 ];
 
-export const familyCelebrations: { title: string; blurb: string }[] = [
-  { title: "Birthday", blurb: "From first candles to milestone years." },
-  { title: "Anniversary", blurb: "Silver, golden, and every year worth marking." },
-  { title: "Godh Bharai", blurb: "A baby shower wrapped in warmth." },
-  { title: "Namkaran", blurb: "The naming, announced with grace." },
-  { title: "Annaprashan", blurb: "First bites, first blessings." },
-  { title: "Mundan", blurb: "A tender first ceremony." },
-  { title: "Griha Pravesh", blurb: "A new home, a new beginning." },
-  { title: "Milestones", blurb: "Retirements, reunions, and firsts of every kind." },
+/**
+ * Celebration title tiles. The artwork carries its own lettering, so these are
+ * shown as pictures alone — no caption, no link. `alt` stays descriptive for
+ * anyone who cannot see the tile.
+ */
+export const celebrationTiles: { slug: string; alt: string }[] = [
+  { slug: "engagement-soiree", alt: "Engagement Soirée" },
+  { slug: "cocktail-and-sangeet", alt: "Cocktail & Sangeet" },
+  { slug: "haldi-utsav", alt: "Haldi Utsav" },
+  { slug: "bhaat-and-mayra", alt: "Bhaat & Mayra" },
+  { slug: "bachelors-night", alt: "Bachelors Night" },
+  { slug: "baby-shower", alt: "Baby Shower" },
+  { slug: "silver-jubilee", alt: "Silver Jubilee" },
+  { slug: "diwali-soiree", alt: "Diwali Soirée" },
+  { slug: "diwali-casino", alt: "Diwali Casino" },
+  { slug: "holi-utsav", alt: "Holi Utsav" },
+  { slug: "teej-mahotsav", alt: "Teej Mahotsav" },
+  { slug: "valentines-soiree", alt: "Valentine's Soirée" },
+  { slug: "new-years-eve", alt: "New Year's Eve" },
 ];
 
 export const festivals: string[] = [
