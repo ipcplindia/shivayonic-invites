@@ -13,16 +13,27 @@ export const contact = {
   // PLACEHOLDER links — point at search until the exact URLs are configured.
   instagramProfileUrl: "https://www.instagram.com/shivayonic.invites/",
   youtubeChannelUrl: "https://www.youtube.com/@SHIVAYONICINVITES",
-  whatsappNumber: "+91 99900 99990",
+  /**
+   * The number every public "talk to us" goes to. The studio takes enquiries on
+   * 99900 99980; 99900 99990 also receives submitted forms but is not the
+   * number customers are pointed at.
+   */
+  whatsappNumber: "+91 99900 99980",
   whatsappUrl:
-    "https://wa.me/919990099990?text=" +
+    "https://wa.me/919990099980?text=" +
     encodeURIComponent("Hello Shivayonic Invites, I would like to discuss a cinematic invitation."),
+};
+
+/** Numbers a completed client form is delivered to. */
+export const formRecipients = {
+  email: "ipcplindia@gmail.com",
+  whatsapp: ["919990099990", "919990099980"],
 };
 
 /** WhatsApp deep link prefilled for a specific design or service. */
 export function whatsappFor(subject: string): string {
   return (
-    "https://wa.me/919990099990?text=" +
+    "https://wa.me/919990099980?text=" +
     encodeURIComponent(`Hello Shivayonic Invites, I would like to customise the ${subject} invitation.`)
   );
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AddDesignToCart, ChoosePlanButton } from "@/features/public/cart-controls";
 import { PIcon } from "@/features/public/icons";
 import type { ToneName } from "@/features/public/pages";
 import { faqs } from "@/features/public/pages";
@@ -193,9 +194,14 @@ export function ProductCard({ product }: { product: PublicProductSummary }) {
           <a href={`/product/${product.slug}`} className="btn btnGhost">
             View
           </a>
-          <a href={`/product/${product.slug}`} className="btn btnPrimary">
-            Customize
-          </a>
+          <AddDesignToCart
+            design={{
+              slug: product.slug,
+              name: product.name,
+              occasion: product.category.name,
+              style,
+            }}
+          />
         </div>
       </div>
     </article>
@@ -285,7 +291,16 @@ const planIncludes = [
   "Delivery by WhatsApp and email",
 ];
 
-export function PlansSection({ id, showHead = true }: { id?: string; showHead?: boolean }) {
+export function PlansSection({
+  id,
+  showHead = true,
+  chooseHref = "/cart",
+}: {
+  id?: string;
+  showHead?: boolean;
+  /** Where choosing a plan lands. The brief flow sends it straight to the cart. */
+  chooseHref?: string;
+}) {
   return (
     <section className="section plansBand" id={id}>
       <div className="shell">
@@ -331,14 +346,29 @@ export function PlansSection({ id, showHead = true }: { id?: string; showHead?: 
 
               <p className="planTagline">{plan.tagline}</p>
 
-              <a
-                href={contact.whatsappUrl}
-                className={`btn ${plan.featured ? "btnSaffron" : "btnGhost"} planBtn`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Get in touch
-              </a>
+              {/*
+                Choosing puts the plan in the basket and moves to the cart;
+                talking to us stays available for anyone not ready to choose.
+              */}
+              <div className="planActions">
+                <ChoosePlanButton
+                  href={chooseHref}
+                  plan={{
+                    key: plan.key,
+                    name: plan.name,
+                    price: plan.price,
+                    priceNote: plan.priceNote,
+                  }}
+                />
+                <a
+                  className="btn btnGhost planBtn"
+                  href={contact.whatsappUrl}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Get in touch
+                </a>
+              </div>
               <span className="planReassure">No advance to talk to us</span>
             </article>
           ))}

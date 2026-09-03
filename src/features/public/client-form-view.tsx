@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import Link from "next/link";
-
+import { useCart } from "@/features/public/cart";
+import { contact } from "@/features/public/data";
 import { PIcon } from "@/features/public/icons";
+import { PlanChooser } from "@/features/public/plan-chooser";
 import { fillFormPdf } from "@/features/public/fill-form-pdf";
 import type { ClientForm, FormItem } from "@/features/public/client-forms";
 
@@ -19,12 +20,10 @@ import type { ClientForm, FormItem } from "@/features/public/client-forms";
  *  - it is walked one section at a time rather than as a single endless page;
  *  - sending produces the real PDF with the answers written into it, rather than
  *    a wall of text, so the studio receives the same document it already works
- *    from. On a phone it is shared straight into WhatsApp or mail; elsewhere it
- *    downloads and the message opens alongside it.
+ *    from. Submitting delivers the answers to the studio from the server — the
+ *    customer never has to pick a channel or attach anything — and then offers
+ *    the plans in place so the commission can be completed without leaving.
  */
-
-const WHATSAPP = "919990099990";
-const EMAIL = "ipcplindia@gmail.com";
 
 type Values = Record<string, string | string[]>;
 
@@ -53,10 +52,10 @@ export function ClientFormView({ form }: { form: ClientForm }) {
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<Values>({});
   const [restored, setRestored] = useState(false);
-  const [done, setDone] = useState<"whatsapp" | "email" | null>(null);
+  const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [sharedFile, setSharedFile] = useState(false);
+  const cart = useCart();
   const topRef = useRef<HTMLDivElement>(null);
 
   // Restore any draft, then keep it in step with what is typed.
@@ -123,32 +122,7 @@ export function ClientFormView({ form }: { form: ClientForm }) {
     return typeof v === "string" ? v.trim() : "";
   };
 
-  /*
-   * The PDF carries the answers, so the message only has to say what is attached
-   * and who it is from — short enough to survive any mail client or wa.me link.
-   */
-  const coveringNote = (unprintable: { label: string; value: string }[]) => {
-    const lines = [
-      "Hello Shivayonic Invites — my completed client form is attached.",
-      "",
-      `Form ${form.formNo} · ${form.name}`,
-    ];
-    const name = answerLike("_client_name_");
-    const mobile = answerLike("_client_mobile_");
-    const email = answerLike("_client_email_");
-    if (name) lines.push(`Name: ${name}`);
-    if (mobile) lines.push(`Mobile: ${mobile}`);
-    if (email) lines.push(`Email: ${email}`);
-    if (unprintable.length) {
-      lines.push(
-        "",
-        "These answers use characters the PDF form cannot print, so they are written here instead:",
-        ...unprintable.map((u) => `${u.label}: ${u.value}`),
-      );
-    }
-    return lines.join("\n");
-  };
-
+  /** Hands a generated file to the browser as a download. */
   const saveBlob = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -172,50 +146,39 @@ export function ClientFormView({ form }: { form: ClientForm }) {
     }
   };
 
-  const send = async (channel: "whatsapp" | "email") => {
+  /**
+   * Submit the brief.
+   *
+   * The answers go to the studio from the server, so the customer does not pick
+   * a channel, attach a file, or leave the page. If delivery fails they are told
+   * plainly and the PDF download stays available as the fallback.
+   */
+  const submitBrief = async () => {
     setBusy(true);
     setSendError(null);
     try {
-      const { blob, fileName, unprintable } = await fillFormPdf(form, values);
-      const text = coveringNote(unprintable);
-      const file = new File([blob], fileName, { type: "application/pdf" });
-
-      // On a phone this hands the PDF straight to WhatsApp or mail, already
-      // attached. Desktop browsers cannot attach a file to a link, so there the
-      // PDF downloads and the message opens beside it.
-      if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], text, title: `Shivayonic — ${form.name}` });
-          setSharedFile(true);
-          setDone(channel);
-          return;
-        } catch (err) {
-          // A cancelled share is the user's choice, not a failure.
-          if (err instanceof Error && err.name === "AbortError") return;
-        }
+      const res = await fetch("/api/public/form-submissions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          formSlug: form.slug,
+          formName: form.name,
+          formNo: String(form.formNo ?? ""),
+          contactName: answerLike("_client_name_"),
+          contactEmail: answerLike("_client_email_"),
+          contactPhone: answerLike("_client_mobile_"),
+          design: cart.design ? `${cart.design.name} (${cart.design.occasion})` : "",
+          summary,
+        }),
+      });
+      if (!res.ok) {
+        const problem = (await res.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(problem?.message ?? "We could not submit your form.");
       }
-
-      saveBlob(blob, fileName);
-      setSharedFile(false);
-      const url =
-        channel === "whatsapp"
-          ? `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`
-          : `mailto:${EMAIL}?subject=${encodeURIComponent(`Shivayonic client form ${form.formNo} — ${form.shortName}`)}&body=${encodeURIComponent(text)}`;
-      window.open(url, "_blank", "noopener,noreferrer");
-      setDone(channel);
+      cart.markBriefSubmitted();
+      setDone(true);
     } catch (err) {
-      // Never strand the answers: fall back to sending them as text.
-      setSendError(
-        err instanceof Error
-          ? `${err.message} Your answers were sent as text instead.`
-          : "Could not build the PDF. Your answers were sent as text instead.",
-      );
-      const url =
-        channel === "whatsapp"
-          ? `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(summary)}`
-          : `mailto:${EMAIL}?subject=${encodeURIComponent(`Shivayonic brief — ${form.name}`)}&body=${encodeURIComponent(summary)}`;
-      window.open(url, "_blank", "noopener,noreferrer");
-      setDone(channel);
+      setSendError(err instanceof Error ? err.message : "We could not submit your form.");
     } finally {
       setBusy(false);
     }
@@ -225,7 +188,7 @@ export function ClientFormView({ form }: { form: ClientForm }) {
     try { window.localStorage.removeItem(storageKey); } catch { /* ignore */ }
     setValues({});
     setRestored(false);
-    setDone(null);
+    setDone(false);
     go(0);
   };
 
@@ -235,29 +198,33 @@ export function ClientFormView({ form }: { form: ClientForm }) {
         <span className="formThanksMark">
           <PIcon name="check" size={26} />
         </span>
-        <h2 className="sectionTitle">Almost there</h2>
+        <h2 className="sectionTitle">Thank you — your form is with us</h2>
         <p className="sectionLede" style={{ margin: "1rem auto 0" }}>
-          {sharedFile
-            ? "Your completed form has been handed to the app you chose — press send there and it reaches our team."
-            : done === "whatsapp"
-              ? "Your completed form has downloaded and WhatsApp is open. Attach the PDF to the message, then press send."
-              : "Your completed form has downloaded and your email app is open. Attach the PDF to the message, then press send."}
-        </p>
-        <p className="formThanksNote">
-          Nothing has been submitted until you send that message. Your answers stay saved in this browser
-          until you clear them.
+          Your answers have been sent to our team. Now choose the level of service for your
+          celebration, and we will confirm everything with you.
         </p>
         {sendError ? <p className="briefWarn">{sendError}</p> : null}
         <div className="formThanksActions">
-          <button type="button" className="btn btnGhost" onClick={() => setDone(null)}>
+          <button className="btn btnGhost" onClick={() => setDone(false)} type="button">
             Back to the form
           </button>
-          <button type="button" className="btn btnGhost" disabled={busy} onClick={downloadPdf}>
-            {busy ? "Preparing…" : "Download the PDF again"}
+          <button className="btn btnGhost" disabled={busy} onClick={downloadPdf} type="button">
+            {busy ? "Preparing…" : "Download your copy"}
           </button>
-          <Link href="/" className="btn btnPrimary">
-            Return home
-          </Link>
+        </div>
+
+        {/*
+          The plans appear here rather than on another page: choosing the level
+          of service is the next step of this same decision, and sending the
+          customer away to find it loses them.
+        */}
+        <div className="formPlans">
+          <p className="sectionEyebrow">Choose your level</p>
+          <h3 className="sectionTitle">One package for the whole celebration</h3>
+          <PlanChooser />
+          <p className="formThanksNote">
+            Choosing a plan opens your cart, where you can review the design and the plan together.
+          </p>
         </div>
       </div>
     );
@@ -323,32 +290,45 @@ export function ClientFormView({ form }: { form: ClientForm }) {
             </>
           ) : null}
 
-          {sendError ? <p className="briefWarn">{sendError}</p> : null}
+          {/*
+            If delivery fails the customer is not left holding an error: the
+            PDF and a direct message to the studio are both one click away.
+          */}
+          {sendError ? (
+            <div className="briefWarn" role="alert">
+              <p>{sendError}</p>
+              <a
+                className="btn btnSaffron btnSm"
+                href={contact.whatsappUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <PIcon name="whatsapp" size={15} /> Message us on WhatsApp
+              </a>
+            </div>
+          ) : null}
 
           <div className="briefSend">
             <button
-              type="button"
-              className="btn btnSaffron"
-              disabled={!answered || busy}
-              onClick={() => send("whatsapp")}
-            >
-              <PIcon name="whatsapp" size={17} /> {busy ? "Preparing…" : "Send on WhatsApp"}
-            </button>
-            <button
-              type="button"
               className="btn btnPrimary"
               disabled={!answered || busy}
-              onClick={() => send("email")}
+              onClick={submitBrief}
+              type="button"
             >
-              {busy ? "Preparing…" : "Send by email"}
+              {busy ? "Submitting…" : "Submit the form"}
             </button>
-            <button type="button" className="btn btnGhost" disabled={!answered || busy} onClick={downloadPdf}>
+            <button
+              className="btn btnGhost"
+              disabled={!answered || busy}
+              onClick={downloadPdf}
+              type="button"
+            >
               {busy ? "Preparing…" : "Download the PDF"}
             </button>
           </div>
           <p className="formFoot">
-            Your answers are written into the real Shivayonic form and sent as a PDF. On a phone it attaches
-            itself; on a computer it downloads and you attach it to the message.
+            Submitting sends your answers straight to our team — there is nothing to attach and
+            nowhere else to go. You can download a copy for your own records.
           </p>
         </div>
       ) : (

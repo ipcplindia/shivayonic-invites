@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 
 import Link from "next/link";
 
+import { CartLink } from "@/features/public/cart-controls";
 import { PIcon } from "@/features/public/icons";
 import { searchShortcuts } from "@/features/public/data";
 
@@ -130,6 +131,8 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
         </nav>
 
         <span className="navSpacer" />
+
+        <CartLink />
 
         <div className="searchWrap" ref={searchRef}>
           <button
