@@ -35,7 +35,7 @@ export const categoryConfigs: Record<string, CategoryConfig> = {
     title: "Every celebration along the journey",
     lede: "From the first Save the Date to the last reception toast — cinematic invitations, films and music for each function of the wedding.",
     tone: "rose",
-    heroImage: "/hero/hero-desktop.webp",
+    heroImage: "/categories/wedding.webp",
     intro: {
       title: "One wedding, told beautifully at every step",
       body: "Each function has its own mood. We craft a coherent suite — invitation, film and music — so the whole celebration feels of a piece, from Roka to Reception.",
@@ -123,16 +123,16 @@ export const categoryConfigs: Record<string, CategoryConfig> = {
 
 /* ---------------------------------------------------------- Wedding events */
 
-export const weddingEvents: Record<string, { title: string; note: string; occasion: string }> = {
-  "save-the-date": { title: "Save the Date", note: "The first flutter of the celebration.", occasion: "Save the Date" },
-  roka: { title: "Roka", note: "Two families, one promise.", occasion: "Roka" },
-  engagement: { title: "Engagement", note: "The ring, and the reveal.", occasion: "Engagement" },
-  mehendi: { title: "Mehendi", note: "Colour, henna and song.", occasion: "Mehendi" },
-  haldi: { title: "Haldi", note: "Turmeric, sunshine and joy.", occasion: "Haldi" },
-  sangeet: { title: "Sangeet", note: "The night of music.", occasion: "Sangeet" },
-  cocktail: { title: "Cocktail", note: "Toasts and glamour.", occasion: "Cocktail" },
-  wedding: { title: "Wedding · Pheras", note: "The seven vows.", occasion: "Wedding" },
-  reception: { title: "Reception", note: "The grand welcome.", occasion: "Reception" },
+export const weddingEvents: Record<string, { title: string; note: string; occasion: string; image: string }> = {
+  "save-the-date": { title: "Save the Date", note: "The first flutter of the celebration.", occasion: "Save the Date", image: "/wedding/save-the-date.webp" },
+  roka: { title: "Roka", note: "Two families, one promise.", occasion: "Roka", image: "/wedding/roka.webp" },
+  engagement: { title: "Engagement", note: "The ring, and the reveal.", occasion: "Engagement", image: "/wedding/engagement.webp" },
+  mehendi: { title: "Mehendi", note: "Colour, henna and song.", occasion: "Mehendi", image: "/wedding/mehendi.webp" },
+  haldi: { title: "Haldi", note: "Turmeric, sunshine and joy.", occasion: "Haldi", image: "/wedding/haldi.webp" },
+  sangeet: { title: "Sangeet", note: "The night of music.", occasion: "Sangeet", image: "/wedding/sangeet.webp" },
+  cocktail: { title: "Cocktail", note: "Toasts and glamour.", occasion: "Cocktail", image: "/wedding/cocktail.webp" },
+  wedding: { title: "Wedding · Pheras", note: "The seven vows.", occasion: "Wedding", image: "/wedding/pheras.webp" },
+  reception: { title: "Reception", note: "The grand welcome.", occasion: "Reception", image: "/wedding/reception.webp" },
 };
 
 export const weddingEventSlugs = Object.keys(weddingEvents);

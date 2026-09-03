@@ -23,7 +23,7 @@ export default function Page() {
         title="Become a Shivayonic dealer"
         lede="For studios, planners and companies who want to offer our cinematic invitations, original music and films to their own clients. Share a few details and our team will reach out."
         tone="teal"
-        image="/categories/corporate.webp"
+        image="/pages/partners.webp"
         primary={{ label: "Apply below", href: "#apply" }}
       />
 

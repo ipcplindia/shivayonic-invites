@@ -181,15 +181,12 @@ export function featuredBySlug(slug: string): Product | undefined {
  * image rather than shuffling between renders.
  */
 export const artPool: string[] = [
-  "/products/diwali-nights.webp",
-  "/products/mehendi-night.webp",
-  "/products/reception-gala.webp",
-  "/products/birthday-bash.webp",
-  "/categories/celebrations.webp",
-  "/categories/devotional.webp",
-  "/categories/corporate.webp",
-  "/categories/music.webp",
-  "/categories/films.webp",
+  "/gallery/janmashtami.webp",
+  "/gallery/bhaat-mayra.webp",
+  "/gallery/baby-shower.webp",
+  "/gallery/corporate-conference.webp",
+  "/gallery/mata-ki-chowki.webp",
+  "/gallery/gurpurab.webp",
 ];
 
 export function artFor(key: string): string {

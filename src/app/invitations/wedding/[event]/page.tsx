@@ -44,7 +44,7 @@ export default async function Page({ params }: { params: Promise<{ event: string
         title={`${event.title} invitations`}
         lede={`${event.note} A coordinated invitation, film and score for this function.`}
         tone="rose"
-        image="/hero/hero-desktop.webp"
+        image={event.image}
         primary={{ label: "Browse designs", href: "#designs" }}
         secondary={{ label: "Talk to us", href: "/contact" }}
       />

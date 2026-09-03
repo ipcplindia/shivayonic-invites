@@ -39,7 +39,7 @@ export const clientForms: ClientForm[] = [
     shortName: "Weddings & Celebrations",
     blurb: "Weddings and every function around them, plus birthdays, anniversaries and family ceremonies.",
     pdf: "/forms/shivayonic-form-weddings-celebrations.pdf",
-    image: "/hero/hero-desktop.webp",
+    image: "/forms/weddings-celebrations.webp",
     tone: "rose",
     sections: [
       {
@@ -464,7 +464,7 @@ export const clientForms: ClientForm[] = [
     shortName: "Corporate & Launch",
     blurb: "Brand films, product launches, conferences, exhibitions, awards and sports campaigns.",
     pdf: "/forms/shivayonic-form-corporate-events.pdf",
-    image: "/categories/corporate.webp",
+    image: "/forms/corporate-events.webp",
     tone: "teal",
     sections: [
       {
@@ -887,7 +887,7 @@ export const clientForms: ClientForm[] = [
     shortName: "Hospitality & Dining",
     blurb: "Restaurants, cafes, bars, clubs, hotels and resorts — openings, event nights and campaigns.",
     pdf: "/forms/shivayonic-form-hospitality-nightlife.pdf",
-    image: "/products/reception-gala.webp",
+    image: "/forms/hospitality-nightlife.webp",
     tone: "gold",
     sections: [
       {
@@ -1259,7 +1259,7 @@ export const clientForms: ClientForm[] = [
     shortName: "Bespoke Projects",
     blurb: "Devotional, community, documentary, education, tourism, tributes — or an idea all your own.",
     pdf: "/forms/shivayonic-form-bespoke-projects.pdf",
-    image: "/categories/devotional.webp",
+    image: "/forms/bespoke-projects.webp",
     tone: "cocoa",
     sections: [
       {

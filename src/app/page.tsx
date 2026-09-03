@@ -4,6 +4,7 @@ import "@/features/public/public.css";
 import "@/features/public/public-sections.css";
 import "@/features/public/public-pages.css";
 import { PIcon } from "@/features/public/icons";
+import { CartProvider } from "@/features/public/cart";
 import { SiteNav } from "@/features/public/site-nav";
 import { SiteFooter } from "@/features/public/site-footer";
 import { PlansSection } from "@/features/public/sections";
@@ -75,6 +76,9 @@ function SectionHead({ eyebrow, title, lede }: { eyebrow: string; title: string;
 
 export default function HomePage() {
   return (
+    // The home page builds its own shell rather than using PageFrame, so it
+    // supplies the cart context the navigation depends on.
+    <CartProvider>
     <div className="site" id="top">
       <SiteNav />
 
@@ -473,5 +477,6 @@ export default function HomePage() {
       {/* FOOTER */}
       <SiteFooter />
     </div>
+    </CartProvider>
   );
 }

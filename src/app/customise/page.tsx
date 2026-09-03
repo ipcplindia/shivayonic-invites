@@ -20,7 +20,7 @@ export default function Page() {
         title="Tell us about your celebration"
         lede="Pick the form that fits your project. Fill it in online — your answers save as you go — or download the PDF and send it back whenever suits you."
         tone="rose"
-        image="/products/mehendi-night.webp"
+        image="/pages/customise.webp"
         primary={{ label: "Choose a brief", href: "#briefs" }}
         secondary={{ label: "Talk to us", href: "/contact" }}
       />
