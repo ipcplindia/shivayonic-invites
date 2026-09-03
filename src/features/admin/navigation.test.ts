@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { getPermissionsForRole } from "@/auth/permissions";
-import { activeNavItem, adminNavItem, canVisitAdminDestination, visibleNavGroups } from "@/features/admin/navigation";
+import { adminModules } from "@/features/admin/modules";
+import {
+  activeNavItem,
+  adminNavItem,
+  allNavItems,
+  canVisitAdminDestination,
+  visibleNavGroups,
+} from "@/features/admin/navigation";
 import type { CurrentUserContext, MemberRole } from "@/shared/auth";
 
 function contextFor(role: MemberRole): CurrentUserContext {
@@ -47,6 +54,21 @@ describe("command center navigation", () => {
     expect(activeNavItem("/admin/media/abc123")?.label).toBe("Media Library");
     expect(activeNavItem("/admin/catalogue/products")?.label).toBe("Products");
     expect(activeNavItem("/admin/settings")?.label).toBe("Settings");
+  });
+
+  it("keeps every module landing reachable from the rail", () => {
+    // A module the rail cannot reach is dead weight; a rail entry with no
+    // landing and no page is dead navigation. Both are caught here.
+    for (const entry of adminModules) {
+      expect(adminNavItem(entry.href), `${entry.href} is missing from the navigation`).toBeDefined();
+    }
+  });
+
+  it("gives every destination a title and a lede, so no screen opens unexplained", () => {
+    for (const entry of allNavItems) {
+      expect(entry.title.length, entry.href).toBeGreaterThan(0);
+      expect(entry.lede.length, entry.href).toBeGreaterThan(0);
+    }
   });
 
   it("does not trust anonymous or lower-role access to sensitive destinations", () => {

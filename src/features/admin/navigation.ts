@@ -2,28 +2,126 @@ import type { IconName } from "@/components/icon";
 import { can } from "@/features/access";
 import type { CurrentUserContext, Permission } from "@/shared/auth";
 
-export type NavItem = { href: string; label: string; icon: IconName; title: string; lede: string; permission?: Permission; pending?: boolean };
+/**
+ * The Control Centre information architecture.
+ *
+ * A destination appears here only if it does one of two things: run a real
+ * feature, or render an honest module landing that says what is missing and
+ * where to connect it. Business areas without a data source get one landing
+ * each rather than a tree of empty subpages, so the rail never promises a
+ * screen that turns out to be blank.
+ *
+ * `pending` marks a destination whose route, permission gate and layout exist
+ * but whose backing capability has not shipped. It drives the "Soon" chip.
+ */
+
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: IconName;
+  title: string;
+  lede: string;
+  permission?: Permission;
+  pending?: boolean;
+};
+
 export type NavGroup = { label: string; items: NavItem[] };
-const pending = true;
-const item = (href: string, label: string, icon: IconName, permission?: Permission, lede = `${label} is not connected yet.`): NavItem => ({ href, label, icon, title: label, lede, permission, pending });
+
+const item = (
+  href: string,
+  label: string,
+  icon: IconName,
+  permission: Permission | undefined,
+  lede: string,
+  pending = false,
+): NavItem => ({ href, label, icon, title: label, lede, permission, pending });
 
 export const navGroups: NavGroup[] = [
-  { label: "Overview", items: [{ href: "/admin", label: "Overview", icon: "overview", title: "Overview", lede: "The current operational state of the studio." }] },
-  { label: "Content", items: [
-    { href: "/admin/media", label: "Media Library", icon: "media", title: "Media Library", lede: "Private master files for the studio.", permission: "MEDIA_READ" },
-    item("/admin/content", "Website Content", "projects", "CONTENT_MANAGE"), item("/admin/our-work", "Our Work", "image", "CONTENT_MANAGE"), item("/admin/films", "Films", "video", "CONTENT_MANAGE"), item("/admin/music", "Music", "audio", "CONTENT_MANAGE"),
-  ] },
-  { label: "Catalogue", items: [item("/admin/catalogue/products", "Products", "projects", "CATALOGUE_MANAGE"), item("/admin/catalogue/categories", "Categories", "schedule", "CATALOGUE_MANAGE"), item("/admin/catalogue/styles", "Styles", "image", "CATALOGUE_MANAGE"), item("/admin/catalogue/plans", "Plans", "publish", "CATALOGUE_MANAGE")] },
-  { label: "Customers", items: [item("/admin/customers/enquiries", "Enquiries", "inbox", "CUSTOMERS_VIEW"), item("/admin/customers/forms", "Form Submissions", "inbox", "CUSTOMERS_VIEW"), item("/admin/customers/partners", "Partners", "user", "CUSTOMERS_VIEW"), item("/admin/customers", "Customers", "user", "CUSTOMERS_VIEW")] },
-  { label: "Orders", items: [item("/admin/orders", "All Orders", "projects", "ORDERS_MANAGE"), item("/admin/orders/new", "New", "plus", "ORDERS_MANAGE"), item("/admin/orders/in-progress", "In Progress", "schedule", "ORDERS_MANAGE"), item("/admin/orders/awaiting-client", "Awaiting Client", "alert", "ORDERS_MANAGE"), item("/admin/orders/completed", "Completed", "check", "ORDERS_MANAGE"), item("/admin/orders/cancelled", "Cancelled", "close", "ORDERS_MANAGE")] },
-  { label: "Social Studio", items: [item("/admin/social", "Social Studio", "publish", "PUBLISH_CONTENT"), item("/admin/social/master-content", "Master Content", "media", "PUBLISH_CONTENT"), item("/admin/social/youtube", "YouTube", "video", "PUBLISH_CONTENT"), item("/admin/social/instagram", "Instagram", "image", "PUBLISH_CONTENT"), item("/admin/social/schedule", "Schedule", "schedule", "PUBLISH_CONTENT"), item("/admin/social/history", "Publishing History", "activity", "PUBLISH_CONTENT")] },
-  { label: "Analytics", items: [item("/admin/analytics", "Business Overview", "overview", "ANALYTICS_VIEW"), item("/admin/analytics/website", "Website", "activity", "ANALYTICS_VIEW"), item("/admin/analytics/products", "Products", "projects", "ANALYTICS_VIEW"), item("/admin/analytics/forms", "Forms / Leads", "inbox", "ANALYTICS_VIEW"), item("/admin/analytics/youtube", "YouTube", "video", "ANALYTICS_VIEW"), item("/admin/analytics/instagram", "Instagram", "image", "ANALYTICS_VIEW")] },
-  { label: "Security", items: [item("/admin/security/users", "Users & Roles", "user", "USERS_MANAGE"), item("/admin/security/sessions", "Sessions", "lock", "SECURITY_VIEW"), item("/admin/security/audit", "Audit Log", "activity", "AUDIT_READ"), item("/admin/security/integrations", "Integrations", "publish", "INTEGRATIONS_MANAGE"), item("/admin/security/events", "Security Events", "alert", "SECURITY_VIEW")] },
-  { label: "Settings", items: [{ href: "/admin/settings", label: "Settings", icon: "settings", title: "Settings", lede: "Account and organization settings." }] },
+  {
+    label: "Command Center",
+    items: [
+      item("/admin", "Overview", "overview", undefined, "A live operating view of Shivayonic and Bholenath Productions."),
+      item("/admin/tasks", "Tasks", "check", undefined, "Everything in the studio that is waiting on a decision or an action."),
+      item("/admin/activity", "Activity", "activity", "AUDIT_READ", "A record of who changed what inside this organization.", true),
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      item("/admin/media", "Media Library", "media", "MEDIA_READ", "Private master files for the studio."),
+      item("/admin/content", "Website Content", "publish", "PUBLISH_CONTENT", "Publish a ready master to a website placement."),
+      item("/admin/projects", "Projects", "projects", "PROJECT_READ", "Every commission, from first brief to delivered invitation.", true),
+      item("/admin/publish", "Publishing", "publish", "PUBLISH_CONTENT", "Delivery of finished masters to each connected channel.", true),
+      item("/admin/schedule", "Schedule", "schedule", "PROJECT_WRITE", "Release windows for invitations that must land at a chosen hour.", true),
+    ],
+  },
+  {
+    label: "Catalogue",
+    items: [
+      item("/admin/catalogue", "Catalogue", "projects", "CATALOGUE_MANAGE", "Products, categories, visual styles and plans."),
+      item("/admin/catalogue/products", "Products", "image", "CATALOGUE_MANAGE", "Individual catalogue products as the public site sees them.", true),
+    ],
+  },
+  {
+    label: "Business",
+    items: [
+      item("/admin/customers", "Customers", "user", "CUSTOMERS_VIEW", "Enquiries, form submissions, partners and customers."),
+      item("/admin/orders", "Orders", "inbox", "ORDERS_MANAGE", "Every commission from placement through delivery."),
+      item("/admin/finance", "Finance", "archive", "ANALYTICS_VIEW", "Revenue, cost and cash position across the divisions."),
+    ],
+  },
+  {
+    label: "Growth",
+    items: [
+      item("/admin/marketing", "Marketing", "activity", "ANALYTICS_VIEW", "Campaigns, advertising and the content calendar."),
+      item("/admin/social", "Social", "video", "PUBLISH_CONTENT", "One master asset delivered to every channel."),
+      item("/admin/analytics", "Analytics", "overview", "ANALYTICS_VIEW", "How the website, catalogue and content perform."),
+    ],
+  },
+  {
+    label: "Automation",
+    items: [
+      item("/admin/automation", "Agent Center", "refresh", "INTEGRATIONS_MANAGE", "Agents, workflows and background jobs."),
+      item("/admin/integrations", "Integrations", "publish", "INTEGRATIONS_MANAGE", "Every system this business runs on, and its state."),
+    ],
+  },
+  {
+    label: "Security",
+    items: [
+      item("/admin/security/users", "Users & Roles", "user", "USERS_MANAGE", "People with access, and what each role may do.", true),
+      item("/admin/security/sessions", "Sessions", "lock", "SECURITY_VIEW", "Active sessions and devices.", true),
+      item("/admin/security/audit", "Audit Log", "activity", "AUDIT_READ", "The immutable record of privileged actions.", true),
+      item("/admin/security/events", "Security Events", "alert", "SECURITY_VIEW", "Sign-in failures, lockouts and permission denials.", true),
+    ],
+  },
+  {
+    label: "Settings",
+    items: [item("/admin/settings", "Settings", "settings", undefined, "Account and organization settings.")],
+  },
 ];
 
 export const allNavItems = navGroups.flatMap((group) => group.items);
-export function visibleNavGroups(context: CurrentUserContext): NavGroup[] { return navGroups.map((group) => ({ label: group.label, items: group.items.filter((entry) => !entry.permission || can(context, entry.permission)) })).filter((group) => group.items.length > 0); }
-export function activeNavItem(pathname: string): NavItem | undefined { return allNavItems.filter((entry) => pathname === entry.href || pathname.startsWith(`${entry.href}/`)).sort((a, b) => b.href.length - a.href.length)[0]; }
-export function adminNavItem(pathname: string) { return allNavItems.find((entry) => entry.href === pathname); }
-export function canVisitAdminDestination(context: CurrentUserContext | null, destination: NavItem) { return Boolean(context && (!destination.permission || can(context, destination.permission))); }
+
+export function visibleNavGroups(context: CurrentUserContext): NavGroup[] {
+  return navGroups
+    .map((group) => ({
+      label: group.label,
+      items: group.items.filter((entry) => !entry.permission || can(context, entry.permission)),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+/** The deepest matching destination wins, so a nested route keeps its parent highlighted. */
+export function activeNavItem(pathname: string): NavItem | undefined {
+  return allNavItems
+    .filter((entry) => pathname === entry.href || pathname.startsWith(`${entry.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+}
+
+export function adminNavItem(pathname: string) {
+  return allNavItems.find((entry) => entry.href === pathname);
+}
+
+export function canVisitAdminDestination(context: CurrentUserContext | null, destination: NavItem) {
+  return Boolean(context && (!destination.permission || can(context, destination.permission)));
+}

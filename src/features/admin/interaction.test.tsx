@@ -28,17 +28,34 @@ describe("command palette", () => {
   });
 
   it("labels destinations whose backend capability is not connected", () => {
-    const publish = commandsFor(contextFor("OWNER")).find((c) => c.label === "Social Studio");
-    const media = commandsFor(contextFor("OWNER")).find((c) => c.label === "Media Library");
+    const audit = commandsFor(contextFor("OWNER")).find((c) => c.label === "Audit Log");
+    const media = commandsFor(contextFor("OWNER")).find(
+      (c) => c.group === "Go to" && c.label === "Media Library",
+    );
 
-    expect(publish?.hint).toBe("Soon");
+    expect(audit?.hint).toBe("Soon");
     expect(media?.hint).toBeUndefined();
+  });
+
+  it("offers the actions that work today ahead of the destinations", () => {
+    const commands = commandsFor(contextFor("OWNER"));
+    const upload = commands.find((command) => command.label === "Upload a master");
+
+    expect(commands[0]?.group).toBe("Actions");
+    expect(upload?.href).toBe("/admin/media");
+    // Nothing that cannot be completed today may appear as an action.
+    expect(commands.filter((command) => command.group === "Actions").map((c) => c.label)).not.toContain(
+      "New campaign",
+    );
   });
 
   it("filters by label and ignores case and surrounding space", () => {
     const commands = commandsFor(contextFor("OWNER"));
 
-    expect(filterCommands(commands, "  MEDIA ").map((c) => c.label)).toEqual(["Media Library"]);
+    expect(filterCommands(commands, "  MEDIA LIBRARY ").map((c) => c.label)).toEqual([
+      "Open the Media Library",
+      "Media Library",
+    ]);
     expect(filterCommands(commands, "")).toHaveLength(commands.length);
     expect(filterCommands(commands, "customers").map((command) => command.label)).toEqual(["Customers"]);
   });

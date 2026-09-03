@@ -13,6 +13,7 @@ import { activeNavItem } from "@/features/admin/navigation";
 import type { CurrentUserContext } from "@/shared/auth";
 
 const NAV_ID = "command-center-nav";
+const RAIL_STORAGE_KEY = "shivayonic:rail-collapsed";
 
 /**
  * Owns the shell state that genuinely needs the client: current pathname, the
@@ -29,6 +30,30 @@ export function AppShell({
   const pathname = usePathname() ?? "/admin";
   const [menuOpen, setMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // The rail preference is read after mount, so the server markup stays stable
+  // and the operator's choice survives navigation and reloads.
+  useEffect(() => {
+    try {
+      setCollapsed(window.localStorage.getItem(RAIL_STORAGE_KEY) === "true");
+    } catch {
+      // Storage can be unavailable (private mode, blocked cookies). The rail
+      // simply starts expanded.
+    }
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((value) => {
+      const next = !value;
+      try {
+        window.localStorage.setItem(RAIL_STORAGE_KEY, String(next));
+      } catch {
+        // Preference is not persisted; the current session still honours it.
+      }
+      return next;
+    });
+  }
 
   // A drawer that survives navigation would cover the page the operator asked for.
   useEffect(() => setMenuOpen(false), [pathname]);
@@ -62,7 +87,7 @@ export function AppShell({
 
   return (
     <ToastProvider>
-      <div className={styles.shell}>
+      <div className={styles.shell} data-collapsed={collapsed ? "true" : "false"}>
         <a href="#command-center-main" className="skipLink">
           Skip to content
         </a>
@@ -72,6 +97,8 @@ export function AppShell({
           pathname={pathname}
           open={menuOpen}
           navId={NAV_ID}
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapsed}
           onNavigate={() => setMenuOpen(false)}
         />
 

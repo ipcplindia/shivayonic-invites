@@ -155,10 +155,50 @@
   white-space: nowrap;
 }
 
+.orgLabel {
+  color: var(--text-faint);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-1);
+}
+
 .orgMeta {
   color: var(--text-faint);
   font-family: var(--font-mono);
   font-size: var(--text-meta);
+}
+
+.railToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--space-5);
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+  font-weight: 550;
+  text-align: left;
+  cursor: pointer;
+}
+
+.railToggle:hover {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.railToggleIcon {
+  flex: none;
+}
+
+.railToggleIconOpen {
+  flex: none;
+  transform: rotate(180deg);
 }
 
 /* --------------------------------------------------------------- Top bar */
@@ -417,6 +457,36 @@
   width: 100%;
 }
 
+/* ------------------------------------------------- Operator-collapsed rail */
+
+/*
+ * The same compact rail the viewport produces below 1180px, chosen deliberately
+ * by the operator. Labels are dropped, not hidden from assistive technology:
+ * every item keeps its `title` tooltip and its accessible name.
+ */
+.shell[data-collapsed="true"] {
+  grid-template-columns: var(--rail-width-compact) minmax(0, 1fr);
+}
+
+.shell[data-collapsed="true"] .brand {
+  justify-content: center;
+  padding: 0;
+}
+
+.shell[data-collapsed="true"] .brandText,
+.shell[data-collapsed="true"] .navGroupLabel,
+.shell[data-collapsed="true"] .navLabel,
+.shell[data-collapsed="true"] .navPending,
+.shell[data-collapsed="true"] .railFooter {
+  display: none;
+}
+
+.shell[data-collapsed="true"] .navItem,
+.shell[data-collapsed="true"] .railToggle {
+  justify-content: center;
+  padding: 0;
+}
+
 /* ----------------------------------------------------------- Responsive */
 
 /* Laptop and small desktop: the rail keeps its icons, drops its labels. */
@@ -438,7 +508,8 @@
     display: none;
   }
 
-  .navItem {
+  .navItem,
+  .railToggle {
     justify-content: center;
     padding: 0;
   }
@@ -450,8 +521,34 @@
 
 /* Tablet and phone: the rail becomes a drawer. */
 @media (max-width: 860px) {
-  .shell {
+  /*
+   * The rail is a drawer here, so a collapsed preference must not survive: the
+   * attribute selector is repeated because it outranks the bare class whatever
+   * the source order.
+   */
+  .shell,
+  .shell[data-collapsed="true"] {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shell[data-collapsed="true"] .brandText {
+    display: flex;
+  }
+
+  .shell[data-collapsed="true"] .navGroupLabel,
+  .shell[data-collapsed="true"] .navLabel,
+  .shell[data-collapsed="true"] .navPending,
+  .shell[data-collapsed="true"] .railFooter {
+    display: block;
+  }
+
+  .shell[data-collapsed="true"] .navItem {
+    justify-content: flex-start;
+    padding: 0 var(--space-3);
+  }
+
+  .railToggle {
+    display: none;
   }
 
   .rail {

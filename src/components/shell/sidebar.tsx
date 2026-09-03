@@ -14,12 +14,16 @@ export function Sidebar({
   pathname,
   open = false,
   navId,
+  collapsed = false,
+  onToggleCollapse,
   onNavigate,
 }: {
   context: CurrentUserContext;
   pathname: string;
   open?: boolean;
   navId?: string;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
   onNavigate?: () => void;
 }) {
   const groups = visibleNavGroups(context);
@@ -72,9 +76,33 @@ export function Sidebar({
       </nav>
 
       <div className={styles.railFooter}>
+        <p className={styles.orgLabel}>Business scope</p>
         <p className={styles.orgName}>{context.organization.name}</p>
         <p className={styles.orgMeta}>{context.organization.slug}</p>
       </div>
+
+      {/*
+        The collapse control is only rendered where something owns the state.
+        Below 860px the rail is a drawer, so collapsing it there is meaningless
+        and the control is hidden by the stylesheet rather than by a guess about
+        viewport width at render time.
+      */}
+      {onToggleCollapse ? (
+        <button
+          type="button"
+          className={styles.railToggle}
+          onClick={onToggleCollapse}
+          aria-expanded={!collapsed}
+          aria-controls={navId}
+        >
+          <Icon
+            name="chevronRight"
+            size={16}
+            className={collapsed ? styles.railToggleIcon : styles.railToggleIconOpen}
+          />
+          <span className={styles.navLabel}>Collapse rail</span>
+        </button>
+      ) : null}
     </div>
   );
 }

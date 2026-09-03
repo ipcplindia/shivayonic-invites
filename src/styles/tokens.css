@@ -1,60 +1,74 @@
 /*
- * SHIVAYONIC COMMAND CENTER — design tokens.
+ * SHIVAYONIC + BHOLENATH — BUSINESS CONTROL CENTRE design tokens.
  *
- * Visual direction: "Lacquer & Brass". Surfaces are a warm, near-black lacquer
- * (the inside of a film can, a polished instrument lid) rather than a neutral
- * grey. Brass carries the brand and commitment; a cool signal blue carries
- * system state. The two are never used for the same job.
+ * Visual direction: "Graphite & Saffron". Surfaces are a warm graphite-olive
+ * stone rather than black, so long operating sessions stay calm. Saffron
+ * carries brand and commitment, sage carries operational health, and a
+ * desaturated teal carries data and automation. The three are never used for
+ * the same job.
  *
- * Colors are authored in OKLCH so the ramps stay perceptually even.
+ * The centre is a darkish hybrid, not a dark theme: the shell and dashboard are
+ * graphite, while dense data surfaces (finance, planners, tables) may opt into
+ * the light panel tokens at the bottom of this file.
  */
 
 :root {
   color-scheme: dark;
 
-  /* --- Surfaces (warm lacquer ink) --- */
-  --surface-canvas: oklch(0.145 0.008 35);
-  --surface-rail: oklch(0.125 0.008 30);
-  --surface-panel: oklch(0.185 0.008 40);
-  --surface-raised: oklch(0.225 0.009 40);
-  --surface-sunken: oklch(0.165 0.008 35);
-  --surface-overlay: oklch(0.205 0.009 40);
-  --surface-scrim: oklch(0.09 0.008 30 / 0.72);
+  /* --- Surfaces (warm graphite / soft stone) --- */
+  --surface-canvas: #171916;
+  --surface-rail: #131511;
+  --surface-panel: #20231f;
+  --surface-raised: #292c27;
+  --surface-sunken: #1b1e1a;
+  --surface-overlay: #252824;
+  --surface-scrim: rgba(10, 11, 10, 0.72);
 
   /* --- Hairlines --- */
-  --line-soft: oklch(0.26 0.008 40);
-  --line: oklch(0.31 0.008 40);
-  --line-strong: oklch(0.4 0.009 40);
+  --line-soft: rgba(245, 241, 232, 0.08);
+  --line: rgba(245, 241, 232, 0.12);
+  --line-strong: rgba(245, 241, 232, 0.2);
 
   /* --- Text --- */
-  --text-primary: oklch(0.95 0.008 80);
-  --text-secondary: oklch(0.78 0.008 72);
-  --text-muted: oklch(0.66 0.008 64);
-  --text-faint: oklch(0.56 0.008 60); /* decorative + disabled only, never body copy */
-  --text-on-brass: oklch(0.14 0.01 40);
+  --text-primary: #f5f1e8;
+  --text-secondary: #c7c3b9;
+  --text-muted: #aaa99f;
+  --text-faint: #85847b; /* decorative + disabled only, never body copy */
+  --text-on-brass: #1b1e1a;
 
-  /* --- Brass: brand, primary commitment, hairline ornament --- */
-  --brass: oklch(0.78 0.09 85);
-  --brass-bright: oklch(0.87 0.075 88);
-  --brass-deep: oklch(0.62 0.08 80);
+  /* --- Saffron: brand, primary commitment, hairline ornament --- */
+  --brass: #d99b45;
+  --brass-bright: #e9b76e;
+  --brass-deep: #b0782d;
   --brass-hairline: color-mix(in oklab, var(--brass) 32%, transparent);
   --brass-tint: color-mix(in oklab, var(--brass) 12%, transparent);
 
-  /* --- Signal: interaction, focus, current state --- */
-  --signal: oklch(0.7 0.095 272);
-  --signal-bright: oklch(0.81 0.08 274);
-  --signal-deep: oklch(0.5 0.1 272);
-  --signal-tint: color-mix(in oklab, var(--signal) 16%, transparent);
+  /* --- Signal (desaturated teal): interaction, focus, data and automation --- */
+  --signal: #5f9890;
+  --signal-bright: #86b7b0;
+  --signal-deep: #3b6660;
+  --signal-tint: color-mix(in oklab, var(--signal) 18%, transparent);
 
   /* --- Semantic --- */
-  --success: oklch(0.74 0.1 155);
-  --success-tint: color-mix(in oklab, var(--success) 16%, transparent);
-  --warning: oklch(0.76 0.135 62);
-  --warning-tint: color-mix(in oklab, var(--warning) 16%, transparent);
-  --danger: oklch(0.66 0.155 27);
-  --danger-tint: color-mix(in oklab, var(--danger) 18%, transparent);
+  --success: #7fa27b; /* muted sage — operational health */
+  --success-tint: color-mix(in oklab, var(--success) 18%, transparent);
+  --warning: #cfa63c; /* muted amber */
+  --warning-tint: color-mix(in oklab, var(--warning) 18%, transparent);
+  --danger: #cf6a5c; /* restrained coral */
+  --danger-tint: color-mix(in oklab, var(--danger) 20%, transparent);
   --info: var(--signal);
   --info-tint: var(--signal-tint);
+
+  /*
+   * --- Light data panels ---
+   * The hybrid half of the theme. A module opts in by setting these on its own
+   * container; nothing inherits them, so the shell stays graphite.
+   */
+  --surface-light: #f4f0e8;
+  --surface-light-sunken: #eeeae1;
+  --text-on-light: #2a2c27;
+  --text-on-light-muted: #6b6d63;
+  --line-on-light: rgba(23, 25, 22, 0.12);
 
   /* --- Typography --- */
   --font-display: var(--font-serif-display), "Iowan Old Style", Georgia, serif;
@@ -93,9 +107,9 @@
   --radius-pill: 999px;
 
   /* --- Elevation. Dark UI reads depth from hairlines first, shadow second. --- */
-  --shadow-sm: 0 1px 2px oklch(0.05 0 0 / 0.5);
-  --shadow-md: 0 4px 14px oklch(0.05 0 0 / 0.45);
-  --shadow-lg: 0 18px 48px oklch(0.05 0 0 / 0.55);
+  --shadow-sm: 0 1px 2px rgba(8, 9, 8, 0.5);
+  --shadow-md: 0 4px 14px rgba(8, 9, 8, 0.45);
+  --shadow-lg: 0 18px 48px rgba(8, 9, 8, 0.55);
 
   /* --- Motion --- */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -104,8 +118,8 @@
   --duration-slow: 240ms;
 
   /* --- Layout --- */
-  --rail-width: 260px;
-  --rail-width-compact: 72px;
+  --rail-width: 252px;
+  --rail-width-compact: 68px;
   --topbar-height: 60px;
   --content-max: 1440px;
 

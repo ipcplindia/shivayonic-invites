@@ -1,31 +1,396 @@
-.columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: var(--space-6);
-  align-items: start;
+/*
+ * Control Centre modules.
+ *
+ * One card language across every module: 10px radius, hairline border, the
+ * same interior rhythm. Layout is a 12-column asymmetric split that collapses
+ * to a two-up metric grid on a phone rather than a single stacked column.
+ */
+
+/* ---------------------------------------------------------- Executive head */
+
+.exec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
-.overviewCounts {
+.execText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.execScope {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.execScopeCurrent {
+  color: var(--brass);
+}
+
+.execTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 400;
+  line-height: var(--leading-tight);
+}
+
+.execLede {
+  color: var(--text-muted);
+  font-size: var(--text-body);
+  max-width: 72ch;
+}
+
+.execNote,
+.moduleStatus {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--brass-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-normal);
+  max-width: 96ch;
+}
+
+.execNote svg,
+.moduleStatus svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--brass);
+}
+
+/* --------------------------------------------------------------- Metrics */
+
+.metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-4);
 }
 
-.countCard { display: flex; flex-direction: column; gap: var(--space-1); min-height: 112px; padding: var(--space-5); }
-.countLabel { color: var(--text-muted); font-size: var(--text-body-sm); font-weight: 600; }
-.countValue { color: var(--brass-bright); font-family: var(--font-display); font-size: 2rem; font-weight: 500; line-height: 1.1; }
-.countDetail { color: var(--text-faint); font-size: var(--text-meta); }
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 116px;
+  padding: var(--space-5);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+  color: inherit;
+  text-decoration: none;
+}
 
-.stack {
+.metricLink {
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.metricLink:hover {
+  border-color: var(--brass-hairline);
+  background: var(--surface-raised);
+}
+
+.metricLabel {
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+}
+
+.metricValue {
+  color: var(--brass-bright);
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.metric[data-empty="true"] .metricValue {
+  color: var(--text-faint);
+}
+
+.metricDetail {
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+}
+
+/* ----------------------------------------------------------- Bento layout */
+
+.bento {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.bentoMain,
+.bentoSide {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
   min-width: 0;
 }
 
+.cardLink {
+  color: var(--signal-bright);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.cardLink:hover {
+  text-decoration: underline;
+}
+
+/* -------------------------------------------------------- Needs attention */
+
+.attentionList,
+.activityList,
+.sourceList {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  padding: 0;
+}
+
+.attentionRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--line-soft);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.attentionRow:hover {
+  background: var(--surface-raised);
+}
+
+.attentionCount {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+}
+
+.attentionRow[data-tone="danger"] .attentionCount {
+  border-color: color-mix(in oklab, var(--danger) 45%, transparent);
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+.attentionRow[data-tone="warning"] .attentionCount {
+  border-color: color-mix(in oklab, var(--warning) 45%, transparent);
+  background: var(--warning-tint);
+  color: var(--warning);
+}
+
+.attentionRow[data-tone="signal"] .attentionCount {
+  border-color: color-mix(in oklab, var(--signal) 45%, transparent);
+  background: var(--signal-tint);
+  color: var(--signal-bright);
+}
+
+.attentionText,
+.activityText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.attentionLabel,
+.activityTitle {
+  color: var(--text-primary);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attentionDetail,
+.activityDetail {
+  color: var(--text-muted);
+  font-size: var(--text-meta);
+}
+
+.rowChevron {
+  flex: none;
+  color: var(--text-faint);
+}
+
+/* --------------------------------------------------------------- Pipeline */
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+  list-style: none;
+  padding: var(--space-5);
+}
+
+.pipelineStage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+/* The arrow is decoration between real stages, not a claim about a flow. */
+.pipelineStage + .pipelineStage {
+  position: relative;
+}
+
+.pipelineStage + .pipelineStage::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(var(--space-2) * -1);
+  width: var(--space-2);
+  height: 1px;
+  background: var(--line);
+}
+
+.pipelineStage[data-empty="true"] {
+  border-style: dashed;
+  background: transparent;
+}
+
+.pipelineValue {
+  color: var(--brass-bright);
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  line-height: 1.1;
+}
+
+.pipelineStage[data-empty="true"] .pipelineValue {
+  color: var(--text-faint);
+}
+
+.pipelineLabel {
+  color: var(--text-primary);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+}
+
+.pipelineDetail {
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+}
+
+/* --------------------------------------------------------------- Activity */
+
+.activityRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--line-soft);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.activityRow:hover {
+  background: var(--surface-raised);
+}
+
+.activityTime {
+  flex: none;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+
+.attentionList > li:last-child .attentionRow,
+.activityList > li:last-child .activityRow {
+  border-bottom: 0;
+}
+
+/* --------------------------------------------------------------- Timeline */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  padding: var(--space-4) var(--space-5);
+}
+
+.timelineRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px var(--space-4);
+  padding: var(--space-3) 0 var(--space-3) var(--space-4);
+  border-left: 1px solid var(--line);
+  position: relative;
+}
+
+.timelineRow::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--space-3) + 6px);
+  left: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--brass);
+}
+
+.timelineDate {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+
+.timelineTitle {
+  color: var(--text-primary);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timelineMeta {
+  grid-column: 2;
+  color: var(--text-muted);
+  font-size: var(--text-meta);
+}
+
+/* ------------------------------------------------------------- Status list */
+
 .statusList {
   display: flex;
   flex-direction: column;
+  list-style: none;
+  padding: 0;
 }
 
 .statusRow {
@@ -43,9 +408,29 @@
 }
 
 .statusName {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   color: var(--text-secondary);
   min-width: 0;
 }
+
+.statusDetail {
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+}
+
+.permissionCode {
+  flex: none;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+
+/* ---------------------------------------------------------- Quick actions */
 
 .quickActions {
   display: flex;
@@ -72,7 +457,7 @@
 }
 
 .quickAction:hover {
-  border-color: var(--line-strong);
+  border-color: var(--brass-hairline);
   background: var(--surface-raised);
 }
 
@@ -83,7 +468,172 @@
 
 .quickActionLabel {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.quickActionHint {
+  flex: none;
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* -------------------------------------------------- Connection panels */
+
+.performance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.performanceHeading {
+  font-family: var(--font-display);
+  font-size: var(--text-title);
+  font-weight: 400;
+}
+
+.performanceLede {
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+  max-width: 80ch;
+}
+
+.performanceGrid,
+.integrationGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin-top: var(--space-2);
+}
+
+.integrationGrid {
+  padding: var(--space-5);
+  margin-top: 0;
+}
+
+.panel,
+.integration {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.panel:hover {
+  border-color: var(--brass-hairline);
+  background: var(--surface-raised);
+}
+
+.panelTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.panelIcon {
+  flex: none;
+  color: var(--signal-bright);
+}
+
+.panelName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-card);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panelBody {
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-normal);
+}
+
+.panelAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+  color: var(--signal-bright);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.integrationMeta {
+  display: grid;
+  grid-template-columns: minmax(0, 88px) minmax(0, 1fr);
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--text-body-sm);
+}
+
+.integrationMeta dt {
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.integrationMeta dd {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.integrationNote {
+  margin-top: auto;
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+}
+
+/* -------------------------------------------------------- Chips + sources */
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  padding: var(--space-5);
+}
+
+.chip {
+  padding: var(--space-1) var(--space-3);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.sourceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-secondary);
+  font-size: var(--text-body-sm);
+}
+
+.sourceList > li:last-child {
+  border-bottom: 0;
+}
+
+/* ---------------------------------------------------- Existing module CSS */
 
 .toolbar {
   display: flex;
@@ -189,9 +739,21 @@
   max-width: 72ch;
 }
 
+/* ------------------------------------------------------------ Responsive */
+
+@media (max-width: 1200px) {
+  .pipeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .pipelineStage + .pipelineStage::before {
+    display: none;
+  }
+}
+
 @media (max-width: 1100px) {
-  .overviewCounts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .columns {
+  .bento {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -210,4 +772,58 @@
   }
 }
 
-@media (max-width: 480px) { .overviewCounts { grid-template-columns: minmax(0, 1fr); } }
+/*
+ * Phone: metrics and pipeline stay two-up rather than collapsing to one long
+ * column, which is what makes the dashboard readable at a glance on a 375px
+ * screen. Panels go full width because their prose needs the measure.
+ */
+@media (max-width: 720px) {
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .metric {
+    min-height: 96px;
+    padding: var(--space-4);
+  }
+
+  .metricValue {
+    font-size: 1.625rem;
+  }
+
+  .pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: var(--space-4);
+  }
+
+  .execTitle {
+    font-size: 1.75rem;
+  }
+
+  .performanceGrid,
+  .integrationGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .integrationGrid {
+    padding: var(--space-4);
+  }
+
+  .attentionRow,
+  .activityRow,
+  .statusRow,
+  .sourceRow {
+    padding-inline: var(--space-4);
+  }
+
+  .quickActions,
+  .timeline,
+  .chipList {
+    padding-inline: var(--space-4);
+  }
+
+  .activityTime {
+    display: none;
+  }
+}

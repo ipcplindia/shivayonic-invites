@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Icon, type IconName } from "@/components/icon";
 import { overlayStyles as styles, useModalDialog } from "@/components/overlay";
+import { quickActionsFor } from "@/features/admin/actions";
 import { visibleNavGroups } from "@/features/admin/navigation";
 import type { CurrentUserContext } from "@/shared/auth";
 
@@ -22,16 +23,26 @@ export type Command = {
  * without mounting a router.
  */
 export function commandsFor(context: CurrentUserContext): Command[] {
-  return visibleNavGroups(context).flatMap((group) =>
-    group.items.map((item) => ({
-      id: `go:${item.href}`,
-      label: item.label,
-      group: "Go to",
-      icon: item.icon,
-      hint: item.pending ? "Soon" : undefined,
-      href: item.href,
+  return [
+    ...quickActionsFor(context).map((action) => ({
+      id: `do:${action.label}`,
+      label: action.label,
+      group: "Actions",
+      icon: action.icon,
+      hint: action.hint,
+      href: action.href,
     })),
-  );
+    ...visibleNavGroups(context).flatMap((group) =>
+      group.items.map((item) => ({
+        id: `go:${item.href}`,
+        label: item.label,
+        group: "Go to",
+        icon: item.icon,
+        hint: item.pending ? "Soon" : undefined,
+        href: item.href,
+      })),
+    ),
+  ];
 }
 
 export function filterCommands(commands: Command[], query: string) {
