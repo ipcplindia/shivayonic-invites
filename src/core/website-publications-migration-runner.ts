@@ -6,7 +6,8 @@ import { prisma } from "@/db/client";
 
 export const WEBSITE_PUBLICATIONS_MIGRATION = "20260903000000_website_publications";
 const MIGRATION_PATH = join(process.cwd(), "prisma", "migrations", WEBSITE_PUBLICATIONS_MIGRATION, "migration.sql");
-const MIGRATION_LOCK_KEY = 20260903000000;
+const MIGRATION_LOCK_NAMESPACE = 20260903;
+const MIGRATION_LOCK_ID = 0;
 
 type MigrationRow = {
   migration_name: string;
@@ -99,7 +100,9 @@ export async function runWebsitePublicationsMigration(db: MigrationDb = prisma) 
   try {
     return await db.$transaction<WebsitePublicationsMigrationResult>(async (tx) => {
       stage = "acquire_lock";
-      await tx.$queryRawUnsafe("SELECT pg_advisory_xact_lock($1)", MIGRATION_LOCK_KEY);
+      await tx.$queryRawUnsafe(
+        `SELECT pg_advisory_xact_lock(${MIGRATION_LOCK_NAMESPACE}::int, ${MIGRATION_LOCK_ID}::int)`,
+      );
 
       stage = "check_failed_migrations";
       const blockingFailures = await failedMigrationRows(tx);
