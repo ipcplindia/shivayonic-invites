@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AddDesignToCart, ChoosePlanButton } from "@/features/public/cart-controls";
+import { focusFor } from "@/features/public/image-focus";
 import { PIcon } from "@/features/public/icons";
 import type { ToneName } from "@/features/public/pages";
 import { faqs } from "@/features/public/pages";
@@ -91,7 +92,14 @@ export function CategoryHero({
       <span className={`catHeroArt tone-${tone}`} aria-hidden="true">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="catHeroPhoto" src={image} alt="" aria-hidden="true" decoding="async" />
+          <img
+            alt=""
+            aria-hidden="true"
+            className="catHeroPhoto"
+            decoding="async"
+            src={image}
+            style={{ objectPosition: focusFor(image) }}
+          />
         ) : null}
       </span>
       <div className="catHeroInner">
@@ -140,7 +148,11 @@ export function EditorialSplit({
     <div className={flip ? "split splitFlip reveal" : "split reveal"}>
       <span
         className={`splitArt tone-${tone}${image ? " hasPhoto" : ""}`}
-        style={image ? { backgroundImage: `url(${image})` } : undefined}
+        style={
+          image
+            ? { backgroundImage: `url(${image})`, backgroundPosition: focusFor(image) }
+            : undefined
+        }
         aria-hidden="true"
       />
       <div>
@@ -177,12 +189,16 @@ export function ChipRail({ items }: { items: { label: string; href: string }[] }
 
 export function ProductCard({ product }: { product: PublicProductSummary }) {
   const style = product.styles[0]?.name ?? product.category.name;
+  const art = featuredBySlug(product.slug)?.img ?? artFor(product.slug);
   return (
     <article className="pcard">
       <a
         href={`/product/${product.slug}`}
         className={`pcardArt tone-${toneForProduct(product)} hasPhoto`}
-        style={{ backgroundImage: `url(${featuredBySlug(product.slug)?.img ?? artFor(product.slug)})` }}
+        style={{
+          backgroundImage: `url(${art})`,
+          backgroundPosition: focusFor(art),
+        }}
         aria-label={product.name}
       >
         <span className="pcardTag">{product.category.name}</span>
@@ -235,7 +251,11 @@ export function StyleCard({
     <div className="styleCard">
       <span
         className={`styleCardArt tone-${tone}${image ? " hasPhoto" : ""}`}
-        style={image ? { backgroundImage: `url(${image})` } : undefined}
+        style={
+          image
+            ? { backgroundImage: `url(${image})`, backgroundPosition: focusFor(image) }
+            : undefined
+        }
         aria-hidden="true"
       />
       <div className="styleCardBody">

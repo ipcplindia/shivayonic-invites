@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+import { focusFor } from "@/features/public/image-focus";
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, Breadcrumb, CTASection, MiniFaq, ProcessBand, ProductCard, SectionHead } from "@/features/public/sections";
 import { PIcon } from "@/features/public/icons";
@@ -93,7 +94,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   const otherFeatured = featuredProducts.filter((p) => p.slug !== slug);
   const artStyle = view.image
-    ? { backgroundImage: `url(${view.image})`, backgroundSize: "cover", backgroundPosition: "center 30%" }
+    ? {
+        backgroundImage: `url(${view.image})`,
+        backgroundSize: "cover",
+        backgroundPosition: focusFor(view.image),
+      }
     : undefined;
 
   return (
@@ -108,12 +113,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         />
         <div className="productHero">
           <div className="productGallery">
+            {/*
+              One design, one photograph. This carried a strip of four
+              thumbnails that were all the same image repeated — a gallery
+              implying angles that do not exist. It returns when a design
+              actually has more than one picture.
+            */}
             <span className={`productMain tone-${view.tone}`} style={artStyle} aria-hidden="true" />
-            <div className="productThumbs">
-              {[0, 1, 2, 3].map((i) => (
-                <span key={i} className={`productThumb tone-${view.tone}`} style={artStyle} aria-hidden="true" />
-              ))}
-            </div>
           </div>
           <div className="productInfo">
             <p className="productLabel">

@@ -18,6 +18,12 @@ export type CategoryConfig = {
   tone: ToneName;
   /** Approved lead artwork, reused from the homepage category card for continuity. */
   heroImage: string;
+  /**
+   * Optional second photograph for the intro panel. Left unset, that panel
+   * uses its tone gradient — it previously repeated the hero image, so the
+   * same picture appeared twice on one page.
+   */
+  introImage?: string;
   intro: { title: string; body: string };
   /** Sub-occasions shown as a chip rail (each may become a route later). */
   chips: { label: string; href: string }[];

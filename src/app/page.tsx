@@ -5,6 +5,7 @@ import "@/features/public/public-sections.css";
 import "@/features/public/public-pages.css";
 import { PIcon } from "@/features/public/icons";
 import { CartProvider } from "@/features/public/cart";
+import { AddDesignToCart } from "@/features/public/cart-controls";
 import { SiteNav } from "@/features/public/site-nav";
 import { SiteFooter } from "@/features/public/site-footer";
 import { PlansSection } from "@/features/public/sections";
@@ -164,11 +165,14 @@ export default function HomePage() {
             />
             <div className="rail reveal">
               {weddingJourney.map((event, i) => (
-                <article key={event.label} className="chapter">
+                <Link className="chapter" href={event.href} key={event.label}>
                   <span className="chapterNum">{String(i + 1).padStart(2, "0")}</span>
                   <h3 className="chapterLabel">{event.label}</h3>
                   <p className="chapterNote">{event.note}</p>
-                </article>
+                  <span className="chapterGo">
+                    Browse designs <PIcon name="arrow" size={13} />
+                  </span>
+                </Link>
               ))}
             </div>
             <div style={{ textAlign: "center", marginTop: "2rem" }}>
@@ -198,9 +202,14 @@ export default function HomePage() {
                       <Link href={`/product/${product.slug}`} className="btn btnGhost">
                         View Details
                       </Link>
-                      <Link href={`/product/${product.slug}`} className="btn btnPrimary">
-                        Customize
-                      </Link>
+                      <AddDesignToCart
+                        design={{
+                          slug: product.slug,
+                          name: product.name,
+                          occasion: product.occasion,
+                          style: product.style,
+                        }}
+                      />
                     </div>
                   </div>
                 </article>

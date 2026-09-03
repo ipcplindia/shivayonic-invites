@@ -25,9 +25,11 @@
 }
 
 /*
- * The hero band is much wider than the artwork, so covering it crops top and
- * bottom. Centring that crop cuts people's heads off — faces sit in the upper
- * third of these frames — so the crop is biased upwards instead.
+ * The band is `62svh` at full width, so its aspect swings from about 3.2:1 on
+ * a desktop to taller than square on a phone. The artwork is cut to 3:2 with
+ * the subject centred, so cropping outward from the centre keeps faces in
+ * frame at every width. Biasing this upwards, as it once did, cut the heads
+ * off any photograph whose subject was not in the top third.
  */
 .catHeroPhoto {
   position: absolute;
@@ -35,7 +37,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 28%;
+  object-position: center;
 }
 
 .catHeroArt::after {
@@ -1849,16 +1851,47 @@
   justify-content: center;
 }
 
+/*
+ * Over a hero the bar is transparent, and a cart outlined in `currentColor`
+ * disappeared into whatever photograph sat behind it. It carries its own dark
+ * scrim and a light edge so it holds its shape against any image, and inverts
+ * once the bar turns solid.
+ */
 .navCart {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.9rem;
-  border: 1px solid currentColor;
+  gap: 0.45rem;
+  padding: 0.42rem 0.95rem;
+  border: 1px solid rgb(255 249 241 / 0.45);
   border-radius: 999px;
+  background: rgb(40 20 10 / 0.42);
+  backdrop-filter: blur(6px);
+  color: #fff9f1;
   font-size: 0.85rem;
+  font-weight: 600;
   white-space: nowrap;
+  transition:
+    background-color 0.3s var(--ease),
+    border-color 0.3s var(--ease),
+    color 0.3s var(--ease);
+}
+
+.navCart:hover {
+  background: rgb(40 20 10 / 0.62);
+  border-color: rgb(255 249 241 / 0.75);
+}
+
+.site .navScrolled .navCart {
+  border-color: var(--cocoa-line);
+  background: transparent;
+  backdrop-filter: none;
+  color: var(--cocoa);
+}
+
+.site .navScrolled .navCart:hover {
+  background: var(--cream);
+  border-color: var(--cocoa);
 }
 
 .navCartCount {

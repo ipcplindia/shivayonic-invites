@@ -1,7 +1,7 @@
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, Breadcrumb, CategoryHero, CTASection, MiniFaq, ProcessBand, SectionHead, StyleCard } from "@/features/public/sections";
 import { listStyles } from "@/features/public/catalogue-data";
-import { artFor, contact } from "@/features/public/data";
+import { contact } from "@/features/public/data";
 import type { ToneName } from "@/features/public/pages";
 
 export const metadata = {
@@ -31,7 +31,7 @@ export default async function Page() {
         {styles.length > 0 ? (
           <div className="styleCards reveal">
             {styles.map((s, i) => (
-              <StyleCard key={s.id} name={s.name} note={s.description ?? ""} tone={tones[i % tones.length]} image={artFor(s.name)} />
+              <StyleCard key={s.id} name={s.name} note={s.description ?? ""} tone={tones[i % tones.length]} />
             ))}
           </div>
         ) : (

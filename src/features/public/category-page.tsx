@@ -13,7 +13,7 @@ import {
   SectionHead,
   StyleCard,
 } from "@/features/public/sections";
-import { artFor, contact } from "@/features/public/data";
+import { contact } from "@/features/public/data";
 import { listProducts, listStyles } from "@/features/public/catalogue-data";
 import type { CategoryConfig, ToneName } from "@/features/public/pages";
 
@@ -56,7 +56,7 @@ export async function CategoryPage({
           title={config.intro.title}
           body={config.intro.body}
           tone={config.tone}
-          image={config.heroImage}
+          image={config.introImage}
           action={{ label: "See how it works", href: "/how-it-works" }}
         />
       </Band>
@@ -94,7 +94,7 @@ export async function CategoryPage({
           />
           <div className="styleCards reveal">
             {styleCards.map((s, i) => (
-              <StyleCard key={s.id} name={s.name} note={s.description ?? ""} tone={styleTones[i % styleTones.length]} image={artFor(s.name)} />
+              <StyleCard key={s.id} name={s.name} note={s.description ?? ""} tone={styleTones[i % styleTones.length]} />
             ))}
           </div>
           <div style={{ textAlign: "center", marginTop: "2rem" }}>

@@ -94,18 +94,26 @@ export const categories: Category[] = [
   { title: "Cinematic Films", blurb: "Invitation films that move people to reply.", href: "/films", img: "/categories/films.webp", tone: "sage", span: "tall" },
 ];
 
-export const weddingJourney: { label: string; note: string }[] = [
-  { label: "Save the Date", note: "The first flutter" },
-  { label: "Roka", note: "Two families, one promise" },
-  { label: "Engagement", note: "The ring, the reveal" },
-  { label: "Godh Tilak", note: "Blessings begin" },
-  { label: "Mehendi", note: "Colour and song" },
-  { label: "Haldi", note: "Turmeric and joy" },
-  { label: "Sangeet", note: "The night of music" },
-  { label: "Cocktail", note: "Toasts and glamour" },
-  { label: "Wedding · Pheras", note: "The seven vows" },
-  { label: "Reception", note: "The grand welcome" },
-  { label: "Invitation Songs", note: "Your story, scored" },
+/**
+ * The functions of a wedding, each pointing at the page that holds its designs.
+ *
+ * These were inert cards. Every function now has a page where its designs can
+ * be browsed and added to the cart, so each chapter opens it — a list of
+ * occasions the reader cannot act on is just decoration.
+ */
+export const weddingJourney: { label: string; note: string; href: string }[] = [
+  { label: "Save the Date", note: "The first flutter", href: "/invitations/wedding/save-the-date" },
+  { label: "Roka", note: "Two families, one promise", href: "/invitations/wedding/roka" },
+  { label: "Engagement", note: "The ring, the reveal", href: "/invitations/wedding/engagement" },
+  // Godh Tilak has no page of its own yet, so it opens the wedding overview.
+  { label: "Godh Tilak", note: "Blessings begin", href: "/invitations/wedding" },
+  { label: "Mehendi", note: "Colour and song", href: "/invitations/wedding/mehendi" },
+  { label: "Haldi", note: "Turmeric and joy", href: "/invitations/wedding/haldi" },
+  { label: "Sangeet", note: "The night of music", href: "/invitations/wedding/sangeet" },
+  { label: "Cocktail", note: "Toasts and glamour", href: "/invitations/wedding/cocktail" },
+  { label: "Wedding · Pheras", note: "The seven vows", href: "/invitations/wedding/wedding" },
+  { label: "Reception", note: "The grand welcome", href: "/invitations/wedding/reception" },
+  { label: "Invitation Songs", note: "Your story, scored", href: "/music" },
 ];
 
 /**
@@ -188,6 +196,18 @@ export const artPool: string[] = [
   "/gallery/mata-ki-chowki.webp",
   "/gallery/gurpurab.webp",
 ];
+
+/**
+ * Art by position, for a list rendered in order.
+ *
+ * The hashed variant below can hand the same photograph to two entries of the
+ * same list — with a pool of six and a page of five panels that is likely, not
+ * rare. Indexing walks the pool instead, so a list never repeats itself until
+ * it is longer than the pool.
+ */
+export function artAt(index: number): string {
+  return artPool[index % artPool.length];
+}
 
 export function artFor(key: string): string {
   let hash = 0;

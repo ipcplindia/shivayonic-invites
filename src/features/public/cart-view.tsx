@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { artFor, featuredBySlug } from "@/features/public/data";
+import { focusFor } from "@/features/public/image-focus";
 import { useCart } from "@/features/public/cart";
 
 /**
@@ -43,6 +44,7 @@ export function CartView() {
               className="cartItemArt"
               style={{
                 backgroundImage: `url(${featuredBySlug(design.slug)?.img ?? artFor(design.slug)})`,
+                backgroundPosition: focusFor(featuredBySlug(design.slug)?.img ?? artFor(design.slug)),
               }}
             />
             <div className="cartItemBody">
