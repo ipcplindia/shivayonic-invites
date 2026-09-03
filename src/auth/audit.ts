@@ -21,7 +21,8 @@ export type SecurityAuditAction =
   | "WEBSITE_PUBLICATION_CREATED"
   | "WEBSITE_PUBLICATION_UPDATED"
   | "WEBSITE_PUBLICATION_PUBLISHED"
-  | "WEBSITE_PUBLICATION_UNPUBLISHED";
+  | "WEBSITE_PUBLICATION_UNPUBLISHED"
+  | "WEBSITE_PUBLICATION_DELETED";
 
 export async function recordSecurityAudit(input: {
   action: SecurityAuditAction;

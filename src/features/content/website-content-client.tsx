@@ -45,6 +45,20 @@ export function WebsiteContent() {
     catch { setMessage("This publication could not be updated. It remains in its previous state."); }
     finally { setPending(false); }
   }
+  async function update(entry: Publication) {
+    setPending(true); setMessage("");
+    try {
+      await request(`/api/website-publications/${entry.id}`, { method: "PATCH", body: JSON.stringify({ action: "save", title: `${entry.title || entry.mediaAsset.displayTitle || entry.mediaAsset.originalFilename} Updated`, description: "Task 3 smoke metadata update verified.", altText: "Updated disposable Task 3 smoke image", sortOrder: entry.sortOrder + 1 }) });
+      setMessage("Publication metadata updated."); await load();
+    } catch { setMessage("This publication could not be updated. It remains in its previous state."); }
+    finally { setPending(false); }
+  }
+  async function remove(id: string) {
+    setPending(true); setMessage("");
+    try { await request(`/api/website-publications/${id}`, { method: "DELETE" }); setMessage("Publication deleted."); await load(); }
+    catch { setMessage("This publication could not be deleted."); }
+    finally { setPending(false); }
+  }
   if (state === "loading") return <Card><CardBody>Loading website content…</CardBody></Card>;
   if (state === "error") return <Card><ErrorState title="Website content unavailable" body={message} action={<Button onClick={() => void load()}>Try again</Button>} /></Card>;
   return <section aria-label="Website publishing"><Card><CardHeader title="Create website draft" description="Only READY masters are available. Publishing creates no duplicate object." /><CardBody><form onSubmit={create}>
@@ -56,6 +70,6 @@ export function WebsiteContent() {
     <label>Description<textarea value={form.description} maxLength={4000} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
     <Button type="submit" variant="primary" disabled={pending}>Save draft</Button>
   </form>{message ? <p role="status">{message}</p> : null}</CardBody></Card>
-  <Card><CardHeader title="Website publications" description="Live status and placements." />{publications.length ? <ul>{publications.map((entry) => <li key={entry.id}><strong>{entry.title || entry.mediaAsset.displayTitle || entry.mediaAsset.originalFilename}</strong> · {options.find((option) => option.value === entry.placement)?.label} <StatusBadge label={entry.status[0] + entry.status.slice(1).toLowerCase()} tone={entry.status === "PUBLISHED" ? "success" : "neutral"} /> {entry.status === "PUBLISHED" ? <Button size="sm" onClick={() => void action(entry.id, "unpublish")} disabled={pending}>Unpublish</Button> : <Button size="sm" onClick={() => void action(entry.id, "publish")} disabled={pending}>Publish</Button>}</li>)}</ul> : <EmptyState title="No website publications" body="Create a draft from a READY master. Existing public pages keep their curated fallback." />}</Card>
+  <Card><CardHeader title="Website publications" description="Live status and placements." />{publications.length ? <ul>{publications.map((entry) => <li key={entry.id}><strong>{entry.title || entry.mediaAsset.displayTitle || entry.mediaAsset.originalFilename}</strong> · {options.find((option) => option.value === entry.placement)?.label} <StatusBadge label={entry.status[0] + entry.status.slice(1).toLowerCase()} tone={entry.status === "PUBLISHED" ? "success" : "neutral"} /> <Button size="sm" onClick={() => void update(entry)} disabled={pending}>Update metadata</Button> {entry.status === "PUBLISHED" ? <Button size="sm" onClick={() => void action(entry.id, "unpublish")} disabled={pending}>Unpublish</Button> : <Button size="sm" onClick={() => void action(entry.id, "publish")} disabled={pending}>Publish</Button>} <Button size="sm" onClick={() => void remove(entry.id)} disabled={pending}>Delete</Button></li>)}</ul> : <EmptyState title="No website publications" body="Create a draft from a READY master. Existing public pages keep their curated fallback." />}</Card>
   </section>;
 }

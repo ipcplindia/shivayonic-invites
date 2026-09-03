@@ -45,3 +45,16 @@ export async function PATCH(request: Request, route: RouteContext) {
     return NextResponse.json({ publication: next });
   } catch (error) { return failure(error); }
 }
+
+export async function DELETE(request: Request, route: RouteContext) {
+  try {
+    const context = await requirePermission("PUBLISH_CONTENT", { headers: request.headers });
+    const { publicationId } = await route.params;
+    const publication = await prisma.websitePublication.findFirst({ where: { id: publicationId, organizationId: context.organization.id } });
+    if (!publication) return NextResponse.json({ error: { code: "PUBLICATION_NOT_FOUND" } }, { status: 404 });
+    await prisma.websitePublication.delete({ where: { id: publication.id } });
+    for (const path of publicPathsForPlacement[publication.placement]) revalidatePath(path);
+    await recordSecurityAudit({ action: "WEBSITE_PUBLICATION_DELETED", organizationId: context.organization.id, actorUserId: context.user.id, entityType: "WebsitePublication", entityId: publication.id });
+    return NextResponse.json({ ok: true });
+  } catch (error) { return failure(error); }
+}
