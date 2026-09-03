@@ -35,6 +35,8 @@ export default async function CommandCenterPage() {
   const metrics: BentoItem[] = [
     {
       id: "metric-media",
+      accent: "#5f9890",
+      icon: "layers",
       title: "Media",
       description: "Masters held",
       href: "/admin/media",
@@ -43,6 +45,8 @@ export default async function CommandCenterPage() {
     },
     {
       id: "metric-published",
+      accent: "#d99b45",
+      icon: "radio",
       title: "Published",
       description: "Live on the website",
       href: "/admin/content",
@@ -51,6 +55,8 @@ export default async function CommandCenterPage() {
     },
     {
       id: "metric-projects",
+      accent: "#7fa27b",
+      icon: "film",
       title: "Projects",
       description: "Organization projects",
       feature: "counter",
@@ -58,6 +64,8 @@ export default async function CommandCenterPage() {
     },
     {
       id: "metric-catalogue",
+      accent: "#c58a6a",
+      icon: "shop",
       title: "Catalogue",
       description: "Public products",
       feature: "counter",
@@ -71,6 +79,8 @@ export default async function CommandCenterPage() {
   const modules: BentoItem[] = [
     {
       id: "attention",
+      accent: "#cf6a5c",
+      icon: "zap",
       title: "Needs attention",
       description: "Work the studio has actually left unfinished, counted from live records.",
       className: "md:col-span-4",
@@ -100,6 +110,8 @@ export default async function CommandCenterPage() {
     },
     {
       id: "health",
+      accent: "#7fa27b",
+      icon: "check",
       title: "System health",
       description: "What this deployment can actually do right now.",
       className: "md:col-span-2",
@@ -128,6 +140,8 @@ export default async function CommandCenterPage() {
     },
     {
       id: "pipeline",
+      accent: "#5f9890",
+      icon: "activity",
       title: "Content pipeline",
       description:
         "Where the masters of this organization sit today. Each bar is that stage's real share of everything held.",
@@ -167,6 +181,8 @@ export default async function CommandCenterPage() {
     },
     {
       id: "activity",
+      accent: "#d99b45",
+      icon: "list",
       title: "Recent activity",
       description: "The last changes to media, publications and projects.",
       className: "md:col-span-3",
@@ -206,6 +222,8 @@ export default async function CommandCenterPage() {
     },
     {
       id: "quick-actions",
+      accent: "#cfa63c",
+      icon: "sparkles",
       title: "Quick actions",
       description: "Everything here works today.",
       className: "md:col-span-2",
@@ -223,6 +241,8 @@ export default async function CommandCenterPage() {
     },
     {
       id: "timeline",
+      accent: "#5f9890",
+      icon: "calendar",
       title: "Operations timeline",
       description: "Dated events from real records.",
       className: "md:col-span-2",
@@ -241,6 +261,8 @@ export default async function CommandCenterPage() {
     },
     {
       id: "scope",
+      accent: "#c58a6a",
+      icon: "archive",
       title: "Business scope",
       description: `Every count on this page is for ${context.organization.name}.`,
       className: "md:col-span-2",

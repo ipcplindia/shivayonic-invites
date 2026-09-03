@@ -172,6 +172,87 @@
 }
 
 /*
+ * Surface atmosphere.
+ *
+ * The references this centre is modelled on are not flat fields of one grey:
+ * they carry a faint coloured ambience behind the content and a rail that
+ * reads as a distinct plane. This is the whole of that treatment — two very
+ * low-opacity washes fixed behind the canvas, in the saffron and teal the
+ * palette already uses. Nothing here encodes data.
+ */
+@layer components {
+  .cc-scope [data-slot="sidebar-inset"],
+  .cc-scope main {
+    position: relative;
+  }
+
+  .cc-scope [data-slot="sidebar-inset"]::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(70% 55% at 78% -8%, rgba(217, 155, 69, 0.09), transparent 60%),
+      radial-gradient(55% 45% at 4% 6%, rgba(95, 152, 144, 0.07), transparent 62%);
+  }
+
+  .cc-scope main {
+    z-index: 1;
+  }
+
+  /* The rail sits on its own plane rather than dissolving into the canvas. */
+  .cc-scope [data-slot="sidebar"] [data-sidebar="sidebar"],
+  .cc-scope [data-collapsible] [data-sidebar="sidebar"] {
+    background:
+      linear-gradient(180deg, rgba(217, 155, 69, 0.05), transparent 220px),
+      var(--color-sidebar);
+  }
+
+  /* Active destination: a saffron edge and a tinted field, not just bold text. */
+  .cc-scope [data-sidebar="menu-button"][data-active="true"] {
+    position: relative;
+    background: color-mix(in oklab, var(--color-primary) 12%, transparent);
+    color: var(--color-foreground);
+  }
+
+  .cc-scope [data-sidebar="menu-button"][data-active="true"]::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: -8px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--color-primary);
+  }
+
+  .cc-scope [data-sidebar="menu-button"][data-active="true"] svg {
+    color: var(--color-primary);
+  }
+
+  .cc-scope [data-sidebar="group-label"] {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--color-muted-foreground) 72%, transparent);
+  }
+
+  /* "Soon" chips read as quiet metadata, not as a second navigation. */
+  .cc-scope [data-sidebar="menu-badge"] {
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0 7px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+    background: var(--color-surface-sunken);
+  }
+}
+
+/*
  * The imported components animate on hover and on mount. An operator who has
  * asked their system for less motion gets none of it. Motion's own JS
  * animations are handled separately by <MotionConfig reducedMotion="user">.

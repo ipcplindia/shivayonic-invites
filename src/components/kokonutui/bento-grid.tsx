@@ -14,37 +14,50 @@
  *
  * Source: https://kokonutui.com/r/bento-grid.json.
  *
- * Kept from the original, unchanged in behaviour: the `BentoCard` shell with its pointer-tracked
- * 3D tilt (useMotionValue → useTransform → rotateX/rotateY), the hover lift,
- * the reveal-on-hover ArrowUpRight, the layered gradient/backdrop treatment,
- * and the `SpotlightFeature`, `CounterAnimation`, `TimelineFeature` and
- * `MetricsFeature` sub-components.
+ * Kept from the original: the `BentoCard` shell with its pointer-tracked 3D
+ * tilt (useMotionValue → useTransform → rotateX/rotateY), the hover lift, the
+ * reveal-on-hover ArrowUpRight, and the `SpotlightFeature`,
+ * `CounterAnimation`, `TimelineFeature` and `MetricsFeature` sub-components.
  *
  * Removed, because each one could only be filled with invented data:
  * `IconsFeature` (OpenAI/Anthropic/Gemini/Mistral/DeepSeek logos),
  * `TypingCodeFeature`, `ChartAnimation`, `AIInput_Voice`, and the entire
- * hardcoded marketing `itemsSample` array. The seven vendor logo icon files
- * that shipped with the component were not copied into this repository.
+ * hardcoded marketing `itemsSample` array.
  *
  * Changed:
  *  - the grid is driven by an `items` prop instead of a module-level constant.
- *  - `BentoCard` renders an `<article>` when an item has no `href`. The
- *    original always renders a `<Link>`; several Control Centre cards contain
- *    their own links (quick actions, attention rows), and nesting an anchor
- *    inside an anchor is invalid and unusable with a keyboard.
- *  - `MetricsFeature` gained an optional `display` field so the figure shown is
- *    the real count while the bar length shows that count's real share of the
- *    total. Without it the bar and the number cannot both be truthful.
- *  - the entrance animation moved from the container's `staggerContainer` /
- *    `fadeInUp` variants onto each card, because that propagation left every
- *    card at opacity 0 in this tree. The staggered fade-up is unchanged in
- *    appearance; it is simply driven per card. See BentoGrid below.
- *  - neutral/emerald demo colours replaced with Control Centre tokens.
+ *  - `BentoCard` renders an `<article>` when an item has no `href`, because
+ *    several Control Centre cards contain their own links and nesting an
+ *    anchor inside an anchor is invalid.
+ *  - `MetricsFeature` gained an optional `display` field so the figure shown
+ *    is the real count while the bar shows that count's real share.
+ *  - the entrance animation moved onto each card; the container's variant
+ *    propagation left every card at opacity 0 in this tree.
+ *  - the card surface now carries the treatment KokonutUI's own
+ *    spotlight-cards applies to its cards — a solid elevated gradient, an
+ *    inset top highlight, an ambient accent glow that springs on hover, a
+ *    tinted icon badge with an inset ring, and an accent rule along the base.
+ *    The original's flat translucent gradient was built for a pure-black
+ *    marketing page and read as no card at all over this canvas.
  * ---------------------------------------------------------------------------
  */
 
-import { ArrowUpRight, CheckCircle2 } from "lucide-react";
-import { motion, useMotionValue, useTransform } from "motion/react";
+import {
+  Activity,
+  Archive,
+  ArrowUpRight,
+  CalendarClock,
+  CheckCircle2,
+  Clapperboard,
+  Layers,
+  ListChecks,
+  Radio,
+  ShoppingBag,
+  Sparkles,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -66,8 +79,32 @@ export interface BentoItem {
     color?: "health" | "data" | "primary" | "warn" | "destructive";
   }>;
   statistic?: { start?: number; end?: number; suffix?: string };
+  /** Accent colour, as spotlight-cards uses: tints the glow, badge and rule. */
+  accent?: string;
+  /**
+   * Icon for the accent badge, named rather than passed as a component: the
+   * dashboard is a server component, and a Lucide component reference is not a
+   * plain object, so React refuses to serialise it across the boundary.
+   */
+  icon?: BentoIconName;
   children?: ReactNode;
 }
+
+export type BentoIconName = keyof typeof bentoIcons;
+
+const bentoIcons = {
+  activity: Activity,
+  archive: Archive,
+  calendar: CalendarClock,
+  check: CheckCircle2,
+  film: Clapperboard,
+  layers: Layers,
+  list: ListChecks,
+  radio: Radio,
+  shop: ShoppingBag,
+  sparkles: Sparkles,
+  zap: Zap,
+} satisfies Record<string, LucideIcon>;
 
 const SpotlightFeature = ({ items }: { items: string[] }) => (
   <ul className="mt-2 space-y-1.5">
@@ -129,21 +166,17 @@ const CounterAnimation = ({
 
   return (
     <div className="flex items-baseline gap-1">
-      <span className="font-bold text-3xl text-primary">
+      <span className="font-semibold text-4xl text-foreground tracking-tight tabular-nums">
         {isWhole ? Math.round(count) : count.toFixed(1).replace(/\.0$/, "")}
       </span>
-      <span className="font-medium text-foreground text-xl">{suffix}</span>
+      <span className="font-medium text-lg text-muted-foreground">{suffix}</span>
     </div>
   );
 };
 
-const TimelineFeature = ({
-  timeline,
-}: {
-  timeline: Array<{ year: string; event: string }>;
-}) => (
+const TimelineFeature = ({ timeline }: { timeline: Array<{ year: string; event: string }> }) => (
   <div className="relative mt-3">
-    <div className="absolute top-0 bottom-0 left-[9px] w-[2px] bg-border" />
+    <div className="absolute top-1 bottom-1 left-[7px] w-px bg-border" />
     {timeline.map((item, index) => (
       <motion.div
         animate={{ opacity: 1, x: 0 }}
@@ -152,9 +185,9 @@ const TimelineFeature = ({
         key={`timeline-${item.year}-${item.event.toLowerCase().replace(/\s+/g, "-")}`}
         transition={{ delay: 0.08 * index }}
       >
-        <div className="z-10 mt-0.5 h-5 w-5 flex-shrink-0 rounded-full border-2 border-primary/60 bg-surface-sunken" />
+        <span className="z-10 mt-1 h-[15px] w-[15px] flex-shrink-0 rounded-full border-2 border-primary/70 bg-surface-sunken" />
         <div className="min-w-0">
-          <div className="font-medium text-foreground text-sm">{item.year}</div>
+          <div className="font-medium font-mono text-[11px] text-primary/90">{item.year}</div>
           <div className="truncate text-muted-foreground text-xs">{item.event}</div>
         </div>
       </motion.div>
@@ -162,11 +195,7 @@ const TimelineFeature = ({
   </div>
 );
 
-const MetricsFeature = ({
-  metrics,
-}: {
-  metrics: NonNullable<BentoItem["metrics"]>;
-}) => {
+const MetricsFeature = ({ metrics }: { metrics: NonNullable<BentoItem["metrics"]> }) => {
   const getColorClass = (color: string | undefined) => {
     const colors = {
       health: "bg-health",
@@ -183,19 +212,19 @@ const MetricsFeature = ({
       {metrics.map((metric, index) => (
         <motion.div
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-1"
+          className="space-y-1.5"
           initial={{ opacity: 0, y: 10 }}
           key={`metric-${metric.label.toLowerCase().replace(/\s+/g, "-")}`}
           transition={{ delay: 0.15 * index }}
         >
-          <div className="flex items-center justify-between text-sm">
-            <div className="font-medium text-foreground/80">{metric.label}</div>
-            <div className="font-semibold text-foreground/80">
+          <div className="flex items-center justify-between text-[12.5px]">
+            <div className="font-medium text-foreground/85">{metric.label}</div>
+            <div className="font-semibold text-foreground tabular-nums">
               {metric.display ?? metric.value}
               {metric.suffix}
             </div>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken ring-1 ring-border/60 ring-inset">
             <motion.div
               animate={{ width: `${Math.min(100, metric.value)}%` }}
               className={`h-full rounded-full ${getColorClass(metric.color)}`}
@@ -209,62 +238,85 @@ const MetricsFeature = ({
   );
 };
 
+const DEFAULT_ACCENT = "#d99b45";
+
 /*
- * The original's card is a translucent gradient (80% → 40%) designed to sit on
- * a pure-black marketing page. Over this canvas the two are within a few
- * percent of each other, so every card read as flat and the grid lost its
- * structure. The gradient is kept but anchored on the solid card surface, so
- * the elevation step is actually visible.
+ * The card surface. Nothing here carries data — it is all surface: a solid
+ * elevated gradient, a hairline, an inset top highlight, an ambient accent
+ * glow that springs up on hover, and an accent rule that draws along the base.
  */
 const CARD_CLASS =
-  "group relative flex h-full flex-col gap-4 rounded-xl border border-border bg-gradient-to-b from-surface-raised via-card to-card p-5 shadow-[0_4px_20px_rgb(0,0,0,0.28)] transition-all duration-500 ease-out hover:border-primary/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.38)]";
+  "group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-gradient-to-b from-surface-raised via-card to-card p-5 shadow-[inset_0_1px_0_0_rgba(245,241,232,0.06),0_6px_24px_rgba(8,9,8,0.35)] transition-all duration-500 ease-out hover:border-primary/40 hover:shadow-[inset_0_1px_0_0_rgba(245,241,232,0.1),0_10px_34px_rgba(8,9,8,0.45)]";
 
 export const BentoCard = ({ item, index = 0 }: { item: BentoItem; index?: number }) => {
+  const accent = item.accent ?? DEFAULT_ACCENT;
+  const Icon = item.icon ? bentoIcons[item.icon] : undefined;
+
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotateX = useTransform(y, [-100, 100], [2, -2]);
   const rotateY = useTransform(x, [-100, 100], [-2, 2]);
+  const glow = useSpring(0, { stiffness: 180, damping: 22 });
 
   function handleMouseMove(event: React.MouseEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-    x.set(xPct * 100);
-    y.set(yPct * 100);
+    x.set(((event.clientX - rect.left) / rect.width - 0.5) * 100);
+    y.set(((event.clientY - rect.top) / rect.height - 0.5) * 100);
   }
 
   function handleMouseLeave() {
     x.set(0);
     y.set(0);
+    glow.set(0);
   }
 
+  const tint = `radial-gradient(120% 80% at 12% 0%, ${accent}1f, transparent 62%)`;
+  const tintStrong = `radial-gradient(120% 80% at 12% 0%, ${accent}33, transparent 62%)`;
+
   const body = (
-    <div
-      className="relative z-10 flex h-full flex-col gap-3"
-      style={{ transform: "translateZ(20px)" }}
-    >
-      <div className="flex flex-1 flex-col space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-foreground text-lg tracking-tight">{item.title}</h3>
+    <>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{ background: tint }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{ opacity: glow, background: tintStrong }}
+      />
+
+      <div
+        className="relative z-10 flex h-full flex-col gap-3"
+        style={{ transform: "translateZ(20px)" }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            {Icon ? (
+              <span
+                className="flex h-9 w-9 flex-none items-center justify-center rounded-lg"
+                style={{ background: `${accent}1c`, boxShadow: `inset 0 0 0 1px ${accent}3d` }}
+              >
+                <Icon size={17} strokeWidth={1.9} style={{ color: accent }} />
+              </span>
+            ) : null}
+            <h3 className="truncate font-semibold text-[15px] text-foreground tracking-tight">
+              {item.title}
+            </h3>
+          </div>
           {item.href ? (
-            <div className="flex-none text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <ArrowUpRight className="h-5 w-5" />
-            </div>
+            <ArrowUpRight className="h-4 w-4 flex-none text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
           ) : null}
         </div>
 
-        <p className="text-muted-foreground text-sm tracking-tight">{item.description}</p>
+        <p className="text-[12.5px] text-muted-foreground leading-relaxed">{item.description}</p>
 
         {item.feature === "spotlight" && item.spotlightItems && (
           <SpotlightFeature items={item.spotlightItems} />
         )}
 
         {item.feature === "counter" && item.statistic && (
-          <div className="mt-auto pt-3">
+          <div className="mt-auto pt-2">
             <CounterAnimation
               end={item.statistic.end ?? 0}
               start={item.statistic.start ?? 0}
@@ -281,27 +333,31 @@ export const BentoCard = ({ item, index = 0 }: { item: BentoItem; index?: number
 
         {item.children}
       </div>
-    </div>
+
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 left-0 h-[2px] w-0 transition-all duration-500 group-hover:w-full"
+        style={{ background: `linear-gradient(to right, ${accent}99, transparent)` }}
+      />
+    </>
   );
 
-  /*
-   * The original relies on variant propagation from the grid's
-   * `staggerContainer`. In this tree that propagation does not reach the cards
-   * — QA found every card sitting at opacity 0 while the container finished at
-   * 1, which hides real operating figures. Each card therefore declares its own
-   * entrance with an index-derived delay: the same staggered fade-up, but it
-   * cannot silently fail to run.
-   */
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
-      className={cn("h-full", item.className)}
+      /*
+       * No `h-full`: with `items-start` on the grid a card hugs its content
+       * instead of being stretched to the height of the tallest card in its
+       * row. Sparse real data was leaving large empty voids inside cards.
+       */
+      className={cn(item.className)}
       initial={{ opacity: 0, y: 20 }}
       onHoverEnd={handleMouseLeave}
+      onHoverStart={() => glow.set(1)}
       onMouseMove={handleMouseMove}
       style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
       transition={{ duration: 0.4, ease: "easeOut", delay: Math.min(index, 8) * 0.06 }}
-      whileHover={{ y: -5 }}
+      whileHover={{ y: -4 }}
     >
       {item.href ? (
         <Link
@@ -324,10 +380,15 @@ export const BentoCard = ({ item, index = 0 }: { item: BentoItem; index?: number
  * observed during QA, every card inside a grid taller than the viewport — can
  * sit at opacity 0 with their figures unreadable. The stagger is kept, but it
  * runs on mount, so no operating figure can ever be invisible.
+ *
+ * `auto-rows-min` with `items-start` stops a short card being stretched to the
+ * height of the tallest in its row, which was leaving large voids inside cards.
  */
 export function BentoGrid({ items, className }: { items: BentoItem[]; className?: string }) {
   return (
-    <div className={cn("grid grid-cols-1 gap-5 md:grid-cols-6", className)}>
+    <div
+      className={cn("grid auto-rows-min grid-cols-1 items-start gap-4 md:grid-cols-6", className)}
+    >
       {items.map((item, index) => (
         <BentoCard index={index} item={item} key={item.id} />
       ))}
