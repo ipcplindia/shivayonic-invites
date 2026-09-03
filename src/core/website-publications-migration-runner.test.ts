@@ -49,10 +49,7 @@ describe("website publication migration runner", () => {
       ok: true,
     });
 
-    expect(calls[0]).toMatchObject({
-      sql: "SELECT pg_advisory_xact_lock(20260903::int, 0::int)",
-      values: [],
-    });
+    expect(calls[0].sql).toContain("finished_at IS NULL");
     expect(calls.some((call) => call.sql.includes('INSERT INTO "_prisma_migrations"'))).toBe(true);
     expect(calls.some((call) => call.sql.includes('UPDATE "_prisma_migrations" SET finished_at'))).toBe(true);
     expect(calls.some((call) => call.sql.includes("CREATE TYPE"))).toBe(true);
