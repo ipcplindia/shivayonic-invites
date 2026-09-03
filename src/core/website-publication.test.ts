@@ -9,6 +9,7 @@ describe("website publications", () => {
 
   it("uses controlled placements and only revalidates their mapped public paths", () => {
     expect(websitePublicationInputSchema.safeParse({ mediaId: "ck1234567890123456789012345", placement: "OUR_WORK_GRID" }).success).toBe(true);
+    expect(websitePublicationInputSchema.safeParse({ mediaId: "727c279e-0694-4dc2-9aa7-3c118da5f2f0", placement: "OUR_WORK_GRID" }).success).toBe(true);
     expect(websitePublicationInputSchema.safeParse({ mediaId: "ck1234567890123456789012345", placement: "/admin" }).success).toBe(false);
     expect(publicPathsForPlacement.OUR_WORK_GRID).toEqual(["/our-work"]);
   });

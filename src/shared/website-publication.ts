@@ -6,8 +6,9 @@ export const websitePublicationStatuses = ["DRAFT", "PUBLISHED", "UNPUBLISHED"] 
 export type WebsitePublicationStatus = (typeof websitePublicationStatuses)[number];
 
 const copy = z.string().trim().max(500).optional().transform((value) => value || undefined);
+const mediaId = z.string().refine((value) => z.string().cuid().safeParse(value).success || z.string().uuid().safeParse(value).success, "Invalid media id");
 export const websitePublicationInputSchema = z.object({
-  mediaId: z.string().cuid(),
+  mediaId,
   placement: z.enum(websitePlacements),
   title: copy,
   description: z.string().trim().max(4_000).optional().transform((value) => value || undefined),
