@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { runWebsitePublicationsMigration, splitMigrationStatements, WEBSITE_PUBLICATIONS_MIGRATION } from "./website-publications-migration-runner";
+import {
+  inspectWebsitePublicationsMigration,
+  runWebsitePublicationsMigration,
+  splitMigrationStatements,
+  WEBSITE_PUBLICATIONS_MIGRATION,
+} from "./website-publications-migration-runner";
 
 vi.mock("node:fs/promises", () => ({
   readFile: vi.fn(async () => 'CREATE TYPE "WebsitePublicationStatus" AS ENUM (\'DRAFT\');\nALTER TABLE "MediaAsset" ADD COLUMN "displayTitle" TEXT;\n'),
@@ -64,6 +69,30 @@ describe("website publication migration runner", () => {
 
     await expect(runWebsitePublicationsMigration(tx)).rejects.toThrow("FAILED_MIGRATION_BLOCKS_DEPLOY");
 
+    expect(calls.some((call) => call.kind === "execute")).toBe(false);
+  });
+
+  it("inspects schema state without executing migration SQL", async () => {
+    const { tx, calls } = dbStub();
+    tx.$queryRawUnsafe.mockResolvedValueOnce([{
+      migration_name: null,
+      finished_at: null,
+      rolled_back_at: null,
+      status_enum: false,
+      placement_enum: false,
+      publication_table: false,
+      media_columns: false,
+    }] as never);
+
+    await expect(inspectWebsitePublicationsMigration(tx)).resolves.toMatchObject({
+      state: "not_started",
+      schema: {
+        statusEnum: false,
+        placementEnum: false,
+        publicationTable: false,
+        mediaColumns: false,
+      },
+    });
     expect(calls.some((call) => call.kind === "execute")).toBe(false);
   });
 });

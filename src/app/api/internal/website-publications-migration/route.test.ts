@@ -3,10 +3,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "./route";
 
 const runWebsitePublicationsMigration = vi.fn();
+const inspectWebsitePublicationsMigration = vi.fn();
 
 vi.mock("@/core/website-publications-migration-runner", () => ({
   WEBSITE_PUBLICATIONS_MIGRATION: "20260903000000_website_publications",
   runWebsitePublicationsMigration: () => runWebsitePublicationsMigration(),
+  inspectWebsitePublicationsMigration: () => inspectWebsitePublicationsMigration(),
+  WebsitePublicationsMigrationError: class WebsitePublicationsMigrationError extends Error {},
 }));
 
 afterEach(() => {
@@ -23,6 +26,13 @@ function request(host: string) {
 
 function getRequest(host: string, confirm = "20260903000000_website_publications") {
   return new Request("https://" + host + "/api/internal/website-publications-migration?confirm=" + confirm, {
+    method: "GET",
+    headers: { host },
+  });
+}
+
+function statusRequest(host: string) {
+  return new Request("https://" + host + "/api/internal/website-publications-migration?status=20260903000000_website_publications", {
     method: "GET",
     headers: { host },
   });
@@ -100,5 +110,22 @@ describe("temporary website publications migration route", () => {
       ok: false,
       error: { code: "MIGRATION_FAILED" },
     });
+  });
+
+  it("returns only read-only migration state for the protected status request", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("VERCEL_URL", "shivayonic-invites-temp-shivayonic.vercel.app");
+    inspectWebsitePublicationsMigration.mockResolvedValueOnce({
+      migration: "20260903000000_website_publications",
+      state: "not_started",
+      schema: { statusEnum: false, placementEnum: false, publicationTable: false, mediaColumns: false },
+      ok: true,
+    });
+
+    const response = await GET(statusRequest("shivayonic-invites-temp-shivayonic.vercel.app"));
+
+    expect(response.status).toBe(200);
+    expect(runWebsitePublicationsMigration).not.toHaveBeenCalled();
+    expect(inspectWebsitePublicationsMigration).toHaveBeenCalledTimes(1);
   });
 });
