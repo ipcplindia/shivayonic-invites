@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { deliverSubmission } from "@/features/public/notify";
+import { deliverSubmission, isDelivered } from "@/features/public/notify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,10 +58,23 @@ export async function POST(request: Request) {
   const results = await deliverSubmission({
     subject: `Client form — ${form.formName}${form.contactName ? ` — ${form.contactName}` : ""}`,
     body,
+    short: [
+      `New client form: ${form.formName}`,
+      form.contactName ? `from ${form.contactName}` : null,
+      form.contactPhone ? `(${form.contactPhone})` : null,
+      form.design ? `for ${form.design}` : null,
+    ]
+      .filter((part) => part !== null)
+      .join(" "),
+    replyTo: form.contactEmail || undefined,
   });
 
-  const delivered = results.filter((r) => r.ok);
-  if (delivered.length === 0) {
+  /*
+   * Only the email carries the whole form, so a WhatsApp alert on its own is
+   * not success — the customer would be told we have their brief when all that
+   * survived is a one-line summary.
+   */
+  if (!isDelivered(results)) {
     console.error("Client form could not be delivered:", results);
     return NextResponse.json(
       {
@@ -72,5 +85,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, delivered: delivered.length });
+  return NextResponse.json({ ok: true, delivered: results.filter((r) => r.ok).length });
 }

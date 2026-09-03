@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { deliverSubmission } from "@/features/public/notify";
+import { deliverSubmission, isDelivered } from "@/features/public/notify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,12 +99,23 @@ export async function POST(request: Request) {
   const results = await deliverSubmission({
     subject: `Order request — ${customer.name}${design ? ` — ${design.name}` : ""}`,
     body,
+    short: [
+      `New order request from ${customer.name} (${customer.phone})`,
+      design ? `— ${design.name}` : null,
+      plan ? `— ${plan.name} plan` : null,
+    ]
+      .filter((part) => part !== null)
+      .join(" "),
+    replyTo: customer.email,
   });
 
-  const delivered = results.filter((r) => r.ok);
-  if (delivered.length === 0) {
-    // The studio would never see this, so the customer must not be told it was
-    // received. The reasons are logged for the maintainer, never returned.
+  /*
+   * Only the email carries the full address and event details, so a WhatsApp
+   * alert alone is not success. The studio would never see this, and the
+   * customer must not be told it was received. The reasons are logged for the
+   * maintainer, never returned.
+   */
+  if (!isDelivered(results)) {
     console.error("Order request could not be delivered:", results);
     return NextResponse.json(
       {
@@ -115,5 +126,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, delivered: delivered.length });
+  return NextResponse.json({ ok: true, delivered: results.filter((r) => r.ok).length });
 }
