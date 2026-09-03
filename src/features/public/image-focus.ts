@@ -25,7 +25,8 @@ const IMAGE_FOCUS: Record<string, string> = {
   "/pages/our-work.webp": "72% 42%",
   "/pages/plans.webp": "50% 42%",
   "/pages/customise.webp": "50% 20%",
-  "/pages/styles.webp": "50% 64%",
+  // Hand-tuned: the generated point landed on the dress, cropping both heads off.
+  "/pages/styles.webp": "50% 38%",
   "/pages/partners.webp": "50% 42%",
   "/pages/catalogue.webp": "50% 20%",
   "/forms/weddings-celebrations.webp": "50% 20%",
