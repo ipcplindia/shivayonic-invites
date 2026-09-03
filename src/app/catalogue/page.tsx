@@ -1,6 +1,6 @@
 import { PageFrame } from "@/features/public/page-frame";
-import { Band, Breadcrumb, CategoryHero, ChipRail, CollectionGrid, CTASection, SectionHead } from "@/features/public/sections";
-import { listCategories, listProducts, listStyles } from "@/features/public/catalogue-data";
+import { Band, Breadcrumb, CategoryHero, ChipRail, CollectionGrid, CTASection, MakeItYours, SectionHead } from "@/features/public/sections";
+import { listCategories, listProductsForDisplay, listStyles } from "@/features/public/catalogue-data";
 import { contact } from "@/features/public/data";
 
 export const metadata = {
@@ -18,7 +18,7 @@ export default async function Page({
   const filters = await searchParams;
   // One request for the newest published designs; grouped by their category.
   const [{ products, pageInfo }, categories, styles] = await Promise.all([
-    listProducts({ q: filters.q, category: filters.category, style: filters.style, limit: 48 }),
+    listProductsForDisplay({ q: filters.q, category: filters.category, style: filters.style, limit: 48 }),
     listCategories(),
     listStyles(),
   ]);
@@ -29,6 +29,12 @@ export default async function Page({
     groups.set(p.category.slug, g);
   }
   const groupList = [...groups.values()];
+  /*
+   * Splitting a handful of designs across one-card sections reads as a broken
+   * page, not a collection. Below a dozen the catalogue is a single grid; the
+   * per-occasion sections return once there is enough in each to fill a row.
+   */
+  const groupByOccasion = products.length >= 12 && groupList.every((g) => g.items.length > 1);
 
   return (
     <PageFrame>
@@ -64,7 +70,7 @@ export default async function Page({
           <button className="btn btnPrimary" type="submit">Apply filters</button>
           {filters.q || filters.category || filters.style ? <a className="btn btnGhost" href="/catalogue">Clear filters</a> : null}
         </form>
-        {groupList.length > 0 ? (
+        {groupByOccasion ? (
           <ChipRail items={groupList.map((g) => ({ label: g.name, href: `#${g.slug}` }))} />
         ) : null}
       </Band>
@@ -77,7 +83,7 @@ export default async function Page({
               : "The catalogue is being prepared. Message us and we will craft your invitation directly."}
           </p>
         </Band>
-      ) : (
+      ) : groupByOccasion ? (
         groupList.map((g, i) => (
           <section key={g.slug} id={g.slug} className={"section " + (i % 2 === 1 ? "creamSection" : "")}>
             <div className="shell">
@@ -88,6 +94,20 @@ export default async function Page({
             </div>
           </section>
         ))
+      ) : (
+        <section className="section" id="designs">
+          <div className="shell">
+            <SectionHead
+              center
+              eyebrow="The collection"
+              lede="Every design can be personalised — the names, the dates, the palette and the visual world."
+              title="Published designs"
+            />
+            <div style={{ marginTop: "2rem" }}>
+              <CollectionGrid products={products} />
+            </div>
+          </div>
+        </section>
       )}
 
       {pageInfo.hasMore ? (
@@ -97,6 +117,11 @@ export default async function Page({
           </p>
         </Band>
       ) : null}
+
+      <MakeItYours
+        lede="Every design here can be personalised — your names, your dates, your colours. Start with the client form, or message us and we will take it from there."
+        title="Make any of these your own"
+      />
 
       <CTASection
         title="Ready to make one yours?"

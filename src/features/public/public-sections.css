@@ -1651,3 +1651,78 @@
     font-size: 1.05rem;
   }
 }
+
+/* ------------------------------------------------- Make-it-yours panel */
+
+.makeYours {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: clamp(2rem, 4vw, 4rem);
+  align-items: center;
+}
+
+.makeYoursText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.makeYoursCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.makeYoursSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.makeYoursStep {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--cocoa-line-soft);
+  border-radius: 14px;
+  background: var(--ivory);
+  box-shadow: 0 1px 2px rgba(68, 36, 29, 0.04);
+}
+
+.makeYoursNum {
+  flex: none;
+  font-family: var(--font-display, inherit);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--saffron-ink);
+}
+
+.makeYoursStepText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.makeYoursStepText strong {
+  color: var(--cocoa);
+  font-size: 0.9375rem;
+}
+
+.makeYoursStepText span {
+  color: var(--umber);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 860px) {
+  .makeYours {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

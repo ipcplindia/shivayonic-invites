@@ -473,3 +473,62 @@ export function Band({
     </section>
   );
 }
+
+/* ------------------------------------------------- Make-it-yours panel */
+
+/**
+ * The two things a visitor can actually do on any occasion or catalogue page:
+ * talk to the studio, or fill the client form for their own invitation.
+ *
+ * It is one component so every occasion page carries the same pair of actions
+ * in the same place. Previously these pages ended in a single line of prose
+ * with nothing to click.
+ */
+export function MakeItYours({
+  title,
+  lede,
+  formHref = "/customise/weddings-celebrations",
+  formLabel = "Customise your invite",
+}: {
+  title: string;
+  lede: string;
+  formHref?: string;
+  formLabel?: string;
+}) {
+  return (
+    <section className="section creamSection">
+      <div className="shell">
+        <div className="makeYours">
+          <div className="makeYoursText">
+            <p className="sectionEyebrow">Make it yours</p>
+            <h2 className="sectionTitle">{title}</h2>
+            <p className="sectionLede">{lede}</p>
+            <div className="makeYoursCtas">
+              <a className="btn btnPrimary" href={formHref}>
+                {formLabel}
+              </a>
+              <a className="btn btnGhost" href="/contact">
+                Talk to us
+              </a>
+            </div>
+          </div>
+          <ul className="makeYoursSteps">
+            {[
+              { n: "01", t: "Choose a design", b: "Pick any design, or describe the one you have in mind." },
+              { n: "02", t: "Tell us the details", b: "Names, dates, venues and the visual world you want." },
+              { n: "03", t: "We craft it", b: "Your invitation, film and score, made for your celebration." },
+            ].map((step) => (
+              <li className="makeYoursStep" key={step.n}>
+                <span className="makeYoursNum">{step.n}</span>
+                <span className="makeYoursStepText">
+                  <strong>{step.t}</strong>
+                  <span>{step.b}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 
 import { PageFrame } from "@/features/public/page-frame";
-import { Band, Breadcrumb, CategoryHero, CollectionGrid, CTASection, SectionHead } from "@/features/public/sections";
+import { Band, Breadcrumb, CategoryHero, CollectionGrid, CTASection, MakeItYours, SectionHead } from "@/features/public/sections";
 import { contact } from "@/features/public/data";
-import { listProducts } from "@/features/public/catalogue-data";
+import { listDesignsForOccasion, listProductsForDisplay } from "@/features/public/catalogue-data";
 import { weddingEvents } from "@/features/public/pages";
 
 export async function generateMetadata({ params }: { params: Promise<{ event: string }> }) {
@@ -23,9 +23,19 @@ export default async function Page({ params }: { params: Promise<{ event: string
   const event = weddingEvents[slug];
   if (!event) notFound();
 
-  // Wedding functions frame the same wedding catalogue; products come from the
-  // real wedding category.
-  const { products } = await listProducts({ category: "wedding", limit: 12 });
+  /*
+   * Designs for this specific function first — a haldi page should lead with
+   * haldi designs. When none carry that occasion, the page falls back to the
+   * wider published collection rather than to an empty column, which is what
+   * every one of these pages rendered before.
+   */
+  const forOccasion = await listDesignsForOccasion(event.title);
+  const { products: rest } = await listProductsForDisplay({ limit: 12 });
+  // Designs for this function lead; the rest of the collection follows, so a
+  // function with a single matching design is not left as one lonely card.
+  const seen = new Set(forOccasion.map((p) => p.slug));
+  const products = [...forOccasion, ...rest.filter((p) => !seen.has(p.slug))];
+  const showingThisOccasion = forOccasion.length > 0;
 
   return (
     <PageFrame>
@@ -56,15 +66,27 @@ export default async function Page({ params }: { params: Promise<{ event: string
       </Band>
       <section className="section" id="designs">
         <div className="shell">
-          {products.length > 0 ? (
+          <SectionHead
+            center
+            eyebrow={showingThisOccasion ? `${event.title} designs` : "From the collection"}
+            lede={
+              showingThisOccasion
+                ? `Designs made for the ${event.title.toLowerCase()}, followed by the rest of the collection.`
+                : `Designs from across the collection, each one personalised for your ${event.title.toLowerCase()}.`
+            }
+            title="Start from any of these"
+          />
+          <div style={{ marginTop: "2rem" }}>
             <CollectionGrid products={products} />
-          ) : (
-            <p className="sectionLede" style={{ textAlign: "center" }}>
-              Wedding designs are on the way. Message us and we will craft yours.
-            </p>
-          )}
+          </div>
         </div>
       </section>
+
+      <MakeItYours
+        lede={`Tell us the names, the date and the visual world you want, and we will craft the ${event.title.toLowerCase()} invitation around it — with a matching film and score if you want them.`}
+        title={`Your ${event.title.toLowerCase()}, your way`}
+      />
+
       <CTASection
         title={`Make your ${event.title} invitation`}
         primary={{ label: "Chat on WhatsApp", href: contact.whatsappUrl, external: true }}
