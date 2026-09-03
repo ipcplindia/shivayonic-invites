@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 const runWebsitePublicationsMigration = vi.fn();
 
@@ -17,6 +17,13 @@ afterEach(() => {
 function request(host: string) {
   return new Request("https://" + host + "/api/internal/website-publications-migration", {
     method: "POST",
+    headers: { host },
+  });
+}
+
+function getRequest(host: string, confirm = "20260903000000_website_publications") {
+  return new Request("https://" + host + "/api/internal/website-publications-migration?confirm=" + confirm, {
+    method: "GET",
     headers: { host },
   });
 }
@@ -59,6 +66,22 @@ describe("temporary website publications migration route", () => {
       status: "applied",
       ok: true,
     });
+    expect(runWebsitePublicationsMigration).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows a protected GET only with the exact migration confirmation", async () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("VERCEL_URL", "shivayonic-invites-temp-shivayonic.vercel.app");
+    runWebsitePublicationsMigration.mockResolvedValueOnce({
+      migration: "20260903000000_website_publications",
+      status: "applied",
+      ok: true,
+    });
+
+    expect((await GET(getRequest("shivayonic-invites-temp-shivayonic.vercel.app", "wrong"))).status).toBe(404);
+    const response = await GET(getRequest("shivayonic-invites-temp-shivayonic.vercel.app"));
+
+    expect(response.status).toBe(200);
     expect(runWebsitePublicationsMigration).toHaveBeenCalledTimes(1);
   });
 

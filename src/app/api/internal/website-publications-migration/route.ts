@@ -29,7 +29,7 @@ function sanitizedFailure(error: unknown) {
   return NextResponse.json({ migration: WEBSITE_PUBLICATIONS_MIGRATION, ok: false, error: { code } }, { status: 500 });
 }
 
-export async function POST(request: Request) {
+async function run(request: Request) {
   if (process.env.VERCEL_ENV !== "production") return notFound();
   if (!allowedDeploymentHost(requestHost(request))) return notFound();
 
@@ -38,4 +38,14 @@ export async function POST(request: Request) {
   } catch (error) {
     return sanitizedFailure(error);
   }
+}
+
+export async function POST(request: Request) {
+  return run(request);
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  if (searchParams.get("confirm") !== WEBSITE_PUBLICATIONS_MIGRATION) return notFound();
+  return run(request);
 }
