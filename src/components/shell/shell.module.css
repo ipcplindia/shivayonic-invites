@@ -1,205 +1,10 @@
-/* App shell: navigation rail, command bar, content well. */
-
-.shell {
-  display: grid;
-  grid-template-columns: var(--rail-width) minmax(0, 1fr);
-  min-height: 100dvh;
-}
-
-/* ------------------------------------------------------------------- Rail */
-
-.rail {
-  position: sticky;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  border-right: 1px solid var(--line-soft);
-  background: var(--surface-rail);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  height: var(--topbar-height);
-  padding: 0 var(--space-5);
-  border-bottom: 1px solid var(--line-soft);
-  color: var(--text-primary);
-  text-decoration: none;
-}
-
-.brandMark {
-  color: var(--brass);
-  flex: none;
-}
-
-.brandText {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.brandName {
-  font-family: var(--font-display);
-  font-size: 1.0625rem;
-  font-weight: 400;
-  letter-spacing: 0.14em;
-  line-height: 1.1;
-}
-
-.brandDescriptor {
-  color: var(--text-faint);
-  font-size: 0.5625rem;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-.nav {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--space-5) var(--space-3) var(--space-4);
-}
-
-.navGroup + .navGroup {
-  margin-top: var(--space-6);
-}
-
-.navGroupLabel {
-  padding: 0 var(--space-3) var(--space-2);
-  color: var(--text-faint);
-  font-size: var(--text-meta);
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.navList {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  list-style: none;
-  padding: 0;
-}
-
-.navItem {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: 38px;
-  padding: 0 var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: var(--text-body-sm);
-  font-weight: 500;
-  text-decoration: none;
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
-}
-
-.navItem:hover {
-  background: var(--surface-raised);
-  color: var(--text-primary);
-}
-
-.navItemActive {
-  border-color: var(--brass-hairline);
-  background: var(--surface-raised);
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.navItemActive .navIcon {
-  color: var(--brass);
-}
-
-.navIcon {
-  flex: none;
-  color: var(--text-muted);
-}
-
-.navLabel {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.navPending {
-  flex: none;
-  padding: 1px var(--space-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  color: var(--text-faint);
-  font-size: 0.5625rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.railFooter {
-  padding: var(--space-4) var(--space-5);
-  border-top: 1px solid var(--line-soft);
-}
-
-.orgName {
-  color: var(--text-secondary);
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.orgLabel {
-  color: var(--text-faint);
-  font-size: 0.5625rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  margin-bottom: var(--space-1);
-}
-
-.orgMeta {
-  color: var(--text-faint);
-  font-family: var(--font-mono);
-  font-size: var(--text-meta);
-}
-
-.railToggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: 40px;
-  padding: 0 var(--space-5);
-  border: 0;
-  border-top: 1px solid var(--line-soft);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: var(--text-body-sm);
-  font-weight: 550;
-  text-align: left;
-  cursor: pointer;
-}
-
-.railToggle:hover {
-  background: var(--surface-raised);
-  color: var(--text-primary);
-}
-
-.railToggleIcon {
-  flex: none;
-}
-
-.railToggleIconOpen {
-  flex: none;
-  transform: rotate(180deg);
-}
+/*
+ * App shell chrome: command bar, content well and account menu.
+ *
+ * The navigation rail is no longer styled here. It is the shadcn sidebar
+ * primitive in components/ui-kit, which carries its own Tailwind classes and
+ * reads its colours from the Control Centre tokens in styles/control-centre.css.
+ */
 
 /* --------------------------------------------------------------- Top bar */
 
@@ -309,10 +114,6 @@
   gap: var(--space-2);
 }
 
-/* Scoped to the bar so it outranks the shared button display rule. */
-.topbar .menuButton {
-  display: none;
-}
 
 /* --------------------------------------------------------------- Content */
 
@@ -457,152 +258,34 @@
   width: 100%;
 }
 
-/* ------------------------------------------------- Operator-collapsed rail */
+
+/* ------------------------------------------------------------ Rail trigger */
 
 /*
- * The same compact rail the viewport produces below 1180px, chosen deliberately
- * by the operator. Labels are dropped, not hidden from assistive technology:
- * every item keeps its `title` tooltip and its accessible name.
+ * The shadcn SidebarTrigger. On a desktop it collapses the rail to its icon
+ * width; below 768px the same control opens the sheet, so there is one toggle
+ * rather than two.
  */
-.shell[data-collapsed="true"] {
-  grid-template-columns: var(--rail-width-compact) minmax(0, 1fr);
+.railTrigger {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  color: var(--text-muted);
 }
 
-.shell[data-collapsed="true"] .brand {
-  justify-content: center;
-  padding: 0;
+.railTrigger:hover {
+  color: var(--text-primary);
 }
 
-.shell[data-collapsed="true"] .brandText,
-.shell[data-collapsed="true"] .navGroupLabel,
-.shell[data-collapsed="true"] .navLabel,
-.shell[data-collapsed="true"] .navPending,
-.shell[data-collapsed="true"] .railFooter {
-  display: none;
-}
+/* ------------------------------------------------------------- Responsive */
 
-.shell[data-collapsed="true"] .navItem,
-.shell[data-collapsed="true"] .railToggle {
-  justify-content: center;
-  padding: 0;
-}
-
-/* ----------------------------------------------------------- Responsive */
-
-/* Laptop and small desktop: the rail keeps its icons, drops its labels. */
 @media (max-width: 1180px) {
-  .shell {
-    grid-template-columns: var(--rail-width-compact) minmax(0, 1fr);
-  }
-
-  .brand {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .brandText,
-  .navGroupLabel,
-  .navLabel,
-  .navPending,
-  .railFooter {
-    display: none;
-  }
-
-  .navItem,
-  .railToggle {
-    justify-content: center;
-    padding: 0;
-  }
-
   .content {
     padding: var(--space-6) var(--space-5) var(--space-12);
   }
 }
 
-/* Tablet and phone: the rail becomes a drawer. */
 @media (max-width: 860px) {
-  /*
-   * The rail is a drawer here, so a collapsed preference must not survive: the
-   * attribute selector is repeated because it outranks the bare class whatever
-   * the source order.
-   */
-  .shell,
-  .shell[data-collapsed="true"] {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .shell[data-collapsed="true"] .brandText {
-    display: flex;
-  }
-
-  .shell[data-collapsed="true"] .navGroupLabel,
-  .shell[data-collapsed="true"] .navLabel,
-  .shell[data-collapsed="true"] .navPending,
-  .shell[data-collapsed="true"] .railFooter {
-    display: block;
-  }
-
-  .shell[data-collapsed="true"] .navItem {
-    justify-content: flex-start;
-    padding: 0 var(--space-3);
-  }
-
-  .railToggle {
-    display: none;
-  }
-
-  .rail {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: var(--z-modal);
-    width: min(var(--rail-width), 84vw);
-    transform: translateX(-102%);
-    transition: transform var(--duration-slow) var(--ease-out);
-    box-shadow: var(--shadow-lg);
-  }
-
-  /* Attribute-driven so the open state always outranks the closed default. */
-  .rail[data-open="true"] {
-    transform: translateX(0);
-  }
-
-  .brand {
-    justify-content: flex-start;
-    padding: 0 var(--space-5);
-  }
-
-  .brandText,
-  .navGroupLabel,
-  .navLabel,
-  .navPending,
-  .railFooter {
-    display: revert;
-  }
-
-  .brandText,
-  .navList {
-    display: flex;
-  }
-
-  .navItem {
-    justify-content: flex-start;
-    padding: 0 var(--space-3);
-    min-height: 44px;
-  }
-
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: var(--z-backdrop);
-    border: 0;
-    background: var(--surface-scrim);
-  }
-
-  .topbar .menuButton {
-    display: inline-flex;
-  }
-
   .topbar {
     padding: 0 var(--space-4);
   }

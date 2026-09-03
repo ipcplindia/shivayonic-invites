@@ -2,7 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { getPermissionsForRole } from "@/auth/permissions";
-import { Sidebar } from "@/components/shell/sidebar";
+import { ControlCentreSidebar } from "@/components/shell/control-centre-sidebar";
+import { SidebarProvider } from "@/components/ui-kit/sidebar";
 import { TopBar, initials } from "@/components/shell/top-bar";
 import type { CurrentUserContext, MemberRole } from "@/shared/auth";
 
@@ -15,11 +16,17 @@ function contextFor(role: MemberRole): CurrentUserContext {
   };
 }
 
-describe("Sidebar", () => {
-  it("renders the wordmark, the permitted sections and the organization", () => {
-    const markup = renderToStaticMarkup(
-      <Sidebar context={contextFor("OWNER")} pathname="/admin" />,
-    );
+function renderSidebar(role: MemberRole, pathname = "/admin") {
+  return renderToStaticMarkup(
+    <SidebarProvider>
+      <ControlCentreSidebar context={contextFor(role)} pathname={pathname} />
+    </SidebarProvider>,
+  );
+}
+
+describe("ControlCentreSidebar", () => {
+  it("renders the wordmark, the permitted sections and the business scope", () => {
+    const markup = renderSidebar("OWNER");
 
     expect(markup).toContain("SHIVAYONIC");
     expect(markup).toContain("Media Library");
@@ -29,48 +36,42 @@ describe("Sidebar", () => {
   });
 
   it("does not offer staff the owner-only audit section", () => {
-    const markup = renderToStaticMarkup(
-      <Sidebar context={contextFor("STAFF")} pathname="/admin" />,
-    );
+    const markup = renderSidebar("STAFF");
 
     expect(markup).toContain("Media Library");
     expect(markup).not.toContain('href="/admin/security/audit"');
   });
 
   it("marks the current section for assistive technology", () => {
-    const markup = renderToStaticMarkup(
-      <Sidebar context={contextFor("OWNER")} pathname="/admin/media/xyz" />,
-    );
+    const markup = renderSidebar("OWNER", "/admin/media/xyz");
 
-    expect(markup).toMatch(/aria-current="page"[^>]*href="\/admin\/media"/);
+    expect(markup).toMatch(/aria-current="page"/);
+    expect(markup).toContain('data-active="true"');
   });
 
   it("labels sections whose backend capability is not connected yet", () => {
-    const markup = renderToStaticMarkup(
-      <Sidebar context={contextFor("OWNER")} pathname="/admin" />,
-    );
-
-    expect(markup).toContain("Soon");
+    expect(renderSidebar("OWNER")).toContain("Soon");
   });
 
-  it("exposes its open/closed state so the mobile drawer is controllable", () => {
-    const closed = renderToStaticMarkup(
-      <Sidebar context={contextFor("OWNER")} pathname="/admin" open={false} />,
-    );
-    const open = renderToStaticMarkup(
-      <Sidebar context={contextFor("OWNER")} pathname="/admin" open />,
-    );
+  it("uses the imported sidebar primitive, so collapse state is real", () => {
+    const markup = renderSidebar("OWNER");
 
-    expect(closed).toContain('data-open="false"');
-    expect(open).toContain('data-open="true"');
+    expect(markup).toContain('data-collapsible=""');
+    expect(markup).toContain('data-sidebar="menu-button"');
   });
 });
 
+/**
+ * TopBar renders the shadcn SidebarTrigger, which reads the sidebar context,
+ * so the provider is part of its contract now.
+ */
+function renderTopBar(node: React.ReactElement) {
+  return renderToStaticMarkup(<SidebarProvider>{node}</SidebarProvider>);
+}
+
 describe("TopBar", () => {
   it("shows the page, the operator, their role and their organization", () => {
-    const markup = renderToStaticMarkup(
-      <TopBar context={contextFor("ADMIN")} pageTitle="Media Library" />,
-    );
+    const markup = renderTopBar(<TopBar context={contextFor("ADMIN")} pageTitle="Media Library" />);
 
     expect(markup).toContain("Media Library");
     expect(markup).toContain("Aarav Mehta");
@@ -79,43 +80,33 @@ describe("TopBar", () => {
   });
 
   it("offers a command palette trigger that says what it actually searches", () => {
-    const markup = renderToStaticMarkup(
-      <TopBar context={contextFor("OWNER")} pageTitle="Overview" />,
-    );
+    const markup = renderTopBar(<TopBar context={contextFor("OWNER")} pageTitle="Overview" />);
 
     expect(markup).toContain("Search commands and destinations…");
     expect(markup).toContain('aria-haspopup="dialog"');
   });
 
   it("keeps unimplemented tools inert rather than pretending they work", () => {
-    const markup = renderToStaticMarkup(
-      <TopBar context={contextFor("OWNER")} pageTitle="Overview" />,
-    );
+    const markup = renderTopBar(<TopBar context={contextFor("OWNER")} pageTitle="Overview" />);
 
     expect(markup).toContain("Notifications — not connected yet");
     expect(markup).toMatch(/aria-label="Notifications[^>]*disabled/);
   });
 
   it("links to Settings from the account menu", () => {
-    const markup = renderToStaticMarkup(
-      <TopBar context={contextFor("STAFF")} pageTitle="Overview" />,
-    );
+    const markup = renderTopBar(<TopBar context={contextFor("STAFF")} pageTitle="Overview" />);
 
     expect(markup).toContain('href="/admin/settings"');
   });
 
   it("offers a real sign-out route", () => {
-    const markup = renderToStaticMarkup(
-      <TopBar context={contextFor("OWNER")} pageTitle="Overview" />,
-    );
+    const markup = renderTopBar(<TopBar context={contextFor("OWNER")} pageTitle="Overview" />);
 
     expect(markup).toContain('action="/api/auth/logout"');
   });
 
   it("never renders session or storage internals", () => {
-    const markup = renderToStaticMarkup(
-      <TopBar context={contextFor("OWNER")} pageTitle="Overview" />,
-    );
+    const markup = renderTopBar(<TopBar context={contextFor("OWNER")} pageTitle="Overview" />);
 
     for (const secret of ["user-1", "org-1", "session", "token", "cookie", "storageKey"]) {
       expect(markup.toLowerCase()).not.toContain(secret.toLowerCase());

@@ -39,6 +39,10 @@ export default [
       "src/app/**/*.tsx",
       "src/components/**/*.tsx",
       "src/features/**/*.{ts,tsx}",
+      // The imported shadcn and KokonutUI components and their hooks are
+      // browser components too, and reference the React namespace for types.
+      "src/hooks/**/*.{ts,tsx}",
+      "src/lib/**/*.{ts,tsx}",
     ],
     languageOptions: {
       globals: {
@@ -58,11 +62,16 @@ export default [
         HTMLDialogElement: "readonly",
         HTMLButtonElement: "readonly",
         HTMLInputElement: "readonly",
+        HTMLLIElement: "readonly",
         HTMLSelectElement: "readonly",
+        HTMLUListElement: "readonly",
         KeyboardEvent: "readonly",
         MouseEvent: "readonly",
         Node: "readonly",
         navigator: "readonly",
+        React: "readonly",
+        clearInterval: "readonly",
+        setInterval: "readonly",
         setTimeout: "readonly",
         SVGSVGElement: "readonly",
         URLSearchParams: "readonly",

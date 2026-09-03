@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-
 import { Icon, type IconName } from "@/components/icon";
+import { ActionSearchBar, type Action } from "@/components/kokonutui/action-search-bar";
 import { overlayStyles as styles, useModalDialog } from "@/components/overlay";
 import { quickActionsFor } from "@/features/admin/actions";
 import { visibleNavGroups } from "@/features/admin/navigation";
@@ -18,9 +17,9 @@ export type Command = {
 };
 
 /**
- * The palette knows exactly what this client knows: the destinations the
- * operator is permitted to open. Extracted so the command set can be asserted
- * without mounting a router.
+ * The palette knows exactly what this client knows: the actions the operator
+ * can complete today, and the destinations they are permitted to open.
+ * Extracted so the command set can be asserted without mounting a router.
  */
 export function commandsFor(context: CurrentUserContext): Command[] {
   return [
@@ -54,12 +53,16 @@ export function filterCommands(commands: Command[], query: string) {
 }
 
 /**
- * Command palette.
+ * Command bar.
  *
- * Scope is deliberately narrow and honestly labelled: it searches the
- * destinations and frontend actions this client already knows about. There is
- * no global search API, so it does not claim to search media, projects or
- * customers.
+ * The search surface itself is KokonutUI's action-search-bar; this component
+ * supplies the real command set, performs the navigation, and keeps the whole
+ * thing inside a native <dialog> so focus trapping and Escape stay the
+ * platform's job rather than a reimplementation.
+ *
+ * Scope is honestly labelled: it searches destinations and the actions this
+ * deployment can actually perform. There is no global search API, so it does
+ * not claim to search media, projects or customers.
  */
 export function CommandPalette({
   context,
@@ -73,104 +76,50 @@ export function CommandPalette({
   onNavigate: (href: string) => void;
 }) {
   const { ref, onDialogClose } = useModalDialog(open, onClose);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
 
-  const commands = useMemo(() => commandsFor(context), [context]);
-  const matches = useMemo(() => filterCommands(commands, query), [commands, query]);
+  const commands = commandsFor(context);
+  const actions: Action[] = commands.map((command) => ({
+    id: command.id,
+    label: command.label,
+    icon: <Icon name={command.icon} size={16} />,
+    description: command.group === "Actions" ? undefined : command.hint,
+    end: command.group === "Actions" ? command.hint : undefined,
+  }));
 
-  // Reset on each opening so the palette never reopens mid-search.
-  useEffect(() => {
-    if (!open) return;
-    setQuery("");
-    setActiveIndex(0);
-    inputRef.current?.focus();
-  }, [open]);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
-
-  function activate(command: Command | undefined) {
-    if (!command) return;
-    onClose();
-    onNavigate(command.href);
-  }
-
-  function onKeyDown(event: { key: string; preventDefault: () => void }) {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActiveIndex((index) => (matches.length ? (index + 1) % matches.length : 0));
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveIndex((index) => (matches.length ? (index - 1 + matches.length) % matches.length : 0));
-    } else if (event.key === "Enter") {
-      event.preventDefault();
-      activate(matches[activeIndex]);
-    }
-    // Escape is handled natively by <dialog>.
-  }
-
-  let lastGroup = "";
+  const hrefById = new Map(commands.map((command) => [command.id, command.href]));
 
   return (
     <dialog
-      ref={ref}
-      className={styles.palette}
       aria-label="Command palette"
-      onClose={onDialogClose}
+      className={styles.palette}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
+      onClose={onDialogClose}
+      ref={ref}
     >
-      <div className={styles.paletteSearch}>
-        <Icon name="search" size={17} />
-        <input
-          ref={inputRef}
-          className={styles.paletteInput}
-          type="text"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Search commands and destinations…"
-          aria-label="Search commands and destinations"
-          aria-controls="command-palette-results"
-          autoComplete="off"
+      <div className="cc-scope dark p-4">
+        <ActionSearchBar
+          actions={actions}
+          autoFocus={open}
+          defaultOpen
+          onDismiss={onClose}
+          onSelect={(action) => {
+            const href = hrefById.get(action.id);
+            if (!href) return;
+            onClose();
+            onNavigate(href);
+          }}
         />
+        {/*
+          The scope note lives outside the results panel so it is readable
+          whether or not a search is in progress.
+        */}
+        <p className="mt-3 text-muted-foreground text-xs">
+          Searches this workspace&rsquo;s destinations and actions it can perform today. Searching
+          media and projects arrives with their APIs.
+        </p>
       </div>
-
-      {matches.length === 0 ? (
-        <p className={styles.paletteEmpty}>No command or destination matches “{query}”.</p>
-      ) : (
-        <ul className={styles.paletteList} id="command-palette-results">
-          {matches.map((command, index) => {
-            const showGroup = command.group !== lastGroup;
-            lastGroup = command.group;
-            return (
-              <li key={command.id}>
-                {showGroup ? <p className={styles.paletteGroup}>{command.group}</p> : null}
-                <button
-                  type="button"
-                  className={styles.paletteItem}
-                  data-active={index === activeIndex ? "true" : "false"}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => activate(command)}
-                >
-                  <Icon name={command.icon} size={16} className={styles.paletteIcon} />
-                  <span className={styles.paletteLabel}>{command.label}</span>
-                  {command.hint ? <span className={styles.paletteHint}>{command.hint}</span> : null}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      <p className={styles.paletteFooter}>
-        Searches this workspace&rsquo;s destinations and actions. Searching media and projects
-        arrives with their APIs.
-      </p>
     </dialog>
   );
 }

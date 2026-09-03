@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 import styles from "@/app/admin/admin.module.css";
 import { getCurrentUserContext } from "@/auth/context";
 import { Icon } from "@/components/icon";
-import { Card, CardHeader, EmptyState, StatusBadge } from "@/components/ui";
+import { BentoGrid, type BentoItem } from "@/components/kokonutui/bento-grid";
+import { StatusBadge } from "@/components/ui";
 import { quickActionsFor } from "@/features/admin/actions";
 import { loadOverview } from "@/features/admin/overview";
 import { isSystemConnected, systemStatuses, systemStatePresentation } from "@/features/admin/systems";
@@ -16,200 +17,254 @@ export const metadata: Metadata = { title: "Command Center" };
  * The Command Center: one operating view of Shivayonic and Bholenath
  * Productions.
  *
- * Every module on this page is one of three honest things — a real count from
- * real rows, a real action that works today, or a truthful statement that a
- * system is not connected and where to connect it. There are no trends,
- * projections, decorative charts or invented alerts anywhere on this surface.
+ * The layout is KokonutUI's bento grid; every value inside it is a real count
+ * from real rows, a real action that works today, or a truthful statement that
+ * a system is not connected. There are no trends, projections, decorative
+ * charts or invented alerts anywhere on this surface.
  */
 export default async function CommandCenterPage() {
   const context = await getCurrentUserContext();
 
   // The dashboard degrades to its honest empty shape rather than erroring out
-  // if the database is briefly unreachable; the health panel then says so.
+  // if the database is briefly unreachable; the health card then says so.
   const overview = await loadOverview(context.organization.id).catch(() => null);
   const systems = systemStatuses({ databaseReachable: overview !== null });
+  const platform = systems.filter((s) => s.group === "platform" || s.group === "channel");
+  const external = systems.filter((s) => s.group !== "platform");
+
+  const metrics: BentoItem[] = [
+    {
+      id: "metric-media",
+      title: "Media",
+      description: "Masters held",
+      href: "/admin/media",
+      feature: "counter",
+      statistic: { end: overview?.metrics.media ?? 0 },
+    },
+    {
+      id: "metric-published",
+      title: "Published",
+      description: "Live on the website",
+      href: "/admin/content",
+      feature: "counter",
+      statistic: { end: overview?.metrics.publications ?? 0 },
+    },
+    {
+      id: "metric-projects",
+      title: "Projects",
+      description: "Organization projects",
+      feature: "counter",
+      statistic: { end: overview?.metrics.projects ?? 0 },
+    },
+    {
+      id: "metric-catalogue",
+      title: "Catalogue",
+      description: "Public products",
+      feature: "counter",
+      statistic: { end: overview?.metrics.catalogue ?? 0 },
+    },
+  ];
+
+  const held = overview?.pipeline.held ?? 0;
+  const share = (value: number) => (held > 0 ? Math.round((value / held) * 100) : 0);
+
+  const modules: BentoItem[] = [
+    {
+      id: "attention",
+      title: "Needs attention",
+      description: "Work the studio has actually left unfinished, counted from live records.",
+      className: "md:col-span-4",
+      children:
+        overview && overview.attention.length > 0 ? (
+          <ul className={styles.attentionList}>
+            {overview.attention.map((entry) => (
+              <li key={entry.id}>
+                <Link className={styles.attentionRow} data-tone={entry.tone} href={entry.href}>
+                  <span className={styles.attentionCount}>{entry.count}</span>
+                  <span className={styles.attentionText}>
+                    <span className={styles.attentionLabel}>{entry.label}</span>
+                    <span className={styles.attentionDetail}>{entry.detail}</span>
+                  </span>
+                  <Icon className={styles.rowChevron} name="chevronRight" size={15} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.cardEmpty}>
+            {overview
+              ? "All clear. Nothing is failed, stalled or waiting to be published."
+              : "The record store could not be read, so no state is claimed here."}
+          </p>
+        ),
+    },
+    {
+      id: "health",
+      title: "System health",
+      description: "What this deployment can actually do right now.",
+      className: "md:col-span-2",
+      children: (
+        <>
+          <ul className={styles.statusList}>
+            {platform.map((system) => {
+              const presentation = systemStatePresentation[system.state];
+              return (
+                <li className={styles.statusRow} key={system.id}>
+                  <span className={styles.statusName}>{system.name}</span>
+                  <StatusBadge
+                    label={presentation.label}
+                    shape={presentation.shape}
+                    tone={presentation.tone}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+          <Link className={styles.cardLink} href="/admin/integrations">
+            All systems
+          </Link>
+        </>
+      ),
+    },
+    {
+      id: "pipeline",
+      title: "Content pipeline",
+      description:
+        "Where the masters of this organization sit today. Each bar is that stage's real share of everything held.",
+      className: "md:col-span-3",
+      feature: "metrics",
+      metrics: [
+        {
+          label: "Held",
+          value: 100,
+          display: String(held),
+          color: "data" as const,
+        },
+        {
+          label: "Ready",
+          value: share(overview?.pipeline.ready ?? 0),
+          display: String(overview?.pipeline.ready ?? 0),
+          color: "health" as const,
+        },
+        {
+          label: "Draft",
+          value: share(overview?.pipeline.draft ?? 0),
+          display: String(overview?.pipeline.draft ?? 0),
+          color: "warn" as const,
+        },
+        {
+          label: "Published",
+          value: share(overview?.pipeline.published ?? 0),
+          display: String(overview?.pipeline.published ?? 0),
+          color: "primary" as const,
+        },
+      ],
+      children: (
+        <p className={styles.cardFootnote}>
+          YouTube and Instagram join this pipeline when their channels are connected.
+        </p>
+      ),
+    },
+    {
+      id: "activity",
+      title: "Recent activity",
+      description: "The last changes to media, publications and projects.",
+      className: "md:col-span-3",
+      children:
+        overview && overview.activity.length > 0 ? (
+          <ul className={styles.activityList}>
+            {overview.activity.slice(0, 6).map((entry) => (
+              <li key={entry.id}>
+                <Link className={styles.activityRow} href={entry.href}>
+                  <Icon
+                    className={styles.rowChevron}
+                    name={
+                      entry.kind === "media"
+                        ? "media"
+                        : entry.kind === "publication"
+                          ? "publish"
+                          : "projects"
+                    }
+                    size={16}
+                  />
+                  <span className={styles.activityText}>
+                    <span className={styles.activityTitle}>{entry.title}</span>
+                    <span className={styles.activityDetail}>{entry.detail}</span>
+                  </span>
+                  <time className={styles.activityTime} dateTime={entry.at.toISOString()}>
+                    {formatDay(entry.at)}
+                  </time>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.cardEmpty}>
+            Uploads, publications and project changes appear here as they happen.
+          </p>
+        ),
+    },
+    {
+      id: "quick-actions",
+      title: "Quick actions",
+      description: "Everything here works today.",
+      className: "md:col-span-2",
+      children: (
+        <div className={styles.quickActions}>
+          {quickActionsFor(context).map((action) => (
+            <Link className={styles.quickAction} href={action.href} key={action.label}>
+              <Icon className={styles.quickActionIcon} name={action.icon} size={17} />
+              <span className={styles.quickActionLabel}>{action.label}</span>
+              <span className={styles.quickActionHint}>{action.hint}</span>
+            </Link>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "timeline",
+      title: "Operations timeline",
+      description: "Dated events from real records.",
+      className: "md:col-span-2",
+      feature: overview && overview.timeline.length > 0 ? "timeline" : undefined,
+      timeline: overview?.timeline.map((entry) => ({
+        year: formatDay(entry.at),
+        event: `${entry.title} — ${entry.state}`,
+      })),
+      children:
+        overview && overview.timeline.length > 0 ? null : (
+          <p className={styles.cardEmpty}>
+            The first website publication puts this timeline to work. No placeholder dates are
+            shown.
+          </p>
+        ),
+    },
+    {
+      id: "scope",
+      title: "Business scope",
+      description: `Every count on this page is for ${context.organization.name}.`,
+      className: "md:col-span-2",
+      feature: "spotlight",
+      spotlightItems: [context.organization.name],
+      children: (
+        <p className={styles.cardFootnote}>
+          Bholenath Productions and Shivayonic Music are not separate data scopes yet, so no
+          cross-business figure is shown.
+        </p>
+      ),
+    },
+  ];
 
   return (
     <>
       <ExecutiveHeader context={context} />
 
-      <section className={styles.metrics} aria-label="Operating metrics">
-        <Metric label="Media" value={overview?.metrics.media} detail="Masters held" href="/admin/media" />
-        <Metric
-          label="Published"
-          value={overview?.metrics.publications}
-          detail="Live on the website"
-          href="/admin/content"
-        />
-        <Metric label="Projects" value={overview?.metrics.projects} detail="Organization projects" />
-        <Metric label="Catalogue" value={overview?.metrics.catalogue} detail="Public products" />
-      </section>
+      <BentoGrid className="grid-cols-2 md:grid-cols-4" items={metrics} />
 
-      <div className={styles.bento}>
-        <div className={styles.bentoMain}>
-          <Card>
-            <CardHeader
-              title="Needs attention"
-              description="Work the studio has actually left unfinished, counted from live records."
-            />
-            {overview && overview.attention.length > 0 ? (
-              <ul className={styles.attentionList}>
-                {overview.attention.map((entry) => (
-                  <li key={entry.id}>
-                    <Link href={entry.href} className={styles.attentionRow} data-tone={entry.tone}>
-                      <span className={styles.attentionCount}>{entry.count}</span>
-                      <span className={styles.attentionText}>
-                        <span className={styles.attentionLabel}>{entry.label}</span>
-                        <span className={styles.attentionDetail}>{entry.detail}</span>
-                      </span>
-                      <Icon name="chevronRight" size={15} className={styles.rowChevron} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState
-                icon="check"
-                title={overview ? "All clear" : "Records unavailable"}
-                body={
-                  overview
-                    ? "Nothing in the studio is failed, stalled or waiting to be published."
-                    : "The record store could not be read, so no state is claimed here."
-                }
-              />
-            )}
-          </Card>
-
-          <Card>
-            <CardHeader
-              title="Content pipeline"
-              description="Where the masters of this organization currently sit, from arrival to public."
-            />
-            <ol className={styles.pipeline}>
-              <PipelineStage label="Held" value={overview?.pipeline.held} detail="Masters in storage" />
-              <PipelineStage label="Ready" value={overview?.pipeline.ready} detail="Processed and usable" />
-              <PipelineStage label="Draft" value={overview?.pipeline.draft} detail="Prepared for the site" />
-              <PipelineStage label="Published" value={overview?.pipeline.published} detail="Live on the website" />
-              <PipelineStage label="YouTube" value={null} detail="Channel not connected" />
-              <PipelineStage label="Instagram" value={null} detail="Account not connected" />
-            </ol>
-          </Card>
-
-          <Card>
-            <CardHeader
-              title="Recent activity"
-              description="The last changes to media, publications and projects in this organization."
-            />
-            {overview && overview.activity.length > 0 ? (
-              <ul className={styles.activityList}>
-                {overview.activity.map((entry) => (
-                  <li key={entry.id}>
-                    <Link href={entry.href} className={styles.activityRow}>
-                      <Icon
-                        name={
-                          entry.kind === "media"
-                            ? "media"
-                            : entry.kind === "publication"
-                              ? "publish"
-                              : "projects"
-                        }
-                        size={16}
-                        className={styles.rowChevron}
-                      />
-                      <span className={styles.activityText}>
-                        <span className={styles.activityTitle}>{entry.title}</span>
-                        <span className={styles.activityDetail}>{entry.detail}</span>
-                      </span>
-                      <time className={styles.activityTime} dateTime={entry.at.toISOString()}>
-                        {formatDay(entry.at)}
-                      </time>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState
-                icon="activity"
-                title="Nothing recorded yet"
-                body="Uploads, publications and project changes appear here as they happen."
-              />
-            )}
-          </Card>
-        </div>
-
-        <div className={styles.bentoSide}>
-          <Card>
-            <CardHeader title="Quick actions" />
-            <div className={styles.quickActions}>
-              {quickActionsFor(context).map((action) => (
-                <Link key={action.label} href={action.href} className={styles.quickAction}>
-                  <Icon name={action.icon} size={17} className={styles.quickActionIcon} />
-                  <span className={styles.quickActionLabel}>{action.label}</span>
-                  <span className={styles.quickActionHint}>{action.hint}</span>
-                </Link>
-              ))}
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader
-              title="System health"
-              description="What this deployment can actually do right now."
-              action={
-                <Link href="/admin/integrations" className={styles.cardLink}>
-                  All systems
-                </Link>
-              }
-            />
-            <ul className={styles.statusList}>
-              {systems
-                .filter((system) => system.group === "platform" || system.group === "channel")
-                .map((system) => {
-                  const presentation = systemStatePresentation[system.state];
-                  return (
-                    <li key={system.id} className={styles.statusRow}>
-                      <span className={styles.statusName}>{system.name}</span>
-                      <StatusBadge
-                        label={presentation.label}
-                        tone={presentation.tone}
-                        shape={presentation.shape}
-                      />
-                    </li>
-                  );
-                })}
-            </ul>
-          </Card>
-
-          <Card>
-            <CardHeader
-              title="Operations timeline"
-              description="Dated events from real records. Campaigns and scheduled posts join this once their channels are connected."
-            />
-            {overview && overview.timeline.length > 0 ? (
-              <ol className={styles.timeline}>
-                {overview.timeline.map((entry) => (
-                  <li key={entry.id} className={styles.timelineRow}>
-                    <time className={styles.timelineDate} dateTime={entry.at.toISOString()}>
-                      {formatDay(entry.at)}
-                    </time>
-                    <span className={styles.timelineTitle}>{entry.title}</span>
-                    <span className={styles.timelineMeta}>{entry.state}</span>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <EmptyState
-                icon="schedule"
-                title="No dated events yet"
-                body="The first website publication puts this timeline to work. No placeholder dates are shown."
-              />
-            )}
-          </Card>
-        </div>
-      </div>
+      <BentoGrid items={modules} />
 
       <section aria-labelledby="performance-heading" className={styles.performance}>
-        <h2 id="performance-heading" className={styles.performanceHeading}>
+        <h2 className={styles.performanceHeading} id="performance-heading">
           Business performance
         </h2>
         <p className={styles.performanceLede}>
@@ -217,34 +272,32 @@ export default async function CommandCenterPage() {
           estimated in the meantime.
         </p>
         <div className={styles.performanceGrid}>
-          {systems
-            .filter((system) => system.group !== "platform")
-            .map((system) => {
-              const presentation = systemStatePresentation[system.state];
-              const connected = isSystemConnected(system);
-              return (
-                <Link
-                  key={system.id}
-                  href={connected && system.href ? system.href : "/admin/integrations"}
-                  className={styles.panel}
-                >
-                  <span className={styles.panelTop}>
-                    <Icon name={system.icon} size={17} className={styles.panelIcon} />
-                    <span className={styles.panelName}>{system.name}</span>
-                    <StatusBadge
-                      label={presentation.label}
-                      tone={presentation.tone}
-                      shape={presentation.shape}
-                    />
-                  </span>
-                  <span className={styles.panelBody}>{system.capability}</span>
-                  <span className={styles.panelAction}>
-                    {connected && system.href ? "Open" : "Configure in Integrations"}
-                    <Icon name="chevronRight" size={14} />
-                  </span>
-                </Link>
-              );
-            })}
+          {external.map((system) => {
+            const presentation = systemStatePresentation[system.state];
+            const connected = isSystemConnected(system);
+            return (
+              <Link
+                className={styles.panel}
+                href={connected && system.href ? system.href : "/admin/integrations"}
+                key={system.id}
+              >
+                <span className={styles.panelTop}>
+                  <Icon className={styles.panelIcon} name={system.icon} size={17} />
+                  <span className={styles.panelName}>{system.name}</span>
+                  <StatusBadge
+                    label={presentation.label}
+                    shape={presentation.shape}
+                    tone={presentation.tone}
+                  />
+                </span>
+                <span className={styles.panelBody}>{system.capability}</span>
+                <span className={styles.panelAction}>
+                  {connected && system.href ? "Open" : "Configure in Integrations"}
+                  <Icon name="chevronRight" size={14} />
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </section>
     </>
@@ -253,12 +306,6 @@ export default async function CommandCenterPage() {
 
 /* ------------------------------------------------------------------ Header */
 
-/**
- * The business scope is shown, not offered as a control: this deployment holds
- * a single organization and there is no server-side scope switching, so a
- * working selector would be a lie. The other divisions are named as what they
- * are — not yet separate scopes.
- */
 function ExecutiveHeader({ context }: { context: CurrentUserContext }) {
   return (
     <header className={styles.exec}>
@@ -273,61 +320,7 @@ function ExecutiveHeader({ context }: { context: CurrentUserContext }) {
           A live operating view of Shivayonic and Bholenath Productions.
         </p>
       </div>
-      <p className={styles.execNote}>
-        <Icon name="lock" size={14} />
-        <span>
-          Bholenath Productions and Shivayonic Music are not separate data scopes yet. Every count on
-          this page is for {context.organization.name}.
-        </span>
-      </p>
     </header>
-  );
-}
-
-/* ------------------------------------------------------------------ Pieces */
-
-function Metric({
-  label,
-  value,
-  detail,
-  href,
-}: {
-  label: string;
-  value: number | null | undefined;
-  detail: string;
-  href?: string;
-}) {
-  const body = (
-    <>
-      <span className={styles.metricLabel}>{label}</span>
-      <strong className={styles.metricValue}>{value ?? "—"}</strong>
-      <span className={styles.metricDetail}>{detail}</span>
-    </>
-  );
-  return href ? (
-    <Link href={href} className={`${styles.metric} ${styles.metricLink}`}>
-      {body}
-    </Link>
-  ) : (
-    <article className={styles.metric}>{body}</article>
-  );
-}
-
-function PipelineStage({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: number | null | undefined;
-  detail: string;
-}) {
-  return (
-    <li className={styles.pipelineStage} data-empty={value == null ? "true" : "false"}>
-      <span className={styles.pipelineValue}>{value ?? "—"}</span>
-      <span className={styles.pipelineLabel}>{label}</span>
-      <span className={styles.pipelineDetail}>{detail}</span>
-    </li>
   );
 }
 

@@ -827,3 +827,99 @@
     display: none;
   }
 }
+
+/* ------------------------------------------- Inside imported bento cards */
+
+/*
+ * The bento card supplies its own frame, so content dropped into it needs no
+ * border or background of its own — only rhythm.
+ */
+.cardEmpty {
+  margin-top: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-normal);
+}
+
+.cardFootnote {
+  margin-top: var(--space-3);
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+  line-height: var(--leading-normal);
+}
+
+/* Rows inside a bento card sit flush with the card's own padding. */
+.attentionList .attentionRow,
+.activityList .activityRow,
+.statusList .statusRow {
+  padding-inline: 0;
+}
+
+.quickActions {
+  padding: var(--space-3) 0 0;
+}
+
+/* The spotlight card grid supplies its own gaps; the card only adds padding. */
+.spotlightWrap {
+  padding: var(--space-5);
+}
+
+@media (max-width: 720px) {
+  .spotlightWrap {
+    padding: var(--space-4);
+  }
+}
+
+/* ------------------------------------------------------------ Task Centre */
+
+.taskGroups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin-top: var(--space-3);
+}
+
+.taskGroupHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.taskGroupTitle {
+  color: var(--text-primary);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.taskGroupDetail {
+  color: var(--text-faint);
+  font-size: var(--text-meta);
+}
+
+.taskAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: none;
+  color: var(--signal-bright);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.attentionRow:hover .taskAction,
+.attentionRow:focus-visible .taskAction {
+  opacity: 1;
+}
+
+/* The affordance must not be hover-only for keyboard and touch operators. */
+@media (hover: none) {
+  .taskAction {
+    opacity: 1;
+  }
+}

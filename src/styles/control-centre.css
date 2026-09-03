@@ -1,0 +1,126 @@
+/*
+ * Tailwind for the Control Centre only.
+ *
+ * This file is imported by src/app/admin/layout.tsx and nowhere else, so no
+ * Tailwind rule is ever served to the public site.
+ *
+ * Preflight is deliberately NOT imported. Tailwind's base reset would strip the
+ * public site's typography and the admin's existing CSS Modules, which still
+ * own most of this interface. Importing only the theme and utilities layers
+ * gives the imported shadcn and KokonutUI components the classes they need
+ * without resetting anything that already works.
+ */
+
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@source "../";
+
+/*
+ * The imported components express their dark treatment as `dark:` variants.
+ * The Control Centre is always dark, so the variant is bound to an explicit
+ * class that the admin shell sets, rather than to the operating system
+ * preference.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Shivayonic Control Centre palette, published under the token names the
+ * imported components already reference. This is the single place where an
+ * external component's colour vocabulary meets ours.
+ */
+@theme {
+  --color-background: #171916;
+  --color-foreground: #f5f1e8;
+
+  --color-card: #292c27;
+  --color-card-foreground: #f5f1e8;
+
+  --color-popover: #252824;
+  --color-popover-foreground: #f5f1e8;
+
+  /* Saffron — brand and primary commitment. */
+  --color-primary: #d99b45;
+  --color-primary-foreground: #1b1e1a;
+
+  --color-secondary: #30332d;
+  --color-secondary-foreground: #f5f1e8;
+
+  --color-muted: #20231f;
+  --color-muted-foreground: #aaa99f;
+
+  --color-accent: #30332d;
+  --color-accent-foreground: #f5f1e8;
+
+  --color-destructive: #cf6a5c;
+  --color-destructive-foreground: #f5f1e8;
+
+  --color-border: rgba(245, 241, 232, 0.12);
+  --color-input: rgba(245, 241, 232, 0.12);
+  --color-ring: #5f9890;
+
+  /* Navigation rail — a shade below the canvas, as the reference rail is. */
+  --color-sidebar: #131511;
+  --color-sidebar-foreground: #c7c3b9;
+  --color-sidebar-primary: #d99b45;
+  --color-sidebar-primary-foreground: #1b1e1a;
+  --color-sidebar-accent: #252824;
+  --color-sidebar-accent-foreground: #f5f1e8;
+  --color-sidebar-border: rgba(245, 241, 232, 0.08);
+  --color-sidebar-ring: #5f9890;
+
+  /* Operational vocabulary carried through to the imported components. */
+  --color-surface-panel: #20231f;
+  --color-surface-raised: #30332d;
+  --color-surface-sunken: #1b1e1a;
+  --color-health: #7fa27b;
+  --color-data: #5f9890;
+  --color-warn: #cfa63c;
+  --color-hairline: rgba(245, 241, 232, 0.08);
+
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+}
+
+/*
+ * The two rules the imported components genuinely rely on from Tailwind's
+ * preflight, scoped to the Control Centre instead of applied globally.
+ *
+ * Without these an anchor keeps the user-agent underline and blue, which the
+ * component classes never override because they assume preflight has already
+ * neutralised it. Everything else preflight does — the margin reset, the
+ * heading and list reset, the border-colour default — is deliberately left
+ * out, because the CSS Modules that still own most of this interface depend on
+ * the browser defaults.
+ *
+ * These sit in the `base` layer, so any CSS Module rule still wins.
+ */
+@layer base {
+  .cc-scope a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .cc-scope :is(h1, h2, h3, h4) {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+}
+
+/*
+ * The imported components animate on hover and on mount. An operator who has
+ * asked their system for less motion gets none of it. Motion's own JS
+ * animations are handled separately by <MotionConfig reducedMotion="user">.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .cc-scope *,
+  .cc-scope *::before,
+  .cc-scope *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

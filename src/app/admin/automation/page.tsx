@@ -6,6 +6,7 @@ import { getCurrentUserContext } from "@/auth/context";
 import { Icon } from "@/components/icon";
 import { Card, CardHeader, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
 import { can } from "@/features/access";
+import { IntegrationCards } from "@/features/admin/integration-cards";
 import { isSystemConnected, systemStatuses, systemStatePresentation } from "@/features/admin/systems";
 import type { Permission } from "@/shared/auth";
 
@@ -160,21 +161,22 @@ export default async function AgentCenterPage() {
               title="Data an agent could read"
               description="Read access follows these systems. An unconnected system is simply unreadable."
             />
-            <ul className={styles.statusList}>
-              {dataSources.map((system) => {
-                const presentation = systemStatePresentation[system.state];
-                return (
-                  <li key={system.id} className={styles.statusRow}>
-                    <span className={styles.statusName}>{system.name}</span>
-                    <StatusBadge
-                      label={presentation.label}
-                      tone={presentation.tone}
-                      shape={presentation.shape}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
+            <div className={styles.spotlightWrap}>
+              <IntegrationCards
+                systems={dataSources.map((system) => ({
+                  id: system.id,
+                  name: system.name,
+                  provider: system.provider,
+                  capability: system.capability,
+                  state: system.state,
+                  stateLabel: systemStatePresentation[system.state].label,
+                  icon: system.icon,
+                  // An agent centre must not offer a link that implies a
+                  // connected source where none exists.
+                  href: isSystemConnected(system) ? system.href : undefined,
+                }))}
+              />
+            </div>
           </Card>
 
           <Card>

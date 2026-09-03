@@ -1,14 +1,18 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import styles from "@/app/admin/admin.module.css";
 import { getCurrentUserContext } from "@/auth/context";
 import { Icon } from "@/components/icon";
-import { Card, CardHeader, PageHeader, StatusBadge } from "@/components/ui";
+import { Card, CardHeader, PageHeader } from "@/components/ui";
 import { can } from "@/features/access";
-import { isSystemConnected, systemStatuses, type SystemGroup } from "@/features/admin/systems";
-import { systemStatePresentation } from "@/features/admin/systems";
+import { IntegrationCards } from "@/features/admin/integration-cards";
+import {
+  isSystemConnected,
+  systemStatuses,
+  systemStatePresentation,
+  type SystemGroup,
+} from "@/features/admin/systems";
 
 export const metadata: Metadata = { title: "Integrations" };
 
@@ -41,7 +45,8 @@ const groupOrder: SystemGroup[] = ["platform", "channel", "advertising", "financ
  *
  * Credentials are held server-side and are never read into this page — not even
  * to say whether a particular key exists. A system reports connected only when
- * its capability genuinely works in this deployment.
+ * its capability genuinely works in this deployment, and a card offers a link
+ * only where there is a real destination behind it.
  */
 export default async function IntegrationsPage() {
   const context = await getCurrentUserContext();
@@ -54,15 +59,16 @@ export default async function IntegrationsPage() {
   return (
     <>
       <PageHeader
-        title="Integrations"
         lede={`Every system this business runs on. ${connected} of ${systems.length} are connected today.`}
+        title="Integrations"
       />
 
       <p className={styles.moduleStatus}>
         <Icon name="lock" size={15} />
         <span>
           Credentials are held on the server and are never displayed here. External providers are
-          connected by configuring the deployment, not from this screen.
+          connected by configuring the deployment, not from this screen, so no card offers a setup
+          button that would do nothing.
         </span>
       </p>
 
@@ -71,42 +77,21 @@ export default async function IntegrationsPage() {
         if (members.length === 0) return null;
         return (
           <Card key={group}>
-            <CardHeader title={groupCopy[group].title} description={groupCopy[group].description} />
-            <ul className={styles.integrationGrid}>
-              {members.map((system) => {
-                const presentation = systemStatePresentation[system.state];
-                const usable = isSystemConnected(system) && system.href;
-                return (
-                  <li key={system.id} className={styles.integration}>
-                    <span className={styles.panelTop}>
-                      <Icon name={system.icon} size={17} className={styles.panelIcon} />
-                      <span className={styles.panelName}>{system.name}</span>
-                      <StatusBadge
-                        label={presentation.label}
-                        tone={presentation.tone}
-                        shape={presentation.shape}
-                      />
-                    </span>
-                    <dl className={styles.integrationMeta}>
-                      <dt>Provider</dt>
-                      <dd>{system.provider}</dd>
-                      <dt>Capability</dt>
-                      <dd>{system.capability}</dd>
-                    </dl>
-                    {usable ? (
-                      <Link href={system.href as string} className={styles.panelAction}>
-                        Open
-                        <Icon name="chevronRight" size={14} />
-                      </Link>
-                    ) : (
-                      <span className={styles.integrationNote}>
-                        Connect by configuring this deployment. No setup flow exists here yet.
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            <CardHeader description={groupCopy[group].description} title={groupCopy[group].title} />
+            <div className={styles.spotlightWrap}>
+              <IntegrationCards
+                systems={members.map((system) => ({
+                  id: system.id,
+                  name: system.name,
+                  provider: system.provider,
+                  capability: system.capability,
+                  state: system.state,
+                  stateLabel: systemStatePresentation[system.state].label,
+                  icon: system.icon,
+                  href: isSystemConnected(system) ? system.href : undefined,
+                }))}
+              />
+            </div>
           </Card>
         );
       })}
