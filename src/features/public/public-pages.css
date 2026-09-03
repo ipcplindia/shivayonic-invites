@@ -1588,3 +1588,238 @@
   text-transform: uppercase;
   color: var(--saffron-ink);
 }
+
+/* ============================================================ MOBILE
+ *
+ * Same principle as the section styles: compact multi-column where the content
+ * is image-led or short, single column only where reading genuinely needs the
+ * full width. Desktop is untouched.
+ */
+
+@media (max-width: 760px) {
+  /* ---- Category hero --------------------------------------------------- */
+
+  .catHero {
+    min-height: 52svh;
+  }
+
+  .catHeroInner {
+    padding: 2rem 0 2.25rem;
+  }
+
+  .catHeroTitle {
+    font-size: clamp(1.9rem, 8.5vw, 2.6rem);
+    max-width: 100%;
+  }
+
+  .catHeroLede {
+    font-size: 0.97rem;
+  }
+
+  .catHeroCtas .btn {
+    flex: 1 1 auto;
+  }
+
+  /* ---- Two-up: image-led and short-label cards -------------------------- */
+
+  .collection,
+  .styleCards,
+  .processGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .filmCards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .pcardBody {
+    padding: 0.8rem 0.85rem 1rem;
+  }
+
+  .pcardName {
+    font-size: 1.05rem;
+  }
+
+  .pcardCtas {
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .pcardCtas .btn {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .styleCardBody {
+    padding: 0.7rem 0.8rem 0.9rem;
+  }
+
+  .styleCardName {
+    font-size: 1.05rem;
+  }
+
+  .processStep {
+    padding: 1.2rem 1rem;
+  }
+
+  .processNum {
+    font-size: 1.9rem;
+  }
+
+  .processTitle {
+    font-size: 1.1rem;
+  }
+
+  .processBody {
+    font-size: 0.86rem;
+  }
+
+  /* ---- Plans: 2x2 rather than four full-width slabs --------------------- */
+
+  .plans {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  .planCard {
+    padding: 1.5rem 1.1rem 1.35rem;
+    border-radius: var(--r-lg);
+  }
+
+  /* The recommended tier keeps its emphasis through colour and border rather
+     than the desktop lift, which would break a two-column row's alignment. */
+  .planFeatured {
+    transform: none;
+  }
+
+  .planName {
+    font-size: 1.3rem;
+  }
+
+  .planPrice {
+    font-size: 1.6rem;
+  }
+
+  .planPriceBlock {
+    min-height: 84px;
+    padding-bottom: 1rem;
+    margin-top: 1rem;
+  }
+
+  .planPriceAsk {
+    font-size: 0.95rem;
+  }
+
+  .planTagline {
+    font-size: 0.85rem;
+    margin-top: 0.9rem;
+  }
+
+  .planBadge {
+    position: static;
+    align-self: flex-start;
+    margin-top: 0.4rem;
+  }
+
+  .planHead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    min-height: 0;
+  }
+
+  .planBtn {
+    margin-top: 1.1rem;
+    min-height: 42px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .planIncludes {
+    gap: 0.6rem 1rem;
+    padding: 1.1rem 1.2rem;
+    margin-top: 2rem;
+  }
+
+  /* ---- Single column: genuinely text-heavy blocks ----------------------- */
+
+  /*
+   * These carry explanatory prose or a title plus two actions. Two columns
+   * would leave the text cramped, so they keep the full width — the exception
+   * that proves the rule rather than the default.
+   */
+  .promiseGrid,
+  .deliverCols,
+  .briefGrid {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .promiseCard {
+    padding: 1.4rem 1.2rem;
+  }
+
+  .promiseTitle {
+    font-size: 1.15rem;
+  }
+
+  .promiseBody {
+    font-size: 0.92rem;
+  }
+
+  .briefBody {
+    padding: 1.2rem 1.2rem 1.35rem;
+  }
+
+  .briefName {
+    font-size: 1.3rem;
+  }
+
+  .briefActions .btn {
+    flex: 1 1 auto;
+  }
+
+  /* ---- Product detail --------------------------------------------------- */
+
+  .productPriceLg {
+    font-size: 1.8rem;
+  }
+
+  /* ---- Long client form ------------------------------------------------- */
+
+  .checkGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .briefSteps {
+    gap: 0.4rem;
+  }
+
+  .briefStep {
+    font-size: 0.78rem;
+    padding: 0.45rem 0.8rem;
+  }
+
+  /* ---- CTA band --------------------------------------------------------- */
+
+  .ctaActions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* Tablet: move toward three-up rather than leaving phone layout stretched. */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .collection,
+  .styleCards,
+  .filmCards,
+  .processGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .promiseGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

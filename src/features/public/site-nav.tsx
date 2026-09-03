@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import Link from "next/link";
 
@@ -48,6 +49,9 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const closeMenuRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (solid) return;
@@ -190,7 +194,8 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
         </button>
       </div>
 
-      {menuOpen ? (
+      {menuOpen && mounted
+        ? createPortal(
         <div className="drawer" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="drawerTop">
             <span className="brandName" style={{ color: "var(--cocoa)" }}>
@@ -233,8 +238,10 @@ export function SiteNav({ solid = false }: { solid?: boolean }) {
               Contact
             </a>
           </nav>
-        </div>
-      ) : null}
+        </div>,
+            document.body,
+          )
+        : null}
     </header>
   );
 }

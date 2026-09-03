@@ -6,7 +6,7 @@
  * ivory ground over the admin's dark body background, so the two never collide.
  */
 
-.site {
+:root {
   --ivory: #fff9f1;
   --cream: #f7e8d4;
   --cream-deep: #f0dcc2;
@@ -55,7 +55,10 @@
 
   --shell: min(1360px, 100% - 4rem);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
 
+/* Layout and canvas stay scoped to the public site. */
+.site {
   position: relative;
   min-height: 100dvh;
   background: var(--ivory);

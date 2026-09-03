@@ -314,11 +314,6 @@
   scale: 1.03;
 }
 
-@media (max-width: 760px) {
-  .heroImg {
-    object-position: 64% center;
-  }
-}
 
 .heroScrim {
   position: absolute;
@@ -1248,23 +1243,6 @@
     display: inline-flex;
   }
 
-  .bento,
-  .celebGrid,
-  .corpGrid,
-  .productGrid,
-  .steps,
-  .footerTop {
-    grid-template-columns: 1fr;
-  }
-
-  .tileWide {
-    grid-column: span 1;
-  }
-
-  .heroInner {
-    max-width: 100%;
-  }
-
   .ribbon {
     overflow-x: auto;
   }
@@ -1379,19 +1357,6 @@
 
 /* Mobile: the top-right placement is a desktop composition; on phones the
    headline returns to a full-width left-aligned block. */
-@media (max-width: 760px) {
-  .heroInner {
-    max-width: 100%;
-    margin: 0 auto;
-    align-items: flex-start;
-    text-align: left;
-    padding-top: 96px;
-  }
-
-  .heroCtas {
-    justify-content: flex-start;
-  }
-}
 
 /* Bounds the sticky hero: it holds and is overlapped by the rising content
    within this stage, then releases at the stage end so it never reappears
@@ -1460,4 +1425,229 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: color-mix(in oklab, var(--gold) 82%, #fff);
+}
+
+/*
+ * The drawer is portalled to <body>, outside `.site`, because a solid header
+ * carries `backdrop-filter` — which makes it the containing block for fixed
+ * descendants and was clipping the menu to the 72px bar on every page whose nav
+ * is solid. Living at body level it can never be trapped by a parent's
+ * stacking or clipping context again, but it must then carry the few base
+ * styles `.site` used to give it.
+ */
+.drawer,
+.drawer *,
+.drawer *::before,
+.drawer *::after {
+  box-sizing: border-box;
+}
+
+.drawer {
+  font-family: var(--font-body);
+  color: var(--cocoa);
+  line-height: 1.6;
+}
+
+.drawer a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.drawer :focus-visible {
+  outline: 2px solid var(--saffron);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ============================================================ MOBILE
+ *
+ * Mobile is composed, not collapsed. Turning every desktop grid into a single
+ * column is what makes a site read as an afterthought, so image-led cards keep
+ * two per row here and only genuinely text-heavy blocks fall to one. The
+ * desktop composition is untouched: everything below is inside a query.
+ */
+
+@media (max-width: 760px) {
+  /* Narrower gutters: 4rem of side padding on a 375px screen costs a sixth of
+     the width, which is what forced single-column grids in the first place. */
+  :root {
+    --shell: min(1360px, 100% - 2.5rem);
+  }
+
+  .section {
+    padding: clamp(2.75rem, 9vw, 4rem) 0;
+  }
+
+  .sectionHead {
+    margin-bottom: 2rem;
+  }
+
+  /* ---- Hero ---------------------------------------------------------- */
+
+  /*
+   * The photo is far wider than a phone screen, so covering it crops the sides.
+   * Pulling the focal point back towards the middle centres the pavilion
+   * instead of leaving it drifting off to the left.
+   */
+  .heroImg {
+    object-position: 52% center;
+  }
+
+  /* Centre the copy in the frame rather than pinning it under the bar, which
+     left a tall dead space beneath it on a 100svh hero. */
+  .hero {
+    align-items: center;
+  }
+
+  .heroInner {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 72px 1.5rem 0;
+    align-items: center;
+    text-align: center;
+  }
+
+  .heroCtas {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .heroCtas .btn {
+    flex: 1 1 auto;
+  }
+
+  /* ---- Image-led grids: two up ---------------------------------------- */
+
+  .bento,
+  .productGrid,
+  .corpGrid,
+  .steps {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  /*
+   * Six tiles into two columns leaves the last one stranded, so the two tiles
+   * that are features on desktop become the section's opening and closing
+   * full-width bands here — every row stays complete.
+   */
+  .tileWide,
+  .tileTall {
+    grid-column: span 2;
+  }
+
+  .tileTall {
+    grid-row: span 1;
+  }
+
+  .tile {
+    min-height: 176px;
+    padding: 1rem;
+  }
+
+  .tileWide {
+    min-height: 200px;
+  }
+
+  .tileTitle {
+    font-size: 1.15rem;
+  }
+
+  .tileWide .tileTitle,
+  .tileTall .tileTitle {
+    font-size: 1.3rem;
+  }
+
+  .tileBlurb {
+    font-size: 0.82rem;
+  }
+
+  .tileArrow {
+    font-size: 0.76rem;
+  }
+
+  /* ---- Celebration title tiles ---------------------------------------- */
+
+  /* These carry their own lettering and are the section's whole point, so they
+     stay two-up rather than becoming a column of giant banners. */
+  .celebTiles {
+    gap: 0.7rem;
+  }
+
+  .celebTile {
+    flex-basis: calc((100% - 0.7rem) / 2);
+    min-width: 0;
+  }
+
+  /* ---- Wedding journey rail ------------------------------------------- */
+
+  .chapter {
+    padding: 1.1rem 1rem;
+  }
+
+  /* ---- Product cards --------------------------------------------------- */
+
+  .productBody {
+    padding: 0.85rem 0.9rem 1rem;
+  }
+
+  .productName {
+    font-size: 1.1rem;
+  }
+
+  .productMeta {
+    font-size: 0.78rem;
+  }
+
+  .productCtas {
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .productCtas .btn {
+    width: 100%;
+    min-height: 40px;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  /* ---- Steps ----------------------------------------------------------- */
+
+  .step {
+    padding: 1.1rem 1rem;
+  }
+
+  /* ---- Footer ---------------------------------------------------------- */
+
+  /* Link lists are short, so two columns read better than one long ladder. */
+  .footerTop {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.75rem 1rem;
+  }
+
+  .footerTop > :first-child {
+    grid-column: span 2;
+  }
+
+  /* ---- Social rails ----------------------------------------------------- */
+
+  .ribbon {
+    overflow-x: auto;
+  }
+
+  .ribbonTrack {
+    animation: none;
+  }
+}
+
+/* Very small phones: the two-up grids stay, but the tiles need room to breathe. */
+@media (max-width: 400px) {
+  .tile {
+    min-height: 156px;
+  }
+
+  .tileTitle {
+    font-size: 1.05rem;
+  }
 }
