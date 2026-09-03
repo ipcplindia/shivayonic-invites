@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { AppAuthError } from "@/auth/errors";
 import { assertPublishableMedia, publicationCreateData } from "@/core/website-publication";
-import { isPubliclyRenderable, publicPathsForPlacement, websitePublicationInputSchema } from "@/shared/website-publication";
+import { isPubliclyRenderable, publicPathsForPlacement, websitePublicationInputSchema, websitePublicationUpdateSchema } from "@/shared/website-publication";
 
 describe("website publications", () => {
   const ready = { organizationId: "org_a", status: "READY", archivedAt: null };
@@ -31,5 +31,10 @@ describe("website publications", () => {
     const data = publicationCreateData({ mediaId: "ck1234567890123456789012345", placement: "FILMS_FEATURED", title: undefined, description: undefined, altText: undefined, category: undefined, slug: undefined }, "owner_1");
     expect(data).toMatchObject({ createdByUserId: "owner_1", updatedByUserId: "owner_1" });
     expect(JSON.stringify(data)).not.toContain("organizationId");
+  });
+
+  it("allows publish and unpublish actions without resending placement metadata", () => {
+    expect(websitePublicationUpdateSchema.safeParse({ action: "publish" }).success).toBe(true);
+    expect(websitePublicationUpdateSchema.safeParse({ action: "unpublish" }).success).toBe(true);
   });
 });

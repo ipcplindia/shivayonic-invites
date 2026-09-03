@@ -17,7 +17,7 @@ export const websitePublicationInputSchema = z.object({
   slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(120).optional().transform((value) => value || undefined),
   sortOrder: z.number().int().min(0).max(10_000).optional(),
 });
-export const websitePublicationUpdateSchema = websitePublicationInputSchema.omit({ mediaId: true }).extend({ action: z.enum(["save", "publish", "unpublish"]).default("save") });
+export const websitePublicationUpdateSchema = websitePublicationInputSchema.omit({ mediaId: true }).partial().extend({ action: z.enum(["save", "publish", "unpublish"]).default("save") });
 export type WebsitePublicationInput = z.infer<typeof websitePublicationInputSchema>;
 
 export const publicPathsForPlacement: Record<WebsitePlacement, string[]> = {
