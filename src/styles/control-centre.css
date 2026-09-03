@@ -57,7 +57,7 @@
   --color-destructive: #cf6a5c;
   --color-destructive-foreground: #f5f1e8;
 
-  --color-border: rgba(245, 241, 232, 0.12);
+  --color-border: rgba(245, 241, 232, 0.16);
   --color-input: rgba(245, 241, 232, 0.12);
   --color-ring: #5f9890;
 
@@ -78,7 +78,7 @@
   --color-health: #7fa27b;
   --color-data: #5f9890;
   --color-warn: #cfa63c;
-  --color-hairline: rgba(245, 241, 232, 0.08);
+  --color-hairline: rgba(245, 241, 232, 0.12);
 
   --radius-lg: 10px;
   --radius-xl: 12px;
@@ -99,7 +99,13 @@
  * These sit in the `base` layer, so any CSS Module rule still wins.
  */
 @layer base {
-  .cc-scope a {
+  /*
+   * The mobile rail is a Radix Sheet, which portals to <body> and therefore
+   * lands outside .cc-scope. Its own data attribute is matched as well, or its
+   * links keep the user-agent underline.
+   */
+  .cc-scope a,
+  [data-mobile="true"] a {
     color: inherit;
     text-decoration: none;
   }
@@ -107,6 +113,61 @@
   .cc-scope :is(h1, h2, h3, h4) {
     font-size: inherit;
     font-weight: inherit;
+  }
+
+  /*
+   * The sidebar's menus are <ul>s, and without preflight they keep their
+   * markers — a column of bullets down the navigation, and down the icon rail
+   * where there is no room for them at all.
+   */
+  ul[data-sidebar],
+  [data-mobile="true"] ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/*
+ * Rail collapse.
+ *
+ * The imported sidebar declares its collapsed state entirely through
+ * `group-data-[collapsible=icon]:*` utilities. In this build those utilities
+ * are generated and they match, but they lose the cascade to the plain
+ * `w-(--sidebar-width)` sitting on the same elements, so collapsing narrowed
+ * the rail without hiding anything — every label truncated to one letter.
+ *
+ * This restates the component's own intent against the component's own data
+ * attributes and variables. It adds no new design decision: the widths still
+ * come from `--sidebar-width-icon`, which the sidebar primitive owns.
+ */
+@layer components {
+  .cc-scope [data-collapsible="icon"] > div,
+  .cc-scope [data-collapsible="icon"] [data-sidebar="sidebar"] {
+    width: var(--sidebar-width-icon);
+  }
+
+  /* Text, chips and the account block have no room on a 48px rail. */
+  .cc-scope [data-collapsible="icon"] [data-sidebar="menu-button"] > span,
+  .cc-scope [data-collapsible="icon"] [data-sidebar="group-label"],
+  .cc-scope [data-collapsible="icon"] [data-sidebar="menu-badge"],
+  .cc-scope [data-collapsible="icon"] [data-sidebar="footer"] {
+    display: none;
+  }
+
+  /* The remaining icon is centred in the rail rather than left-aligned. */
+  .cc-scope [data-collapsible="icon"] [data-sidebar="menu-button"] {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  /*
+   * The rail's own `group-data-[side=left]:border-r` loses the same cascade.
+   * Without an edge the rail and the canvas are within a few percent of each
+   * other in luminance, so the navigation reads as part of the page.
+   */
+  .cc-scope [data-collapsible] [data-sidebar="sidebar"] {
+    border-right: 1px solid var(--color-sidebar-border);
   }
 }
 

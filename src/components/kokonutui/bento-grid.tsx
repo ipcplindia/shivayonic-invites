@@ -209,8 +209,15 @@ const MetricsFeature = ({
   );
 };
 
+/*
+ * The original's card is a translucent gradient (80% → 40%) designed to sit on
+ * a pure-black marketing page. Over this canvas the two are within a few
+ * percent of each other, so every card read as flat and the grid lost its
+ * structure. The gradient is kept but anchored on the solid card surface, so
+ * the elevation step is actually visible.
+ */
 const CARD_CLASS =
-  "group relative flex h-full flex-col gap-4 rounded-xl border border-hairline bg-gradient-to-b from-surface-panel/80 via-surface-panel/60 to-surface-panel/40 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.2)] backdrop-blur-[4px] transition-all duration-500 ease-out hover:border-primary/30 hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)]";
+  "group relative flex h-full flex-col gap-4 rounded-xl border border-border bg-gradient-to-b from-surface-raised via-card to-card p-5 shadow-[0_4px_20px_rgb(0,0,0,0.28)] transition-all duration-500 ease-out hover:border-primary/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.38)]";
 
 export const BentoCard = ({ item, index = 0 }: { item: BentoItem; index?: number }) => {
   const x = useMotionValue(0);

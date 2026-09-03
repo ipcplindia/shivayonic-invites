@@ -189,7 +189,7 @@ function SpotlightCard({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
       }}
       className={cn(
         "group relative flex flex-col gap-5 overflow-hidden rounded-2xl border p-6",
-        "border-hairline bg-surface-panel",
+        "border-border bg-card",
         "transition-[border-color] duration-300 hover:border-primary/30",
       )}
       onMouseEnter={handleMouseEnter}
