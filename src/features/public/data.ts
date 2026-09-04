@@ -30,6 +30,45 @@ export const formRecipients = {
   whatsapp: ["919990099990", "919990099980"],
 };
 
+/**
+ * The business identity the policy pages are required to publish.
+ *
+ * Rule 4(x) of the Consumer Protection (E-Commerce) Rules, 2020 requires an
+ * e-commerce entity to display its legal name, the address of its headquarters,
+ * its customer-care contact, and the name, designation and contact of its
+ * grievance officer. Rule 4 of the IT (Reasonable Security Practices) Rules,
+ * 2011 requires the grievance officer's details to be published alongside the
+ * privacy policy.
+ *
+ * Only the facts we actually hold are set here. Every field is optional and the
+ * policy pages render a line only when it is filled, so nothing is invented and
+ * no placeholder ships to a customer. Fill the blanks below and the disclosures
+ * complete themselves — nothing else needs editing.
+ */
+export const legalEntity = {
+  /** Registered legal name, e.g. "Bholenath Productions Private Limited". */
+  registeredName: "",
+  /** Trading name shown throughout the site. */
+  tradingName: "Shivayonic Invites",
+  parent: "Bholenath Productions",
+  /** Principal place of business, as registered. */
+  address: "",
+  /** GSTIN, if registered. */
+  gstin: "",
+  /** CIN / LLPIN, if incorporated. */
+  cin: "",
+  email: "ipcplindia@gmail.com",
+  phone: "+91 99900 99980",
+  website: "www.shivayonic.com",
+  grievanceOfficer: {
+    /** Name of the officer, as required to be published. */
+    name: "",
+    designation: "Grievance Officer",
+    email: "ipcplindia@gmail.com",
+    phone: "+91 99900 99980",
+  },
+};
+
 /** WhatsApp deep link prefilled for a specific design or service. */
 export function whatsappFor(subject: string): string {
   return (

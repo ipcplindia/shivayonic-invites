@@ -21,14 +21,14 @@ const IMAGE_FOCUS: Record<string, string> = {
   "/wedding/roka.webp": "50% 42%",
   "/wedding/engagement.webp": "28% 42%",
   "/pages/about.webp": "50% 42%",
-  "/pages/invitations.webp": "50% 51%",
+  "/pages/invitations.webp": "50% 33%",
   "/pages/our-work.webp": "72% 42%",
   "/pages/plans.webp": "50% 42%",
-  "/pages/customise.webp": "50% 20%",
+  "/pages/customise.webp": "50% 42%",
   // Hand-tuned: the generated point landed on the dress, cropping both heads off.
-  "/pages/styles.webp": "50% 38%",
+  "/pages/styles.webp": "50% 40%",
   "/pages/partners.webp": "50% 42%",
-  "/pages/catalogue.webp": "50% 20%",
+  "/pages/catalogue.webp": "50% 46%",
   "/forms/weddings-celebrations.webp": "50% 20%",
   "/forms/corporate-events.webp": "63% 42%",
   "/forms/hospitality-nightlife.webp": "50% 36%",
@@ -41,6 +41,13 @@ const IMAGE_FOCUS: Record<string, string> = {
   "/gallery/corporate-conference.webp": "72% 42%",
   "/gallery/mata-ki-chowki.webp": "38% 42%",
   "/gallery/gurpurab.webp": "50% 20%",
+  // The category heroes: each holds on the people, not the ceiling above them.
+  // The wedding frame is 3.75:1, far wider than the band, so it is the sides
+  // that are lost rather than the top — it holds right, where the couple are.
+  "/categories/wedding.webp": "68% 50%",
+  "/categories/corporate.webp": "52% 40%",
+  "/categories/celebrations.webp": "62% 42%",
+  "/categories/devotional.webp": "50% 45%",
   "/pages/plans-detail.webp": "50% 42%",
   // Hand-set from the artwork: each of these keeps the people in shot when the
   // panel crops, rather than holding on the crew or the empty upper third.

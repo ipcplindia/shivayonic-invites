@@ -8,9 +8,16 @@
 
 /* -------------------------------------------------------- Category hero */
 
+/*
+ * The band is deliberately tall. Several hero photographs are portrait (the
+ * page heroes are 941x1672), and `cover` in a short full-width band showed a
+ * thin horizontal slice of them — a waist, a shoulder, the top of a doorway —
+ * with the faces cropped away entirely. Raising the band lowers the crop from
+ * roughly 3.2:1 to 2.4:1, so a good third more of every photograph survives.
+ */
 .catHero {
   position: relative;
-  min-height: 62svh;
+  min-height: 80svh;
   display: flex;
   align-items: flex-end;
   isolation: isolate;
@@ -25,11 +32,10 @@
 }
 
 /*
- * The band is `62svh` at full width, so its aspect swings from about 3.2:1 on
- * a desktop to taller than square on a phone. The artwork is cut to 3:2 with
- * the subject centred, so cropping outward from the centre keeps faces in
- * frame at every width. Biasing this upwards, as it once did, cut the heads
- * off any photograph whose subject was not in the top third.
+ * `object-position` is set per image from the focal map, because the source
+ * artwork is not one shape: the page heroes are tall portraits, the category
+ * heroes are landscape, and the centre of the frame is rarely where the faces
+ * are. A single shared value cropped one or the other every time.
  */
 .catHeroPhoto {
   position: absolute;
@@ -684,7 +690,7 @@
 
 @media (max-width: 760px) {
   .catHero {
-    min-height: 56svh;
+    min-height: 66svh;
   }
 
   .catHeroTitle {
@@ -755,6 +761,13 @@
   margin-top: 0.6rem;
   color: var(--umber);
   font-size: 1.02rem;
+  text-wrap: pretty;
+}
+
+.legalUpdated {
+  color: var(--umber-soft);
+  font-size: 0.86rem;
+  font-style: italic;
 }
 
 .notFound {
@@ -1631,7 +1644,7 @@
   /* ---- Category hero --------------------------------------------------- */
 
   .catHero {
-    min-height: 52svh;
+    min-height: 68svh;
   }
 
   .catHeroInner {

@@ -1098,6 +1098,34 @@
   color: color-mix(in oklab, var(--ivory) 62%, transparent);
 }
 
+/* The statutory identity and grievance block. Quiet, but legible and selectable. */
+.footerLegal {
+  display: grid;
+  gap: 0.28rem;
+  margin-top: 1.1rem;
+  max-width: 32ch;
+  font-style: normal;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: color-mix(in oklab, var(--ivory) 55%, transparent);
+}
+
+.footerLegal a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footerLegal a:hover {
+  color: var(--ivory);
+}
+
+.footerGrievance {
+  margin-top: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in oklab, var(--ivory) 14%, transparent);
+}
+
 .footerColTitle {
   font-size: 0.72rem;
   font-weight: 600;
