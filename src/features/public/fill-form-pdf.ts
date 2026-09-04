@@ -59,6 +59,79 @@ function toWinAnsi(input: string): { text: string; lost: boolean } {
   return { text: stripped.replace(/[^\u0020-\u007E\u00A0-\u00FF]/g, ""), lost: true };
 }
 
+/** Breaks a line of text to a width, in the crude way a fixed font allows. */
+function wrap(text: string, chars: number): string[] {
+  const out: string[] = [];
+  for (const paragraph of text.split(/\r?\n/)) {
+    let line = "";
+    for (const word of paragraph.split(/\s+/)) {
+      if (!word) continue;
+      if (line.length + word.length + 1 > chars) {
+        if (line) out.push(line);
+        line = word.length > chars ? word.slice(0, chars) : word;
+      } else {
+        line = line ? `${line} ${word}` : word;
+      }
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+/** Writes the answers that had no field in the template onto appended pages. */
+async function appendOverflow(
+  doc: Awaited<ReturnType<typeof import("pdf-lib").PDFDocument.load>>,
+  form: ClientForm,
+  overflow: { section: string; label: string; value: string }[],
+) {
+  const { StandardFonts, rgb } = await import("pdf-lib");
+  const body = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+
+  const [w, h] = [595.28, 841.89]; // A4, matching the printed form.
+  const margin = 48;
+  const ink = rgb(0.16, 0.1, 0.08);
+  const soft = rgb(0.42, 0.34, 0.3);
+
+  let page = doc.addPage([w, h]);
+  let y = h - margin;
+
+  const nextPage = () => {
+    page = doc.addPage([w, h]);
+    y = h - margin;
+  };
+
+  page.drawText(`${form.name} — additional answers`, { x: margin, y, size: 14, font: bold, color: ink });
+  y -= 16;
+  page.drawText("Questions asked online that the printed form has no box for.", {
+    x: margin, y, size: 9, font: body, color: soft,
+  });
+  y -= 24;
+
+  let lastSection = "";
+  for (const entry of overflow) {
+    if (entry.section !== lastSection) {
+      if (y < margin + 60) nextPage();
+      y -= 6;
+      page.drawText(entry.section.toUpperCase(), { x: margin, y, size: 8, font: bold, color: soft });
+      y -= 14;
+      lastSection = entry.section;
+    }
+
+    const lines = wrap(entry.value, 92);
+    if (y < margin + 20 + lines.length * 11) nextPage();
+
+    page.drawText(wrap(entry.label, 92)[0] ?? entry.label, { x: margin, y, size: 9, font: bold, color: ink });
+    y -= 12;
+    for (const line of lines) {
+      if (y < margin) nextPage();
+      page.drawText(line, { x: margin, y, size: 9, font: body, color: ink });
+      y -= 11;
+    }
+    y -= 6;
+  }
+}
+
 /**
  * Loads the blank template. In the browser that is a fetch of the public file;
  * on the server the caller passes a reader that takes it straight off disk, so
@@ -84,6 +157,8 @@ export async function fillFormPdf(
 
   const unprintable: { label: string; value: string }[] = [];
   const missing: string[] = [];
+  /** Answers with no field in the template — carried onto an appendix instead. */
+  const overflow: { section: string; label: string; value: string }[] = [];
 
   for (const section of form.sections) {
     for (const item of section.items) {
@@ -96,6 +171,7 @@ export async function fillFormPdf(
             acro.getCheckBox(opt.name).check();
           } catch {
             missing.push(opt.name);
+            overflow.push({ section: section.title, label: `${item.label} — ${opt.label}`, value: "Yes" });
           }
         }
         continue;
@@ -103,12 +179,28 @@ export async function fillFormPdf(
 
       const raw = values[item.name];
       if (typeof raw !== "string" || !raw.trim()) continue;
-      const { text, lost } = toWinAnsi(formatAnswer(item.kind, raw.trim()));
+      const shown = formatAnswer(item.kind, raw.trim());
+      const { text, lost } = toWinAnsi(shown);
       if (lost) unprintable.push({ label: item.label, value: raw.trim() });
       try {
-        acro.getTextField(item.name).setText(text);
+        const field = acro.getTextField(item.name);
+        /*
+         * Many boxes on the printed form carry a /MaxLen — "anything else" is
+         * capped at 100 characters. Writing a longer answer throws, and the
+         * catch below then left the box completely empty: the studio would read
+         * a blank where the client had written a paragraph. So a long answer is
+         * trimmed to what the box holds and carried in full on the appendix.
+         */
+        const max = field.getMaxLength();
+        if (typeof max === "number" && max > 0 && text.length > max) {
+          field.setText(`${text.slice(0, Math.max(1, max - 1))}…`);
+          overflow.push({ section: section.title, label: item.label, value: shown });
+        } else {
+          field.setText(text);
+        }
       } catch {
         missing.push(item.name);
+        overflow.push({ section: section.title, label: item.label, value: shown });
       }
     }
   }
@@ -116,6 +208,16 @@ export async function fillFormPdf(
   // Draw the values into the page so they show in every viewer, not just ones
   // that regenerate appearances themselves.
   acro.updateFieldAppearances();
+
+  /*
+   * The online form asks more than the printed template has boxes for — a venue
+   * address, a schedule note, a lyrics brief, "anything else". Those answers had
+   * no field to land in and were quietly dropped from the attachment, which is
+   * the worst possible outcome: the studio would read a complete-looking form and
+   * never know what was missing. They are appended instead, so the PDF carries
+   * every answer given.
+   */
+  if (overflow.length > 0) await appendOverflow(doc, form, overflow);
 
   const bytes = await doc.save();
   const buffer = new ArrayBuffer(bytes.byteLength);
