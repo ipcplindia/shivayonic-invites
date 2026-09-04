@@ -1,5 +1,7 @@
 import "server-only";
 
+import { Buffer } from "node:buffer";
+
 import { formRecipients } from "@/features/public/data";
 
 /**
@@ -48,6 +50,11 @@ export type Submission = {
   short: string;
   /** The customer's own address, so a reply from the studio reaches them. */
   replyTo?: string;
+  /**
+   * Files to attach to the email — in practice the completed client form, as
+   * the real studio PDF with the answers written into its own fields.
+   */
+  attachments?: { filename: string; content: Uint8Array }[];
 };
 
 /** WhatsApp template parameters must be a single line, and are length-capped. */
@@ -56,7 +63,7 @@ function templateParameter(value: string, max = 700): string {
   return flattened.length > max ? `${flattened.slice(0, max - 1)}…` : flattened;
 }
 
-async function sendEmail({ subject, body, replyTo }: Submission): Promise<DeliveryResult> {
+async function sendEmail({ subject, body, replyTo, attachments }: Submission): Promise<DeliveryResult> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
   const target = formRecipients.email;
@@ -81,6 +88,16 @@ async function sendEmail({ subject, body, replyTo }: Submission): Promise<Delive
         text: body,
         // Replying in Gmail then goes to the customer rather than to the sender.
         ...(replyTo ? { reply_to: [replyTo] } : {}),
+        // Resend takes attachment bytes as base64. The text body stays in place
+        // as the searchable record; the PDF is what the studio actually works from.
+        ...(attachments?.length
+          ? {
+              attachments: attachments.map((file) => ({
+                filename: file.filename,
+                content: Buffer.from(file.content).toString("base64"),
+              })),
+            }
+          : {}),
       }),
     });
     if (!res.ok) {

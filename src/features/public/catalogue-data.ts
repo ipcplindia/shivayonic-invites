@@ -30,6 +30,10 @@ async function get<T>(path: string): Promise<T | null> {
     const res = await fetch(`${await apiBase()}${path}`, {
       cache: "no-store",
       headers: { accept: "application/json" },
+      // A catalogue read is never worth stalling a page render on. When the
+      // database is unreachable the driver takes seconds to give up, and every
+      // browsing page paid that before falling back to the showcase.
+      signal: AbortSignal.timeout(1200),
     });
     if (!res.ok) return null;
     return (await res.json()) as T;

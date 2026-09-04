@@ -75,6 +75,36 @@ describe("delivering a submission", () => {
     expect(isDelivered(results)).toBe(true);
   });
 
+  it("attaches the completed form PDF, base64 encoded the way Resend expects", async () => {
+    vi.stubEnv("RESEND_API_KEY", "key");
+    vi.stubEnv("MAIL_FROM", "orders@shivayonic.com");
+    const calls = stubFetch(() => ({ status: 200 }));
+    const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46]); // "%PDF"
+
+    await deliverSubmission({
+      ...submission,
+      attachments: [{ filename: "Shivayonic-Form-01-weddings-celebrations.pdf", content: pdf }],
+    });
+
+    const sent = bodyOf(calls.find((c) => c.url.includes("api.resend.com")) as Call);
+    const files = sent.attachments as { filename: string; content: string }[];
+    expect(files).toHaveLength(1);
+    expect(files[0].filename).toBe("Shivayonic-Form-01-weddings-celebrations.pdf");
+    expect(files[0].content).toBe("JVBERg==");
+  });
+
+  it("sends no attachments key at all when there is no PDF to carry", async () => {
+    vi.stubEnv("RESEND_API_KEY", "key");
+    vi.stubEnv("MAIL_FROM", "orders@shivayonic.com");
+    const calls = stubFetch(() => ({ status: 200 }));
+
+    await deliverSubmission(submission);
+
+    expect(bodyOf(calls.find((c) => c.url.includes("api.resend.com")) as Call)).not.toHaveProperty(
+      "attachments",
+    );
+  });
+
   it("omits reply_to rather than sending an empty one when no address was given", async () => {
     vi.stubEnv("RESEND_API_KEY", "key");
     vi.stubEnv("MAIL_FROM", "orders@shivayonic.com");

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PageFrame } from "@/features/public/page-frame";
 import { Band, Breadcrumb, CategoryHero, CollectionGrid, CTASection, MakeItYours, SectionHead } from "@/features/public/sections";
 import { contact } from "@/features/public/data";
-import { listDesignsForOccasion, listProductsForDisplay } from "@/features/public/catalogue-data";
+import { listProductsForDisplay } from "@/features/public/catalogue-data";
 import { weddingEvents } from "@/features/public/pages";
 
 export async function generateMetadata({ params }: { params: Promise<{ event: string }> }) {
@@ -29,12 +29,12 @@ export default async function Page({ params }: { params: Promise<{ event: string
    * wider published collection rather than to an empty column, which is what
    * every one of these pages rendered before.
    */
-  const forOccasion = await listDesignsForOccasion(event.title);
-  const { products: rest } = await listProductsForDisplay({ limit: 12 });
-  // Designs for this function lead; the rest of the collection follows, so a
-  // function with a single matching design is not left as one lonely card.
-  const seen = new Set(forOccasion.map((p) => p.slug));
-  const products = [...forOccasion, ...rest.filter((p) => !seen.has(p.slug))];
+  const occasionSlug = event.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const { products: all } = await listProductsForDisplay({ limit: 24 });
+  // One read, partitioned here. Asking the catalogue twice — once filtered by
+  // occasion, once unfiltered — doubled the wait for no extra designs.
+  const forOccasion = all.filter((p) => p.category.slug === occasionSlug);
+  const products = [...forOccasion, ...all.filter((p) => p.category.slug !== occasionSlug)];
   const showingThisOccasion = forOccasion.length > 0;
 
   return (

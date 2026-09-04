@@ -6,7 +6,7 @@ import { useCart } from "@/features/public/cart";
 import { contact } from "@/features/public/data";
 import { PIcon } from "@/features/public/icons";
 import { PlanChooser } from "@/features/public/plan-chooser";
-import { fillFormPdf } from "@/features/public/fill-form-pdf";
+import { fillFormPdf, formatAnswer } from "@/features/public/fill-form-pdf";
 import type { ClientForm, FormItem } from "@/features/public/client-forms";
 
 /**
@@ -40,7 +40,7 @@ function summarise(form: ClientForm, values: Values): string {
         continue;
       }
       const v = values[item.name];
-      if (typeof v === "string" && v.trim()) lines.push(`${item.label}: ${v.trim()}`);
+      if (typeof v === "string" && v.trim()) lines.push(`${item.label}: ${formatAnswer(item.kind, v.trim())}`);
     }
     if (lines.length) out.push(`— ${section.title} —`, ...lines, "");
   }
@@ -169,13 +169,16 @@ export function ClientFormView({ form }: { form: ClientForm }) {
           contactPhone: answerLike("_client_mobile_"),
           design: cart.design ? `${cart.design.name} (${cart.design.occasion})` : "",
           summary,
+          // The answers themselves, so the server can write them into the real
+          // studio PDF. Only what was answered is sent.
+          values,
         }),
       });
       if (!res.ok) {
         const problem = (await res.json().catch(() => null)) as { message?: string } | null;
         throw new Error(problem?.message ?? "We could not submit your form.");
       }
-      cart.markBriefSubmitted();
+      cart.markBriefSubmitted(form.slug);
       setDone(true);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "We could not submit your form.");
@@ -416,14 +419,31 @@ function ItemView({
     );
   }
 
+  /*
+   * A native date box opens its calendar only when the small icon at its right
+   * edge is clicked; clicking the wide empty rest of the field does nothing,
+   * which reads as a broken control. Opening the picker from anywhere in the
+   * field makes the whole box behave the way it looks like it should.
+   */
+  const openPicker = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (item.kind !== "date") return;
+    const el = e.currentTarget as HTMLInputElement & { showPicker?: () => void };
+    try {
+      el.showPicker?.();
+    } catch {
+      /* Not permitted in this browser — the icon and keyboard entry still work. */
+    }
+  };
+
   return (
-    <div className="field">
+    <div className={item.kind === "date" ? "field fieldDate" : "field"}>
       {label}
       <input
         id={id}
         type={item.kind}
         value={value}
         onChange={(e) => set(item.name, e.target.value)}
+        onClick={openPicker}
         autoComplete="off"
       />
     </div>

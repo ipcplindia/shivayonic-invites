@@ -21,6 +21,19 @@ export type FillResult = {
 };
 
 /**
+ * Renders an answer the way the printed form expects to read it.
+ *
+ * `input[type="date"]` always yields ISO (2026-12-15). Written straight into a
+ * printed brief that reads "15/12/2026" it looks like a machine artefact and is
+ * ambiguous to anyone scanning the page, so dates are localised on the way in.
+ */
+export function formatAnswer(kind: string, value: string): string {
+  if (kind !== "date") return value;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+}
+
+/**
  * The form fields draw with Helvetica, which is WinAnsi-encoded. Curly quotes,
  * dashes and accents are folded to characters it can render; anything left over
  * (other scripts) is reported so the caller can carry it in the message instead
@@ -46,15 +59,27 @@ function toWinAnsi(input: string): { text: string; lost: boolean } {
   return { text: stripped.replace(/[^\u0020-\u007E\u00A0-\u00FF]/g, ""), lost: true };
 }
 
+/**
+ * Loads the blank template. In the browser that is a fetch of the public file;
+ * on the server the caller passes a reader that takes it straight off disk, so
+ * an emailed copy never depends on the site being reachable from itself.
+ */
+export type TemplateLoader = (pdfPath: string) => Promise<ArrayBuffer | Uint8Array>;
+
+const fetchTemplate: TemplateLoader = async (pdfPath) => {
+  const res = await fetch(pdfPath);
+  if (!res.ok) throw new Error(`Could not load the form template (${res.status})`);
+  return res.arrayBuffer();
+};
+
 export async function fillFormPdf(
   form: ClientForm,
   values: Record<string, string | string[]>,
+  loadTemplate: TemplateLoader = fetchTemplate,
 ): Promise<FillResult> {
   const { PDFDocument } = await import("pdf-lib");
 
-  const res = await fetch(form.pdf);
-  if (!res.ok) throw new Error(`Could not load the form template (${res.status})`);
-  const doc = await PDFDocument.load(await res.arrayBuffer());
+  const doc = await PDFDocument.load(await loadTemplate(form.pdf));
   const acro = doc.getForm();
 
   const unprintable: { label: string; value: string }[] = [];
@@ -78,7 +103,7 @@ export async function fillFormPdf(
 
       const raw = values[item.name];
       if (typeof raw !== "string" || !raw.trim()) continue;
-      const { text, lost } = toWinAnsi(raw.trim());
+      const { text, lost } = toWinAnsi(formatAnswer(item.kind, raw.trim()));
       if (lost) unprintable.push({ label: item.label, value: raw.trim() });
       try {
         acro.getTextField(item.name).setText(text);

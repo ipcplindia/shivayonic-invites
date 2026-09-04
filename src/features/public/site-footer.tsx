@@ -28,7 +28,7 @@ export function SiteFooter() {
           <FooterCol
             title="Help"
             links={[
-              ["Customise", "/customise"],
+              ["Order Now", "/customise"],
               ["Plans", "/plans"],
               ["How It Works", "/how-it-works"],
               ["Catalogue", "/catalogue"],
@@ -59,7 +59,7 @@ export function SiteFooter() {
         </div>
         <div className="footerBottom">
           <span>© 2026 Shivayonic Invites. All rights reserved.</span>
-          <span>Crafted in India.</span>
+          <span>Crafted in India by Vivaan Poddar.</span>
         </div>
       </div>
     </footer>

@@ -62,7 +62,8 @@ export function CartView() {
                 <Link className="btn btnGhost btnSm" href="/catalogue">
                   Change design
                 </Link>
-                <Link className="btn btnGhost btnSm" href={`/customise/${design.formSlug}`}>
+                {/* Order Now, where the customer chooses the brief that fits. */}
+                <Link className="btn btnGhost btnSm" href={briefSubmitted ? `/customise/${design.formSlug}` : "/customise"}>
                   {briefSubmitted ? "Edit the brief" : "Fill the form"}
                 </Link>
                 <button className="btn btnGhost btnSm" onClick={removeDesign} type="button">

@@ -42,6 +42,12 @@ const IMAGE_FOCUS: Record<string, string> = {
   "/gallery/mata-ki-chowki.webp": "38% 42%",
   "/gallery/gurpurab.webp": "50% 20%",
   "/pages/plans-detail.webp": "50% 42%",
+  // Hand-set from the artwork: each of these keeps the people in shot when the
+  // panel crops, rather than holding on the crew or the empty upper third.
+  "/films/wedding-invitation-films.webp": "56% 56%",
+  "/films/celebration-films.webp": "60% 42%",
+  "/films/devotional-films.webp": "55% 48%",
+  "/films/corporate-films.webp": "58% 32%",
 };
 
 /** The focal point for an image, or the centre when none is recorded. */

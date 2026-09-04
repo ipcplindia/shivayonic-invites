@@ -1084,6 +1084,21 @@
 
 .field textarea { min-height: 120px; resize: vertical; }
 
+/* The whole box opens the calendar, so it should read as clickable throughout,
+   and the picker icon should carry the form's ink rather than browser grey. */
+.fieldDate input {
+  cursor: pointer;
+  min-height: 3rem;
+}
+
+.fieldDate input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  filter: saturate(0.4);
+}
+
+.fieldDate input:hover::-webkit-calendar-picker-indicator { opacity: 1; }
+
 .field input:focus,
 .field textarea:focus {
   outline: 2px solid var(--saffron);
@@ -1092,10 +1107,24 @@
 
 .formActions { grid-column: 1 / -1; margin-top: 0.5rem; }
 
+/*
+ * The confirmation reads as a narrow column, but it also carries the plan
+ * ladder — four cards. Capping the whole block at 560px squeezed those four
+ * into roughly 125px each. The block is therefore full width and its own prose
+ * is what stays narrow, so the plans get the same room they have on /plans.
+ */
 .formThanks {
-  max-width: 560px;
+  max-width: 1100px;
   margin: 3rem auto;
   text-align: center;
+}
+
+.formThanks > .sectionTitle,
+.formThanks > .sectionLede,
+.formThanks > .briefWarn {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .formThanksMark {
@@ -2160,7 +2189,47 @@
 }
 
 .formPlans .planChooser {
-  margin-top: 1.5rem;
+  margin-top: 1.75rem;
+  text-align: left;
+}
+
+/* The heading pair above the ladder keeps the narrow measure of the prose. */
+.formPlans > .sectionEyebrow,
+.formPlans > .sectionTitle,
+.formPlans > .formThanksNote {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/*
+ * Sharper type in the plan cards: crisper rendering, no orphaned word on the
+ * tier name, and figures that line up column to column.
+ */
+.planChooser .planCard {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.planChooser .planName {
+  text-wrap: balance;
+  font-size: 1.55rem;
+}
+
+.planChooser .planTagline {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.planChooser .planPrice {
+  font-size: clamp(1.95rem, 2.2vw, 2.35rem);
+}
+
+/* Inside the confirmation the featured card should not lift out of the row. */
+@media (min-width: 1081px) {
+  .formPlans .planFeatured { transform: none; padding-bottom: 1.9rem; }
+  .formPlans .planFeatured:hover { transform: translateY(-5px); }
 }
 
 @media (max-width: 900px) {

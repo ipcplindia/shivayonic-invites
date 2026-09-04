@@ -42,6 +42,7 @@ export const categoryConfigs: Record<string, CategoryConfig> = {
     lede: "From the first Save the Date to the last reception toast — cinematic invitations, films and music for each function of the wedding.",
     tone: "rose",
     heroImage: "/categories/wedding.webp",
+    introImage: "/films/wedding-invitation-films.webp",
     intro: {
       title: "One wedding, told beautifully at every step",
       body: "Each function has its own mood. We craft a coherent suite — invitation, film and music — so the whole celebration feels of a piece, from Roka to Reception.",
@@ -67,6 +68,7 @@ export const categoryConfigs: Record<string, CategoryConfig> = {
     lede: "Birthdays, anniversaries, and the family ceremonies in between — announced with warmth and craft.",
     tone: "saffron",
     heroImage: "/categories/celebrations.webp",
+    introImage: "/films/celebration-films.webp",
     intro: {
       title: "The small ceremonies deserve the same care",
       body: "A first birthday, a silver anniversary, a naming day — we give each occasion an invitation as memorable as the moment itself.",
@@ -89,6 +91,7 @@ export const categoryConfigs: Record<string, CategoryConfig> = {
     lede: "Luminous invitations for the festivals and pujas that gather families in devotion.",
     tone: "gold",
     heroImage: "/categories/devotional.webp",
+    introImage: "/films/devotional-films.webp",
     intro: {
       title: "Reverent, luminous, and true to the occasion",
       body: "Festival greetings and puja invitations crafted with care for the ritual and the feeling — never a mashup, always in good taste.",
@@ -111,6 +114,7 @@ export const categoryConfigs: Record<string, CategoryConfig> = {
     lede: "Launches, conferences, annual days and awards — the same craft, in a cleaner, brand-aligned register.",
     tone: "teal",
     heroImage: "/categories/corporate.webp",
+    introImage: "/films/corporate-films.webp",
     intro: {
       title: "On-brand, on-message, and unmistakably premium",
       body: "We work to your brand and your moment — a launch teaser, a conference invite, an awards film — with structured, confident design.",

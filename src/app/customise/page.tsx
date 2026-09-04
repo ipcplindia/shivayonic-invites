@@ -5,7 +5,7 @@ import { clientForms } from "@/features/public/client-forms";
 import { contact } from "@/features/public/data";
 
 export const metadata = {
-  title: { absolute: "Customise Your Invitation | Shivayonic Invites" },
+  title: { absolute: "Order Now | Shivayonic Invites" },
   description:
     "Start your invitation, film or music project — fill the client form online, or download the PDF and send it back by WhatsApp or email.",
   alternates: { canonical: "/customise" },
@@ -16,16 +16,16 @@ export default function Page() {
   return (
     <PageFrame solidNav>
       <CategoryHero
-        eyebrow="Customise"
+        eyebrow="Order Now"
         title="Tell us about your celebration"
         lede="Pick the form that fits your project. Fill it in online — your answers save as you go — or download the PDF and send it back whenever suits you."
         tone="rose"
         image="/pages/customise.webp"
-        primary={{ label: "Choose a brief", href: "#briefs" }}
+        primary={{ label: "Choose your form", href: "#briefs" }}
         secondary={{ label: "Talk to us", href: "/contact" }}
       />
 
-      <CrumbBar trail={[{ label: "Home", href: "/" }, { label: "Customise" }]} />
+      <CrumbBar trail={[{ label: "Home", href: "/" }, { label: "Order Now" }]} />
 
       <Band label="Choose your brief">
         <div id="briefs">

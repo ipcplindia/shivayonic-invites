@@ -45,7 +45,7 @@ type CartApi = CartState & {
   ready: boolean;
   setDesign: (design: CartDesign) => void;
   setPlan: (plan: CartPlan) => void;
-  markBriefSubmitted: () => void;
+  markBriefSubmitted: (formSlug?: string) => void;
   removeDesign: () => void;
   removePlan: () => void;
   clear: () => void;
@@ -95,7 +95,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       ready,
       setDesign: (design) => persist({ ...state, design, briefSubmitted: false }),
       setPlan: (plan) => persist({ ...state, plan }),
-      markBriefSubmitted: () => persist({ ...state, briefSubmitted: true }),
+      // The form the customer actually chose on Order Now wins over the one
+      // guessed from the design's occasion, so "Edit the brief" reopens the
+      // brief they filled in rather than a different one.
+      markBriefSubmitted: (formSlug) =>
+        persist({
+          ...state,
+          briefSubmitted: true,
+          design: state.design && formSlug ? { ...state.design, formSlug } : state.design,
+        }),
       removeDesign: () => persist({ ...state, design: null, briefSubmitted: false }),
       removePlan: () => persist({ ...state, plan: null }),
       clear: () => persist(EMPTY),

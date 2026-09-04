@@ -1,15 +1,23 @@
 import type { NextConfig } from "next";
 
+// Next's development server compiles with eval (HMR and React Refresh). Without
+// this the dev bundle throws EvalError before hydration, so every client
+// component on the site is inert — forms accept keystrokes that go nowhere.
+// Production builds contain no eval, so the allowance never reaches the live site.
+const devScriptSrc = process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'";
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net",
+  `script-src 'self' 'unsafe-inline'${devScriptSrc} https://www.googletagmanager.com https://connect.facebook.net`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
-  "img-src 'self' data: blob: https://*.backblazeb2.com https://www.facebook.com",
+  // i.ytimg.com serves the poster frame for every published film. Without it the
+  // film tiles render as empty boxes.
+  "img-src 'self' data: blob: https://i.ytimg.com https://*.backblazeb2.com https://www.facebook.com",
   "media-src 'self' blob: https://*.backblazeb2.com",
   "connect-src 'self' https://*.backblazeb2.com https://www.google-analytics.com https://region1.google-analytics.com https://www.facebook.com",
   "worker-src 'self' blob:",

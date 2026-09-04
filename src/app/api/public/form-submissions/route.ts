@@ -1,6 +1,11 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { clientForms } from "@/features/public/client-forms";
+import { fillFormPdf } from "@/features/public/fill-form-pdf";
 import { deliverSubmission, isDelivered } from "@/features/public/notify";
 import { checkPublicWriteRateLimit } from "@/auth/rate-limit";
 
@@ -11,10 +16,16 @@ export const dynamic = "force-dynamic";
  * A completed client brief, submitted from the public site.
  *
  * The customer no longer chooses a channel: the answers are delivered to the
- * studio here. What is sent is the readable summary of every answer — the same
- * text the form shows under "What will be written into the form". The PDF is
- * still downloadable by the customer, but it is not attached: WhatsApp needs a
- * hosted media upload for that, which is a separate piece of work.
+ * studio here, as the studio's own PDF with every answer written into its real
+ * fields — the same document the team already works from, not a wall of text.
+ *
+ * The PDF is built here rather than uploaded by the browser. The blank template
+ * is 1.6 MB, so a filled copy sent as base64 would be some 2 MB of JSON — past
+ * the 64 KB request cap the middleware enforces, and needless when the server
+ * can read the template off disk. The browser therefore posts only the answers.
+ *
+ * The plain-text summary stays in the mail body: it is searchable in the inbox,
+ * and it is what survives if a template ever fails to fill.
  */
 const schema = z.object({
   formSlug: z.string().trim().max(80),
@@ -26,7 +37,35 @@ const schema = z.object({
   design: z.string().trim().max(160).optional().default(""),
   /** The rendered answer sheet. Capped so one post cannot flood the channels. */
   summary: z.string().max(20000),
+  /**
+   * The raw answers, keyed by AcroForm field name, used to fill the studio PDF.
+   * Optional so an older cached page still submits successfully — it simply
+   * arrives as text only rather than failing.
+   */
+  values: z.record(z.string().max(200), z.union([z.string().max(4000), z.array(z.string().max(400)).max(60)])).optional(),
 });
+
+/**
+ * Fills the studio's own PDF with the submitted answers.
+ *
+ * Returns nothing rather than throwing: a template that will not fill must not
+ * cost the studio the submission, so delivery continues with the text body.
+ */
+async function buildFormPdf(slug: string, values: Record<string, string | string[]> | undefined) {
+  if (!values || Object.keys(values).length === 0) return undefined;
+  const form = clientForms.find((candidate) => candidate.slug === slug);
+  if (!form) return undefined;
+
+  try {
+    const { blob, fileName } = await fillFormPdf(form, values, async (pdfPath) =>
+      readFile(path.join(process.cwd(), "public", pdfPath.replace(/^\//, ""))),
+    );
+    return { filename: fileName, content: new Uint8Array(await blob.arrayBuffer()) };
+  } catch (error) {
+    console.error("Could not fill the client form PDF:", error);
+    return undefined;
+  }
+}
 
 export async function POST(request: Request) {
   const limit = await checkPublicWriteRateLimit("form-submission", request.headers).catch(() => ({ allowed: false, retryAfter: 60 }));
@@ -58,9 +97,12 @@ export async function POST(request: Request) {
     .filter((line) => line !== null)
     .join("\n");
 
+  const attachment = await buildFormPdf(form.formSlug, form.values);
+
   const results = await deliverSubmission({
     subject: `Client form — ${form.formName}${form.contactName ? ` — ${form.contactName}` : ""}`,
     body,
+    attachments: attachment ? [attachment] : undefined,
     short: [
       `New client form: ${form.formName}`,
       form.contactName ? `from ${form.contactName}` : null,

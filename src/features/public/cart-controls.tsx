@@ -23,8 +23,13 @@ export function AddDesignToCart({
   const formSlug = formSlugForOccasion(design.occasion);
 
   if (inCart) {
+    /*
+     * Straight to Order Now, not to a guessed form. The occasion on a design
+     * only hints at which brief fits — a Diwali design might be for a family
+     * puja or a corporate evening — so the customer picks the form themselves.
+     */
     return (
-      <Link className={compact ? "btn btnPrimary btnSm" : "btn btnPrimary"} href={`/customise/${formSlug}`}>
+      <Link className={compact ? "btn btnPrimary btnSm" : "btn btnPrimary"} href="/customise">
         Fill the form
       </Link>
     );
