@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import { URLSearchParams } from "node:url";
 
 import type { CatalogueFilters, CatalogueListResponse, PublicCategory, PublicCategorySummary, PublicCollection, PublicProductDetail, PublicProductSummary, PublicProductType, VisualStyle } from "@/shared/catalogue";
+import { safeFeatures } from "@/core/catalogue-management";
 
 const productTypes = new Set<PublicProductType>(["INVITATION", "VIDEO_INVITATION", "AUDIO_INVITATION"]);
 export const maxCataloguePageSize = 48;
@@ -16,15 +17,15 @@ export function parseCatalogueFilters(params: URLSearchParams): Required<Pick<Ca
   return { limit, category: params.get("category") || undefined, style: params.get("style") || undefined, productType: productType as PublicProductType | undefined, featured: featured === undefined || featured === null ? undefined : featured === "true", q, cursor: params.get("cursor") || undefined };
 }
 
-type ProductInput = { id: string; slug: string; name: string; shortDescription: string; category: PublicCategorySummary; styles: VisualStyle[]; productType: string; startingPrice: number | null; pricingLabel: string | null; currency: string; featured: boolean; displayOrder: number; media: { mediaAssetId: string; role: string; altText: string | null; displayOrder: number }[]; createdAt: Date; updatedAt: Date };
+type ProductInput = { id: string; slug: string; name: string; shortDescription: string; fullDescription?: string | null; category: PublicCategorySummary; styles: VisualStyle[]; productType: string; startingPrice: number | null; pricingLabel: string | null; currency: string; ctaLabel?: string | null; ctaHref?: string | null; features?: unknown; turnaround?: string | null; duration?: string | null; coverMediaAssetId?: string | null; featured: boolean; displayOrder: number; media: { mediaAssetId: string; role: string; altText: string | null; displayOrder: number }[]; createdAt: Date; updatedAt: Date };
 
 export function serializePublicProduct(product: ProductInput): PublicProductSummary {
   const cover = product.media.find((media) => media.role === "COVER");
-  return { id: product.id, slug: product.slug, name: product.name, shortDescription: product.shortDescription, category: product.category, styles: product.styles, productType: product.productType as PublicProductType, startingPrice: product.startingPrice, pricingLabel: product.pricingLabel, currency: product.currency, coverMediaId: cover?.mediaAssetId ?? null, featured: product.featured, displayOrder: product.displayOrder };
+  return { id: product.id, slug: product.slug, name: product.name, shortDescription: product.shortDescription, category: product.category, styles: product.styles, productType: product.productType as PublicProductType, startingPrice: product.startingPrice, pricingLabel: product.pricingLabel, currency: product.currency, coverMediaId: cover?.mediaAssetId ?? product.coverMediaAssetId ?? null, featured: product.featured, displayOrder: product.displayOrder, features: safeFeatures(product.features) };
 }
 
 export function serializePublicProductDetail(product: ProductInput): PublicProductDetail {
-  return { ...serializePublicProduct(product), media: product.media.map((media) => ({ mediaId: media.mediaAssetId, role: media.role as PublicProductDetail["media"][number]["role"], altText: media.altText, displayOrder: media.displayOrder })), createdAt: product.createdAt.toISOString(), updatedAt: product.updatedAt.toISOString() };
+  return { ...serializePublicProduct(product), fullDescription: product.fullDescription, turnaround: product.turnaround, duration: product.duration, ctaLabel: product.ctaLabel, ctaHref: product.ctaHref, media: product.media.map((media) => ({ mediaId: media.mediaAssetId, role: media.role as PublicProductDetail["media"][number]["role"], altText: media.altText, displayOrder: media.displayOrder })), createdAt: product.createdAt.toISOString(), updatedAt: product.updatedAt.toISOString() };
 }
 
 export function cataloguePage(products: ProductInput[], limit: number): CatalogueListResponse {

@@ -196,6 +196,10 @@ model Organization {
   projects            Project[]
   mediaAssets         MediaAsset[]
   websitePublications WebsitePublication[]
+  publicCategories    PublicCategory[]
+  visualStyles        VisualStyle[]
+  publicProducts      PublicProduct[]
+  publicPlans         PublicPlan[]
   contentItems        ContentItem[]
   publishJobs         PublishJob[]
   platformPublications PlatformPublication[]
@@ -254,6 +258,10 @@ model MediaAsset {
   organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   project             Project?             @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdBy           User                 @relation("MediaCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  publicCategories    PublicCategory[]
+  visualStyles        VisualStyle[]
+  publicProductCovers PublicProduct[]
+  publicPlanMedia     PublicPlan[]
   publicProductMedia  PublicProductMedia[]
   websitePublications WebsitePublication[]
   masterContentItems  ContentItem[]       @relation("ContentMasterMedia")
@@ -290,53 +298,80 @@ model WebsitePublication {
 }
 
 model PublicCategory {
-  id        String           @id @default(cuid())
-  slug      String           @unique
-  name      String
-  parentId  String?
-  active    Boolean          @default(true)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  parent    PublicCategory?  @relation("PublicCategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children  PublicCategory[] @relation("PublicCategoryHierarchy")
-  products  PublicProduct[]
+  id             String              @id @default(cuid())
+  organizationId String?
+  slug           String              @unique
+  name           String
+  description    String?
+  parentId       String?
+  mediaAssetId   String?
+  active         Boolean             @default(true)
+  status         PublicProductStatus @default(PUBLISHED)
+  sortOrder      Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  organization   Organization?       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset     MediaAsset?         @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  parent         PublicCategory?     @relation("PublicCategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children       PublicCategory[]    @relation("PublicCategoryHierarchy")
+  products       PublicProduct[]
 
   @@index([parentId, active])
+  @@index([organizationId, status, sortOrder])
 }
 
 model VisualStyle {
-  id          String               @id @default(cuid())
-  slug        String               @unique
-  name        String
-  description String?
-  active      Boolean              @default(true)
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  products    PublicProductStyle[]
+  id             String               @id @default(cuid())
+  organizationId String?
+  slug           String               @unique
+  name           String
+  description    String?
+  mediaAssetId   String?
+  active         Boolean              @default(true)
+  status         PublicProductStatus  @default(PUBLISHED)
+  sortOrder      Int                  @default(0)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization?        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset     MediaAsset?          @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  products       PublicProductStyle[]
+
+  @@index([organizationId, status, sortOrder])
 }
 
 model PublicProduct {
   id               String                    @id @default(cuid())
+  organizationId   String?
   slug             String                    @unique
   name             String
   shortDescription String
+  fullDescription  String?
   categoryId       String
   productType      PublicProductType
   startingPrice    Int?
   pricingLabel     String?
   currency         String                    @default("INR")
+  ctaLabel         String?
+  ctaHref          String?
+  features         Json?
+  turnaround       String?
+  duration         String?
+  coverMediaAssetId String?
   status           PublicProductStatus       @default(DRAFT)
   featured         Boolean                   @default(false)
   displayOrder     Int                       @default(0)
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
+  organization     Organization?             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   category         PublicCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  coverMediaAsset  MediaAsset?               @relation(fields: [coverMediaAssetId], references: [id], onDelete: SetNull)
   styles           PublicProductStyle[]
   media            PublicProductMedia[]
   collections      PublicCollectionProduct[]
 
   @@index([status, featured, displayOrder])
   @@index([categoryId, status, displayOrder])
+  @@index([organizationId, status, displayOrder])
 }
 
 model PublicProductStyle {
@@ -387,6 +422,29 @@ model PublicCollectionProduct {
 
   @@id([collectionId, productId])
   @@index([productId])
+}
+
+model PublicPlan {
+  id             String              @id @default(cuid())
+  organizationId String?
+  slug           String              @unique
+  name           String
+  subtitle       String?
+  description    String
+  features       Json?
+  ctaLabel       String?
+  ctaHref        String?
+  recommended    Boolean             @default(false)
+  sortOrder      Int                 @default(0)
+  status         PublicProductStatus @default(DRAFT)
+  mediaAssetId   String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  organization   Organization?       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mediaAsset     MediaAsset?         @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, sortOrder])
+  @@index([status, recommended, sortOrder])
 }
 
 model ContentItem {
