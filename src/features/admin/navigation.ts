@@ -51,14 +51,15 @@ export const navGroups: NavGroup[] = [
       item("/admin/media", "Media Library", "media", "MEDIA_READ", "Private master files for the studio."),
       item("/admin/content", "Website Content", "publish", "PUBLISH_CONTENT", "Publish a ready master to a website placement."),
       item("/admin/projects", "Projects", "projects", "PROJECT_READ", "Every commission, from first brief to delivered invitation.", true),
-      item("/admin/publish", "Publishing", "publish", "PUBLISH_CONTENT", "Delivery of finished masters to each connected channel.", true),
-      item("/admin/schedule", "Schedule", "schedule", "PROJECT_WRITE", "Release windows for invitations that must land at a chosen hour.", true),
+      item("/admin/publisher", "Publisher", "publish", "PUBLISH_CONTENT", "One master with independent Website, Instagram and YouTube destinations."),
+      item("/admin/publisher/jobs", "Publishing jobs", "schedule", "PUBLISH_CONTENT", "Durable destination job history and truthful execution state."),
     ],
   },
   {
     label: "Catalogue",
     items: [
       item("/admin/catalogue", "Catalogue", "projects", "CATALOGUE_MANAGE", "Products, categories, visual styles and plans."),
+      item("/admin/plans", "Plans", "archive", "CATALOGUE_MANAGE", "Website plan content, without public pricing."),
       item("/admin/catalogue/products", "Products", "image", "CATALOGUE_MANAGE", "Individual catalogue products as the public site sees them.", true),
     ],
   },
@@ -76,6 +77,8 @@ export const navGroups: NavGroup[] = [
       item("/admin/marketing", "Marketing", "activity", "ANALYTICS_VIEW", "Campaigns, advertising and the content calendar."),
       item("/admin/social", "Social", "video", "PUBLISH_CONTENT", "One master asset delivered to every channel."),
       item("/admin/analytics", "Analytics", "overview", "ANALYTICS_VIEW", "How the website, catalogue and content perform."),
+      item("/admin/analytics/content", "Content analytics", "activity", "ANALYTICS_VIEW", "Captured first-party and future provider metrics."),
+      item("/admin/analytics/website", "Website analytics", "activity", "ANALYTICS_VIEW", "First-party event counts without fabricated history."),
     ],
   },
   {

@@ -56,6 +56,7 @@ const stateColor: Record<SystemState, string> = {
   live: "#7fa27b",
   connected: "#7fa27b",
   available: "#5f9890",
+  configured: "#5f9890",
   degraded: "#cfa63c",
   unconfigured: "#85847b",
 };

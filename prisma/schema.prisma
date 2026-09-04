@@ -66,6 +66,62 @@ enum ProductMediaRole {
   AUDIO_PREVIEW
 }
 
+enum ContentItemType {
+  VIDEO
+  IMAGE
+  CAROUSEL
+  ARTICLE
+  CAMPAIGN_ASSET
+}
+
+enum ContentItemStatus {
+  DRAFT
+  READY
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ContentDestinationPlatform {
+  WEBSITE
+  INSTAGRAM
+  YOUTUBE
+}
+
+enum ContentDestinationStatus {
+  DRAFT
+  READY
+  QUEUED
+  PROCESSING
+  PUBLISHED
+  FAILED
+  DISABLED
+}
+
+enum PublishJobStatus {
+  QUEUED
+  PROCESSING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+enum IntegrationConnectionStatus {
+  NOT_CONNECTED
+  CONNECTED
+  EXPIRED
+  ERROR
+  DISABLED
+}
+
+enum WebsiteAnalyticsEventType {
+  PAGE_VIEW
+  CTA_CLICK
+  WHATSAPP_CLICK
+  FORM_START
+  FORM_SUBMIT
+}
+
 model User {
   id                 String               @id @default(cuid())
   email              String               @unique
@@ -78,6 +134,9 @@ model User {
   accounts           Account[]
   memberships        OrganizationMember[]
   createdMediaAssets MediaAsset[]         @relation("MediaCreatedBy")
+  createdContentItems ContentItem[]       @relation("ContentCreatedBy")
+  updatedContentItems ContentItem[]       @relation("ContentUpdatedBy")
+  createdPublishJobs PublishJob[]         @relation("PublishJobCreatedBy")
   auditLogs          AuditLog[]
 }
 
@@ -137,6 +196,12 @@ model Organization {
   projects            Project[]
   mediaAssets         MediaAsset[]
   websitePublications WebsitePublication[]
+  contentItems        ContentItem[]
+  publishJobs         PublishJob[]
+  platformPublications PlatformPublication[]
+  contentMetricSnapshots ContentMetricSnapshot[]
+  integrationConnections IntegrationConnection[]
+  websiteAnalyticsEvents WebsiteAnalyticsEvent[]
   auditLogs           AuditLog[]
 }
 
@@ -191,6 +256,8 @@ model MediaAsset {
   createdBy           User                 @relation("MediaCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   publicProductMedia  PublicProductMedia[]
   websitePublications WebsitePublication[]
+  masterContentItems  ContentItem[]       @relation("ContentMasterMedia")
+  thumbnailContentItems ContentItem[]     @relation("ContentThumbnailMedia")
 
   @@index([organizationId, status])
   @@index([projectId])
@@ -320,6 +387,170 @@ model PublicCollectionProduct {
 
   @@id([collectionId, productId])
   @@index([productId])
+}
+
+model ContentItem {
+  id              String            @id @default(cuid())
+  organizationId  String
+  title           String
+  slug            String?
+  description     String?
+  contentType     ContentItemType
+  status          ContentItemStatus @default(DRAFT)
+  masterMediaId   String?
+  thumbnailMediaId String?
+  createdByUserId String
+  updatedByUserId String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  masterMedia     MediaAsset?       @relation("ContentMasterMedia", fields: [masterMediaId], references: [id], onDelete: SetNull)
+  thumbnailMedia  MediaAsset?       @relation("ContentThumbnailMedia", fields: [thumbnailMediaId], references: [id], onDelete: SetNull)
+  createdBy       User              @relation("ContentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  updatedBy       User              @relation("ContentUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict)
+  destinations    ContentDestination[]
+  jobs            PublishJob[]
+  publications    PlatformPublication[]
+  metricSnapshots ContentMetricSnapshot[]
+  websiteEvents   WebsiteAnalyticsEvent[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, status, updatedAt])
+  @@index([masterMediaId])
+}
+
+model ContentDestination {
+  id            String                   @id @default(cuid())
+  contentItemId String
+  platform      ContentDestinationPlatform
+  enabled       Boolean                  @default(false)
+  status        ContentDestinationStatus @default(DRAFT)
+  metadata      Json?
+  scheduledFor  DateTime?
+  publishedAt   DateTime?
+  lastAttemptAt DateTime?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  contentItem   ContentItem              @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  jobs          PublishJob[]
+  publication   PlatformPublication?
+
+  @@unique([contentItemId, platform])
+  @@index([platform, status, scheduledFor])
+}
+
+model PublishJob {
+  id              String            @id @default(cuid())
+  organizationId  String
+  contentItemId   String
+  destinationId   String
+  provider        ContentDestinationPlatform
+  status          PublishJobStatus  @default(QUEUED)
+  attempt         Int               @default(0)
+  scheduledFor    DateTime?
+  nextAttemptAt   DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  lastErrorCode   String?
+  lastErrorMessage String?
+  idempotencyKey  String            @unique
+  createdByUserId String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contentItem     ContentItem       @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  destination     ContentDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  createdBy       User              @relation("PublishJobCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, status, scheduledFor])
+  @@index([contentItemId, provider, status])
+  @@index([destinationId, createdAt])
+}
+
+model PlatformPublication {
+  id                  String                     @id @default(cuid())
+  organizationId      String
+  contentItemId       String
+  destinationId       String                     @unique
+  provider            ContentDestinationPlatform
+  externalId          String?
+  externalUrl         String?
+  providerStatus      String?
+  publishedAt         DateTime?
+  metadata            Json?
+  lastSyncedAt        DateTime?
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  organization        Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contentItem         ContentItem                @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  destination         ContentDestination         @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  metricSnapshots     ContentMetricSnapshot[]
+
+  @@unique([contentItemId, provider])
+  @@index([organizationId, provider, publishedAt])
+}
+
+model ContentMetricSnapshot {
+  id                    String                     @id @default(cuid())
+  organizationId        String
+  contentItemId         String
+  platformPublicationId String?
+  provider              ContentDestinationPlatform
+  capturedAt            DateTime
+  views                 Int?
+  reach                 Int?
+  impressions           Int?
+  likes                 Int?
+  comments              Int?
+  shares                Int?
+  saves                 Int?
+  watchTimeSeconds      Int?
+  averageViewDurationSeconds Int?
+  clicks                Int?
+  profileVisits         Int?
+  subscribersGained     Int?
+  subscribersLost       Int?
+  organization          Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contentItem           ContentItem                @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  platformPublication   PlatformPublication?       @relation(fields: [platformPublicationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, provider, capturedAt])
+  @@index([contentItemId, capturedAt])
+  @@index([platformPublicationId, capturedAt])
+}
+
+model IntegrationConnection {
+  id                    String                      @id @default(cuid())
+  organizationId        String
+  provider              ContentDestinationPlatform
+  externalAccountId     String?
+  externalAccountName   String?
+  status                IntegrationConnectionStatus @default(NOT_CONNECTED)
+  scopes                String[]
+  tokenExpiresAt        DateTime?
+  encryptedAccessToken  String?
+  encryptedRefreshToken String?
+  metadata              Json?
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  organization          Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider])
+  @@index([organizationId, status])
+}
+
+model WebsiteAnalyticsEvent {
+  id            String                    @id @default(cuid())
+  organizationId String
+  contentItemId String?
+  eventType     WebsiteAnalyticsEventType
+  path          String
+  occurredAt    DateTime                  @default(now())
+  organization  Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contentItem   ContentItem?              @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, eventType, occurredAt])
+  @@index([contentItemId, occurredAt])
 }
 
 model AuditLog {

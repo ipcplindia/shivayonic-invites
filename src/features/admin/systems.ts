@@ -11,7 +11,7 @@ import type { IconName } from "@/components/icon";
  * secret or credential value is ever read into the returned shape.
  */
 
-export type SystemState = "live" | "connected" | "available" | "degraded" | "unconfigured";
+export type SystemState = "live" | "connected" | "available" | "configured" | "degraded" | "unconfigured";
 
 export type SystemGroup = "platform" | "channel" | "advertising" | "finance" | "automation";
 
@@ -36,13 +36,14 @@ export const systemStatePresentation: Record<
   live: { label: "Live", tone: "success", shape: "solid" },
   connected: { label: "Connected", tone: "success", shape: "solid" },
   available: { label: "Available", tone: "signal", shape: "hollow" },
+  configured: { label: "Configured", tone: "signal", shape: "hollow" },
   degraded: { label: "Degraded", tone: "warning", shape: "hollow" },
   unconfigured: { label: "Not connected", tone: "neutral", shape: "square" },
 };
 
 /** True when a system can be used right now. */
 export function isSystemConnected(status: SystemStatus) {
-  return status.state === "live" || status.state === "connected" || status.state === "available";
+  return status.state === "live" || status.state === "connected" || status.state === "available" || status.state === "configured";
 }
 
 /**
@@ -77,12 +78,20 @@ function storageStatus(): Pick<SystemStatus, "provider" | "state" | "capability"
   };
 }
 
+function emailStatus(): Pick<SystemStatus, "provider" | "state" | "capability"> {
+  const configured = Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);
+  return configured
+    ? { provider: "Resend", state: "configured", capability: "Transactional delivery is configured; no key is exposed to this UI." }
+    : { provider: "Resend", state: "unconfigured", capability: "Transactional delivery needs a server-side API key and verified sender." };
+}
+
 /**
  * `databaseReachable` is passed in by the caller, which has just run a real
  * query — this module does not open its own connection to guess.
  */
 export function systemStatuses({ databaseReachable }: { databaseReachable: boolean }): SystemStatus[] {
   const storage = storageStatus();
+  const email = emailStatus();
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   return [
@@ -122,6 +131,13 @@ export function systemStatuses({ databaseReachable }: { databaseReachable: boole
       state: "live",
       capability: "Sessions, organization membership and per-permission authorisation.",
       href: "/admin/settings",
+    },
+    {
+      id: "email",
+      name: "Email",
+      group: "platform",
+      icon: "inbox",
+      ...email,
     },
     {
       id: "website-publishing",
