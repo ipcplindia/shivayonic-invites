@@ -1,7 +1,11 @@
-import { LoginForm } from "./login-form";
+import { redirect } from "next/navigation";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reason?: string }> }) {
+import { safeAdminRedirect } from "@/auth/request-security";
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reason?: string; returnTo?: string }> }) {
   const params = await searchParams;
-  const sessionMessage = params.reason ? "Please sign in to continue." : undefined;
-  return <LoginForm sessionMessage={sessionMessage} />;
+  const query = new URLSearchParams();
+  if (params.reason) query.set("reason", "session");
+  query.set("returnTo", safeAdminRedirect(params.returnTo));
+  redirect(`/admin/login?${query}`);
 }

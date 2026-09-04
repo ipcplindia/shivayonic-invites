@@ -11,7 +11,8 @@ The Shivayonic Command Center is private. Public self-registration is disabled.
 - Centralized permissions in `src/auth/permissions.ts`.
 - Server authorization helpers in `src/auth/context.ts`.
 - Tenant checks in `src/auth/organization-access.ts`.
-- Minimal login route and page at `/login`.
+- Canonical login at `/admin/login`; `/login` redirects there.
+- Internal-only post-login redirects, generic credential errors, database-backed throttling, and explicit public-signup denial.
 - Sanitized current identity at `GET /api/me`.
 - Operations-only owner bootstrap through `npm run admin:bootstrap`.
 
@@ -41,4 +42,4 @@ Frontend code should consume `GET /api/me` and shared types from `src/shared/aut
 
 ## Not implemented yet
 
-MFA/passkeys, enterprise SSO, customer login, social OAuth, account recovery, production WAF/CDN rate limits, final admin UI, and media upload are not part of Task 02.
+MFA/passkeys, enterprise SSO, customer login, social OAuth, and account recovery remain future work. Do not show a recovery link until expiring single-use delivery is configured.

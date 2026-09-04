@@ -1,8 +1,9 @@
 import { createReadStream } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { mkdir, open, rm, stat } from "node:fs/promises";
 import { dirname, resolve, sep } from "node:path";
 import { Readable } from "node:stream";
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectVersionsCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export type UploadTarget = { url: string; headers: Record<string, string>; expiresAt: Date };
@@ -17,7 +18,8 @@ export interface ObjectStorage {
   putObject(input: { storageKey: string; body: globalThis.ReadableStream<Uint8Array>; maxBytes: number }): Promise<{ sizeBytes: number }>;
   getObject(input: { storageKey: string; range?: ByteRange }): Promise<StoredObject>;
   deleteObject(input: { storageKey: string }): Promise<void>;
-  headObject(input: { storageKey: string }): Promise<{ sizeBytes: number } | null>;
+  headObject(input: { storageKey: string }): Promise<{ sizeBytes: number; etag?: string; versionId?: string } | null>;
+  promoteUpload(input: { storageKey: string; etag?: string; versionId?: string }): Promise<string>;
 }
 
 export class LocalObjectStorage implements ObjectStorage {
@@ -75,6 +77,10 @@ export class LocalObjectStorage implements ObjectStorage {
     }
   }
 
+  async promoteUpload({ storageKey }: { storageKey: string }) {
+    return storageKey;
+  }
+
   private toPath(storageKey: string) {
     const filePath = resolve(this.rootPath, storageKey);
     if (!filePath.startsWith(`${this.rootPath}${sep}`)) throw new Error("INVALID_STORAGE_KEY");
@@ -114,15 +120,51 @@ export class S3ObjectStorage implements ObjectStorage {
   }
 
   async deleteObject({ storageKey }: { storageKey: string }) {
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: storageKey }));
+    let keyMarker: string | undefined;
+    let versionIdMarker: string | undefined;
+    do {
+      const listed = await this.client.send(new ListObjectVersionsCommand({
+        Bucket: this.bucket,
+        Prefix: storageKey,
+        KeyMarker: keyMarker,
+        VersionIdMarker: versionIdMarker,
+      }));
+      const versions = [...(listed.Versions ?? []), ...(listed.DeleteMarkers ?? [])]
+        .filter((entry) => entry.Key === storageKey && entry.VersionId);
+      await Promise.all(versions.map((entry) => this.client.send(new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: storageKey,
+        VersionId: entry.VersionId,
+      }))));
+      keyMarker = listed.NextKeyMarker;
+      versionIdMarker = listed.NextVersionIdMarker;
+      if (!listed.IsTruncated) break;
+    } while (keyMarker);
   }
 
   async headObject({ storageKey }: { storageKey: string }) {
     try {
       const result = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: storageKey }));
-      return typeof result.ContentLength === "number" ? { sizeBytes: result.ContentLength } : null;
+      return typeof result.ContentLength === "number"
+        ? { sizeBytes: result.ContentLength, etag: result.ETag, versionId: result.VersionId }
+        : null;
     } catch {
       return null;
     }
+  }
+
+  async promoteUpload({ storageKey, versionId }: { storageKey: string; etag?: string; versionId?: string }) {
+    if (!versionId) throw new Error("OBJECT_VERSION_REQUIRED");
+    const dot = storageKey.lastIndexOf(".");
+    const finalKey = dot > storageKey.lastIndexOf("/")
+      ? `${storageKey.slice(0, dot)}-ready-${randomUUID()}${storageKey.slice(dot)}`
+      : `${storageKey}-ready-${randomUUID()}`;
+    const copySource = `${encodeURIComponent(this.bucket)}/${storageKey.split("/").map(encodeURIComponent).join("/")}?versionId=${encodeURIComponent(versionId)}`;
+    await this.client.send(new CopyObjectCommand({
+      Bucket: this.bucket,
+      Key: finalKey,
+      CopySource: copySource,
+    }));
+    return finalKey;
   }
 }

@@ -17,6 +17,7 @@ const serverSchema = z.object({
   }),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
+  PUBLIC_ORGANIZATION_SLUG: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).default("shivayonic"),
   ADMIN_BOOTSTRAP_EMAIL: z.string().email().optional(),
   ADMIN_BOOTSTRAP_NAME: z.string().min(1).optional(),
   ADMIN_BOOTSTRAP_PASSWORD: z.string().min(12).max(128).optional(),

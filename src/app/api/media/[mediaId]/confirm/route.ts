@@ -17,7 +17,11 @@ export async function POST(request: Request, route: RouteContext) {
     if (!canConfirmMediaUpload(media.status, storage.driver)) throw new MediaError("MEDIA_STATE_INVALID", 409);
     const object = await storage.headObject({ storageKey: media.storageKey });
     if (!object || object.sizeBytes !== Number(media.sizeBytes)) throw new MediaError("MEDIA_OBJECT_INVALID", 422);
-    const ready = await prisma.mediaAsset.update({ where: { id: media.id }, data: { status: "READY" } });
+    const finalStorageKey = await storage.promoteUpload({ storageKey: media.storageKey, etag: object.etag, versionId: object.versionId });
+    const ready = await prisma.mediaAsset.update({ where: { id: media.id }, data: { status: "READY", storageKey: finalStorageKey } });
+    if (finalStorageKey !== media.storageKey) {
+      await storage.deleteObject({ storageKey: media.storageKey }).catch(() => undefined);
+    }
     await recordSecurityAudit({ action: "MEDIA_READY", organizationId: context.organization.id, actorUserId: context.user.id, entityType: "MediaAsset", entityId: media.id });
     return NextResponse.json({ media: serializeMedia(ready) });
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { deliverSubmission, isDelivered } from "@/features/public/notify";
+import { checkPublicWriteRateLimit } from "@/auth/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +52,8 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  const limit = await checkPublicWriteRateLimit("order", request.headers).catch(() => ({ allowed: false, retryAfter: 60 }));
+  if (!limit.allowed) return NextResponse.json({ error: { code: "TOO_MANY_REQUESTS" } }, { status: 429, headers: { "Retry-After": String(limit.retryAfter ?? 60) } });
   let payload: unknown;
   try {
     payload = await request.json();

@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/db/client";
+import { getPublicOrganizationId } from "@/core/public-organization";
 import { isPubliclyRenderable, websitePlacements } from "@/shared/website-publication";
 
 /** Public projection: published + READY only. Storage keys never leave the server. */
 export async function GET(request: Request) {
   const placement = new URL(request.url).searchParams.get("placement");
   if (!placement || !websitePlacements.includes(placement as never)) return NextResponse.json({ publications: [] });
+  const organizationId = await getPublicOrganizationId();
+  if (!organizationId) return NextResponse.json({ publications: [] });
   const candidates = await prisma.websitePublication.findMany({
-    where: { placement: placement as never, status: "PUBLISHED" },
+    where: { organizationId, placement: placement as never, status: "PUBLISHED" },
     include: { mediaAsset: { select: { id: true, kind: true, status: true, archivedAt: true, mimeType: true, originalFilename: true } } },
     orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }],
   });

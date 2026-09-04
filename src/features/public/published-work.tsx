@@ -1,13 +1,16 @@
 import { prisma } from "@/db/client";
 import { unstable_noStore as noStore } from "next/cache";
 import { isPubliclyRenderable, type WebsitePlacement } from "@/shared/website-publication";
+import { getPublicOrganizationId } from "@/core/public-organization";
 
 /** Database content augments curated pages. Empty/error keeps the established static fallback. */
 export async function PublishedWork({ placement, title = "From the studio" }: { placement: WebsitePlacement; title?: string }) {
   noStore();
   try {
+    const organizationId = await getPublicOrganizationId();
+    if (!organizationId) return null;
     const rows = await prisma.websitePublication.findMany({
-      where: { placement: placement as never, status: "PUBLISHED" },
+      where: { organizationId, placement: placement as never, status: "PUBLISHED" },
       include: { mediaAsset: { select: { id: true, kind: true, status: true, archivedAt: true, originalFilename: true } } },
       orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }], take: 12,
     });

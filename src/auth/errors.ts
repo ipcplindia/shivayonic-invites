@@ -6,12 +6,13 @@ export type AppErrorCode =
   | "INVALID_CREDENTIALS"
   | "ORGANIZATION_MEMBERSHIP_REQUIRED"
   | "PERMISSION_DENIED"
-  | "ROLE_NOT_ALLOWED";
+  | "ROLE_NOT_ALLOWED"
+  | "RATE_LIMITED";
 
 export class AppAuthError extends Error {
   constructor(
     public readonly code: AppErrorCode,
-    public readonly status: 401 | 403,
+    public readonly status: 401 | 403 | 429,
   ) {
     super(code);
   }

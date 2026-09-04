@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     entityId: session?.session?.id,
   });
 
-  const redirect = NextResponse.redirect(new URL("/login", request.url), 303);
+  const redirect = NextResponse.redirect(new URL("/admin/login", request.url), 303);
   response.headers.getSetCookie().forEach((cookie) => redirect.headers.append("set-cookie", cookie));
   return redirect;
 }

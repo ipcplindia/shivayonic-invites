@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { catalogueProductInclude, catalogueProductShape } from "@/core/catalogue-api";
 import { cataloguePage, decodeCatalogueCursor, parseCatalogueFilters } from "@/core/catalogue";
 import { prisma } from "@/db/client";
+import { getPublicOrganizationId } from "@/core/public-organization";
 
 export async function GET(request: Request) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
       ...(filters.featured === undefined ? {} : { featured: filters.featured }),
       ...(filters.q ? { OR: [{ name: { contains: filters.q, mode: "insensitive" } }, { shortDescription: { contains: filters.q, mode: "insensitive" } }] } : {}),
     };
-    const products = await prisma.publicProduct.findMany({ where, include: catalogueProductInclude, orderBy: [{ displayOrder: "asc" }, { id: "asc" }], ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), take: filters.limit + 1 });
+    const products = await prisma.publicProduct.findMany({ where: { ...where, organizationId: await getPublicOrganizationId() }, include: catalogueProductInclude, orderBy: [{ displayOrder: "asc" }, { id: "asc" }], ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), take: filters.limit + 1 });
     return NextResponse.json(cataloguePage(products.map(catalogueProductShape), filters.limit));
   } catch (error) {
     return NextResponse.json({ error: { code: error instanceof Error && error.message.startsWith("INVALID_CATALOGUE") ? error.message : "PUBLIC_CATALOGUE_UNAVAILABLE" } }, { status: error instanceof Error && error.message.startsWith("INVALID_CATALOGUE") ? 400 : 503 });

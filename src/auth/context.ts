@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { auth } from "@/auth/auth";
 import { AppAuthError } from "@/auth/errors";
 import { getPermissionsForRole } from "@/auth/permissions";
+import { consumeDurableRateLimit } from "@/auth/rate-limit";
 import { prisma } from "@/db/client";
 import type { CurrentUserContext, MemberRole, Permission } from "@/shared/auth";
 
@@ -50,6 +51,7 @@ export async function requirePermission(permission: Permission, input: { organiz
   if (!context.permissions.includes(permission)) {
     throw new AppAuthError("PERMISSION_DENIED", 403);
   }
+  await enforceMutationRateLimit(context.user.id, input.headers);
   return context;
 }
 
@@ -58,5 +60,15 @@ export async function requireRole(role: MemberRole, input: { organizationId?: st
   if (context.role !== role) {
     throw new AppAuthError("ROLE_NOT_ALLOWED", 403);
   }
+  await enforceMutationRateLimit(context.user.id, input.headers);
   return context;
+}
+
+async function enforceMutationRateLimit(userId: string, requestHeaders?: Headers) {
+  const method = requestHeaders?.get("x-shivayonic-method");
+  if (!method || ["GET", "HEAD", "OPTIONS"].includes(method)) return;
+  const route = requestHeaders?.get("x-shivayonic-route") ?? "unknown";
+  const rule = method === "DELETE" ? { window: 60, max: 10 } : { window: 60, max: 60 };
+  const decision = await consumeDurableRateLimit(`admin:${userId}:${method}:${route}`, rule);
+  if (!decision.allowed) throw new AppAuthError("RATE_LIMITED", 429);
 }

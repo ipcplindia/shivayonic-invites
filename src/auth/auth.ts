@@ -4,6 +4,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@/db/client";
 import { getClientConfig, getServerConfig } from "@/config/env";
+import { betterAuthRateLimitStorage } from "@/auth/rate-limit";
 
 export function createAuth(options: { allowBootstrapSignUp?: boolean } = {}) {
   const config = getServerConfig();
@@ -28,6 +29,7 @@ export function createAuth(options: { allowBootstrapSignUp?: boolean } = {}) {
     },
     rateLimit: {
       enabled: true,
+      customStorage: betterAuthRateLimitStorage,
       window: 60,
       max: 20,
       customRules: {
@@ -38,6 +40,10 @@ export function createAuth(options: { allowBootstrapSignUp?: boolean } = {}) {
     advanced: {
       useSecureCookies: process.env.NODE_ENV === "production",
       cookiePrefix: "shivayonic",
+      ipAddress: {
+        // Vercel overwrites this header at the public origin, preventing spoofing.
+        ipAddressHeaders: ["x-forwarded-for"],
+      },
     },
   });
 }

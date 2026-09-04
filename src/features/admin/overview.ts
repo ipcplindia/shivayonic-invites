@@ -35,7 +35,10 @@ export type OverviewData = {
   timeline: Array<{ id: string; title: string; at: Date; state: string }>;
 };
 
-export async function loadOverview(organizationId: string): Promise<OverviewData> {
+export async function loadOverview(
+  organizationId: string,
+  access: { canPublishContent: boolean; canManageCatalogue: boolean },
+): Promise<OverviewData> {
   const [mediaByStatus, publicationsByStatus, projects, catalogue, recentMedia, recentPublications, recentProjects] =
     await Promise.all([
       prisma.mediaAsset.groupBy({
@@ -49,7 +52,7 @@ export async function loadOverview(organizationId: string): Promise<OverviewData
         _count: { _all: true },
       }),
       prisma.project.count({ where: { organizationId } }),
-      prisma.publicProduct.count(),
+      prisma.publicProduct.count({ where: { status: "PUBLISHED" } }),
       prisma.mediaAsset.findMany({
         where: { organizationId, archivedAt: null },
         orderBy: { createdAt: "desc" },
@@ -73,7 +76,8 @@ export async function loadOverview(organizationId: string): Promise<OverviewData
   const mediaCount = (status: string) =>
     mediaByStatus.find((row) => row.status === status)?._count._all ?? 0;
   const publicationCount = (status: string) =>
-    publicationsByStatus.find((row) => row.status === status)?._count._all ?? 0;
+    access.canPublishContent ? publicationsByStatus.find((row) => row.status === status)?._count._all ?? 0 : 0;
+  const visiblePublications = access.canPublishContent ? recentPublications : [];
 
   const mediaTotal = mediaByStatus.reduce((total, row) => total + row._count._all, 0);
   const published = publicationCount("PUBLISHED");
@@ -114,7 +118,7 @@ export async function loadOverview(organizationId: string): Promise<OverviewData
       at: asset.createdAt,
       href: "/admin/media",
     })),
-    ...recentPublications.map((publication) => ({
+    ...visiblePublications.map((publication) => ({
       id: `publication:${publication.id}`,
       kind: "publication" as const,
       title: publication.title ?? "Untitled publication",
@@ -134,7 +138,7 @@ export async function loadOverview(organizationId: string): Promise<OverviewData
     .sort((a, b) => b.at.getTime() - a.at.getTime())
     .slice(0, 8);
 
-  const timeline = recentPublications
+  const timeline = visiblePublications
     .filter((publication) => publication.publishedAt)
     .map((publication) => ({
       id: publication.id,
@@ -146,7 +150,7 @@ export async function loadOverview(organizationId: string): Promise<OverviewData
     .slice(0, 5);
 
   return {
-    metrics: { media: mediaTotal, projects, publications: published, catalogue },
+    metrics: { media: mediaTotal, projects, publications: published, catalogue: access.canManageCatalogue ? catalogue : 0 },
     pipeline: {
       held: mediaTotal,
       ready: mediaCount("READY"),

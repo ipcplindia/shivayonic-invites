@@ -27,7 +27,10 @@ export default async function CommandCenterPage() {
 
   // The dashboard degrades to its honest empty shape rather than erroring out
   // if the database is briefly unreachable; the health card then says so.
-  const overview = await loadOverview(context.organization.id).catch(() => null);
+  const overview = await loadOverview(context.organization.id, {
+    canPublishContent: context.permissions.includes("PUBLISH_CONTENT"),
+    canManageCatalogue: context.permissions.includes("CATALOGUE_MANAGE"),
+  }).catch(() => null);
   const systems = systemStatuses({ databaseReachable: overview !== null });
   const platform = systems.filter((s) => s.group === "platform" || s.group === "channel");
   const external = systems.filter((s) => s.group !== "platform");

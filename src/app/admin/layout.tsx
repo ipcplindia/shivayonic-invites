@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -19,8 +19,17 @@ import { getCurrentUserContext } from "@/auth/context";
  * public site never loads it.
  */
 export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const requestHeaders = await headers();
+  const isLogin = requestHeaders.get("x-shivayonic-admin-login") === "1";
   const context = await getCurrentUserContext().catch(() => null);
-  if (!context) redirect("/login?reason=session");
+  if (isLogin) {
+    if (context) redirect("/admin");
+    return children;
+  }
+  if (!context) {
+    const returnTo = requestHeaders.get("x-shivayonic-request-path") ?? "/admin";
+    redirect(`/admin/login?reason=session&returnTo=${encodeURIComponent(returnTo)}`);
+  }
 
   // The rail's expanded/collapsed preference is persisted by SidebarProvider in
   // this cookie. Reading it here means the first paint already matches what the

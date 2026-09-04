@@ -22,7 +22,10 @@ export const metadata: Metadata = { title: "Tasks" };
  */
 export default async function TasksPage() {
   const context = await getCurrentUserContext();
-  const overview = await loadOverview(context.organization.id).catch(() => null);
+  const overview = await loadOverview(context.organization.id, {
+    canPublishContent: context.permissions.includes("PUBLISH_CONTENT"),
+    canManageCatalogue: context.permissions.includes("CATALOGUE_MANAGE"),
+  }).catch(() => null);
   const tasks = overview?.attention ?? [];
 
   const byTone = (tone: string) => tasks.filter((task) => task.tone === tone);

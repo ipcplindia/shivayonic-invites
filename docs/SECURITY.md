@@ -11,13 +11,22 @@
 - Private administrator authentication uses Better Auth with server-side PostgreSQL-backed sessions.
 - Public sign-up is disabled in the application auth configuration.
 - Internal access requires server-resolved OrganizationMember membership and centralized OWNER/ADMIN/STAFF permissions.
-- The current permissions are ORGANIZATION_MANAGE, MEMBERS_MANAGE, PROJECT_READ, PROJECT_WRITE, MEDIA_READ, MEDIA_WRITE, and AUDIT_READ.
+- OWNER/ADMIN/STAFF permissions are deny-by-default and enforced in server routes through `requirePermission`/`requireRole`.
 - The owner bootstrap command provisions the first OWNER without a public registration route and records `ADMIN_BOOTSTRAPPED`.
-- Login abuse protection exists at two current layers: Better Auth rate limiting and a small in-memory application throttle on `/api/auth/login`.
+- Better Auth, login, and privileged-mutation rate limits use atomic PostgreSQL counters; no process-local limiter is treated as a production control.
+- Unsafe cross-origin API mutations and public sign-up paths are rejected before routing.
+- Production responses include CSP, HSTS, framing, MIME-sniffing, referrer, permissions, and opener protections.
+- S3 uploads use staging keys. Confirmation copies the verified B2 object version to a new final key before READY, so the original presigned capability cannot change READY bytes.
 
 ## Planned, not implemented
 
-MFA/passkeys, enterprise SSO, customer authentication, account recovery workflows, upload content inspection, signed cloud URLs, social OAuth, encrypted social-token storage, security headers, HSTS, WAF/CDN controls, secret rotation, backups, production edge WAF/CDN rate limits, and production monitoring are future milestones.
+MFA/passkeys, enterprise SSO, customer authentication, account recovery workflows, byte-level upload inspection/malware scanning, backups, and production monitoring remain future milestones.
+
+## PostgreSQL row-level security
+
+RLS is not enabled. The application uses one pooled Prisma database role for Better Auth, public reads, tenant operations, bootstrap, and migrations. That role has no transaction-scoped tenant identity, and pooled/serverless connections make session-level tenant variables unsafe. Enabling policies now would either be bypassed by the table-owning role or risk cross-request tenant leakage/availability failures.
+
+Current enforcement is server-side membership resolution plus organization predicates on every private resource query, backed by negative cross-organization tests. Safe RLS adoption requires separate migration/auth/public/application roles and transaction-scoped `SET LOCAL` tenant context on a dedicated transaction for each tenant operation; then `FORCE ROW LEVEL SECURITY` policies can be tested before production.
 
 `npm audit` currently reports transitive advisories in Next/Prisma dependency paths with no safe fix available from npm. Do not use `npm audit fix --force` without a deliberate dependency review.
 

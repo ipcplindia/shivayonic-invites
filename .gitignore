@@ -9,3 +9,5 @@ coverage/
 *.tsbuildinfo
 prisma/*.db
 .vercel
+.env*
+!.env.example

@@ -7,10 +7,11 @@ import { useRouter } from "next/navigation";
 import styles from "@/app/login/login.module.css";
 import { Button, Input } from "@/components/ui";
 
-export function LoginForm({ sessionMessage }: { sessionMessage?: string }) {
+export function LoginForm({ sessionMessage, returnTo = "/admin" }: { sessionMessage?: string; returnTo?: string }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,15 +27,15 @@ export function LoginForm({ sessionMessage }: { sessionMessage?: string }) {
 
     setPending(false);
     if (!response) {
-      setError("The Command Center could not be reached. Check your connection and try again.");
+      setError("Unable to sign in with those credentials.");
       return;
     }
     if (!response.ok) {
-      setError("Those credentials were not accepted, or the session has expired.");
+      setError("Unable to sign in with those credentials.");
       return;
     }
 
-    router.replace("/admin");
+    router.replace(returnTo);
     router.refresh();
   }
 
@@ -72,13 +73,11 @@ export function LoginForm({ sessionMessage }: { sessionMessage?: string }) {
           ) : null}
 
           <Input label="Email" name="email" type="email" autoComplete="email" required />
-          <Input
-            label="Password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
+          <Input label="Password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required />
+          <label className={styles.passwordToggle}>
+            <input type="checkbox" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} />
+            Show password
+          </label>
 
           <Button type="submit" variant="primary" size="lg" disabled={pending}>
             {pending ? "Signing in…" : "Sign in"}
