@@ -23,6 +23,10 @@ const serverSchema = z.object({
   ADMIN_BOOTSTRAP_PASSWORD: z.string().min(12).max(128).optional(),
   ADMIN_BOOTSTRAP_ORG_NAME: z.string().min(1).optional(),
   ADMIN_BOOTSTRAP_ORG_SLUG: z.string().min(1).optional(),
+  PAYMENTS_ENABLED: z.enum(["true", "false"]).default("false"),
+  RAZORPAY_KEY_ID: z.string().min(1).optional(),
+  RAZORPAY_KEY_SECRET: z.string().min(1).optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().min(1).optional(),
 }).superRefine((value, context) => {
   if (process.env.NODE_ENV === "production" && value.OBJECT_STORAGE_DRIVER !== "s3") {
     context.addIssue({ code: "custom", path: ["OBJECT_STORAGE_DRIVER"], message: "OBJECT_STORAGE_DRIVER must be s3 in production." });

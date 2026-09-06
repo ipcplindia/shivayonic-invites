@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
+import { checkoutInputSchema, persistPublicCheckout } from "@/core/checkout";
 import { deliverSubmission, isDelivered } from "@/features/public/notify";
 import { checkPublicWriteRateLimit } from "@/auth/rate-limit";
 
@@ -16,41 +16,6 @@ export const dynamic = "force-dynamic";
  * Every field is validated and length-capped before it is put into a message,
  * so an oversized or malformed post cannot be used to stuff the studio's inbox.
  */
-const text = (max: number) => z.string().trim().max(max);
-
-const schema = z.object({
-  customer: z.object({
-    name: text(120).min(1),
-    email: z.string().trim().email().max(160),
-    phone: text(32).min(4),
-    whatsapp: text(32).optional().default(""),
-    address1: text(200).min(1),
-    address2: text(200).optional().default(""),
-    city: text(80).min(1),
-    state: text(80).min(1),
-    pincode: text(12).min(4),
-    country: text(80).optional().default("India"),
-    eventDate: text(40).optional().default(""),
-    eventLocation: text(160).optional().default(""),
-    notes: text(2000).optional().default(""),
-    contactEmail: text(8).optional().default(""),
-    contactSms: text(8).optional().default(""),
-    marketing: text(8).optional().default(""),
-  }),
-  design: z
-    .object({
-      slug: text(120),
-      name: text(160),
-      occasion: text(80),
-      style: text(80),
-    })
-    .nullable(),
-  plan: z
-    .object({ key: text(40), name: text(80), price: text(40).nullable(), priceNote: text(120) })
-    .nullable(),
-  briefSubmitted: z.boolean().optional().default(false),
-});
-
 export async function POST(request: Request) {
   const limit = await checkPublicWriteRateLimit("order", request.headers).catch(() => ({ allowed: false, retryAfter: 60 }));
   if (!limit.allowed) return NextResponse.json({ error: { code: "TOO_MANY_REQUESTS" } }, { status: 429, headers: { "Retry-After": String(limit.retryAfter ?? 60) } });
@@ -61,7 +26,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid request." }, { status: 400 });
   }
 
-  const parsed = schema.safeParse(payload);
+  const parsed = checkoutInputSchema.safeParse({
+    ...(typeof payload === "object" && payload ? payload : {}),
+    idempotencyKey: request.headers.get("idempotency-key"),
+  });
   if (!parsed.success) {
     return NextResponse.json(
       { message: "Please check the details and try again." },
@@ -69,7 +37,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const { customer, design, plan, briefSubmitted } = parsed.data;
+  let persisted;
+  try {
+    persisted = await persistPublicCheckout(parsed.data);
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "CHECKOUT_UNAVAILABLE";
+    if (code === "IDEMPOTENCY_KEY_REUSED") return NextResponse.json({ message: "This submission key cannot be reused with different details." }, { status: 409 });
+    if (code === "CHECKOUT_PLAN_NOT_FOUND") return NextResponse.json({ message: "That plan is not available." }, { status: 400 });
+    return NextResponse.json({ message: "We could not save your request right now. Please try again." }, { status: 503 });
+  }
+
+  const { customer, design, briefSubmitted } = parsed.data;
   const yes = (value: string) => (value === "yes" ? "yes" : "no");
 
   const body = [
@@ -87,7 +65,7 @@ export async function POST(request: Request) {
     `  ${customer.country}`,
     "",
     `Design:    ${design ? `${design.name} (${design.occasion} · ${design.style})` : "not chosen"}`,
-    `Plan:      ${plan ? `${plan.name} — ${plan.price ?? plan.priceNote}` : "not chosen"}`,
+    `Plan:      ${persisted.planName ?? "custom quote / not chosen"}`,
     `Brief:     ${briefSubmitted ? "submitted" : "not filled in"}`,
     customer.eventDate ? `Event date: ${customer.eventDate}` : null,
     customer.eventLocation ? `Event venue: ${customer.eventLocation}` : null,
@@ -105,7 +83,7 @@ export async function POST(request: Request) {
     short: [
       `New order request from ${customer.name} (${customer.phone})`,
       design ? `— ${design.name}` : null,
-      plan ? `— ${plan.name} plan` : null,
+      persisted.planName ? `— ${persisted.planName} plan` : null,
     ]
       .filter((part) => part !== null)
       .join(" "),
@@ -119,15 +97,18 @@ export async function POST(request: Request) {
    * maintainer, never returned.
    */
   if (!isDelivered(results)) {
-    console.error("Order request could not be delivered:", results);
+    console.error("Persisted order request notification was not delivered.");
     return NextResponse.json(
       {
-        message:
-          "We could not submit your request right now. Please message us on WhatsApp and we will take your details directly.",
+        ok: true,
+        enquiryId: persisted.enquiryId,
+        paymentIntentId: persisted.paymentIntentId,
+        status: persisted.status,
+        delivery: "pending",
       },
-      { status: 502 },
+      { status: 202 },
     );
   }
 
-  return NextResponse.json({ ok: true, delivered: results.filter((r) => r.ok).length });
+  return NextResponse.json({ ok: true, enquiryId: persisted.enquiryId, paymentIntentId: persisted.paymentIntentId, status: persisted.status, delivery: "delivered" });
 }

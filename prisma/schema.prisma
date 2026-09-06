@@ -122,6 +122,68 @@ enum WebsiteAnalyticsEventType {
   FORM_SUBMIT
 }
 
+enum PaymentIntentStatus {
+  DRAFT
+  PENDING_APPROVAL
+  READY
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+enum PaymentMode {
+  TOKEN
+  FULL
+  BALANCE
+  CUSTOM_APPROVED_AMOUNT
+}
+enum PaymentProvider {
+  RAZORPAY
+}
+enum PaymentProviderEventStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  IGNORED
+}
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+enum IdempotencyStatus {
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+enum ReconciliationStatus {
+  PENDING
+  MATCHED
+  MISMATCH
+  INVESTIGATE
+}
+enum CheckoutEnquiryStatus {
+  RECEIVED
+  PAYMENT_PENDING_APPROVAL
+  PAYMENT_READY
+  CANCELLED
+}
+enum CheckoutPlanKey {
+  SILVER
+  GOLD
+  PLATINUM
+  CUSTOM
+}
+enum PaymentCaptureMode {
+  AUTO
+  MANUAL
+}
+
 model User {
   id                 String               @id @default(cuid())
   email              String               @unique
@@ -137,6 +199,9 @@ model User {
   createdContentItems ContentItem[]       @relation("ContentCreatedBy")
   updatedContentItems ContentItem[]       @relation("ContentUpdatedBy")
   createdPublishJobs PublishJob[]         @relation("PublishJobCreatedBy")
+  createdPaymentIntents PaymentIntent[]   @relation("PaymentIntentCreatedBy")
+  requestedRefunds Refund[]               @relation("RefundRequestedBy")
+  approvedCheckoutEnquiries CheckoutEnquiry[] @relation("CheckoutEnquiryApprovedBy")
   auditLogs          AuditLog[]
 }
 
@@ -206,6 +271,12 @@ model Organization {
   contentMetricSnapshots ContentMetricSnapshot[]
   integrationConnections IntegrationConnection[]
   websiteAnalyticsEvents WebsiteAnalyticsEvent[]
+  paymentIntents       PaymentIntent[]
+  paymentProviderEvents PaymentProviderEvent[]
+  paymentIdempotencyKeys PaymentIdempotencyKey[]
+  reconciliationRecords PaymentReconciliation[]
+  checkoutEnquiries     CheckoutEnquiry[]
+  paymentProviderConfigurations PaymentProviderConfiguration[]
   auditLogs           AuditLog[]
 }
 
@@ -609,6 +680,168 @@ model WebsiteAnalyticsEvent {
 
   @@index([organizationId, eventType, occurredAt])
   @@index([contentItemId, occurredAt])
+}
+
+model PaymentIntent {
+  id                      String              @id @default(cuid())
+  organizationId          String
+  customerId              String?
+  enquiryId               String?             @unique
+  orderId                 String?
+  status                  PaymentIntentStatus @default(DRAFT)
+  currency                String              @default("INR")
+  amountMinor             BigInt
+  purpose                 String
+  paymentMode             PaymentMode
+  totalOrderAmountMinor   BigInt
+  approvedAmountMinor     BigInt
+  amountAlreadyPaidMinor  BigInt              @default(0)
+  balanceDueMinor         BigInt
+  provider                PaymentProvider?
+  providerOrderId         String?
+  providerPaymentId       String?
+  expiresAt               DateTime?
+  captureMode             PaymentCaptureMode?
+  createdById             String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  organization            Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy               User?               @relation("PaymentIntentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  enquiry                 CheckoutEnquiry?    @relation("CheckoutEnquiryPaymentIntent", fields: [enquiryId], references: [id], onDelete: SetNull)
+  refunds                 Refund[]
+  providerEvents          PaymentProviderEvent[]
+  reconciliationRecords   PaymentReconciliation[]
+
+  @@index([organizationId, status, createdAt])
+  @@unique([provider, providerOrderId])
+  @@unique([provider, providerPaymentId])
+  @@index([orderId])
+}
+
+model CheckoutEnquiry {
+  id                    String                @id @default(cuid())
+  organizationId        String
+  idempotencyKey        String
+  requestFingerprint    String
+  status                CheckoutEnquiryStatus @default(RECEIVED)
+  planKey               CheckoutPlanKey
+  designSlug            String?
+  designName            String?
+  designOccasion        String?
+  designStyle           String?
+  customerName          String
+  customerEmail         String
+  customerPhone         String
+  customerWhatsapp      String?
+  address1              String
+  address2              String?
+  city                  String
+  state                 String
+  pincode               String
+  country               String
+  eventDate             String?
+  eventLocation         String?
+  notes                 String?
+  contactEmail          Boolean               @default(false)
+  contactSms            Boolean               @default(false)
+  marketing             Boolean               @default(false)
+  briefSubmitted        Boolean               @default(false)
+  approvedById          String?
+  approvedAt            DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  approvedBy            User?                 @relation("CheckoutEnquiryApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  paymentIntent         PaymentIntent?        @relation("CheckoutEnquiryPaymentIntent")
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, status, createdAt])
+}
+
+model PaymentProviderConfiguration {
+  id          String              @id @default(cuid())
+  organizationId String
+  provider    PaymentProvider
+  captureMode PaymentCaptureMode?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider])
+}
+
+model PaymentIdempotencyKey {
+  id                  String            @id @default(cuid())
+  organizationId      String
+  operation           String
+  idempotencyKey      String
+  requestFingerprint  String
+  status              IdempotencyStatus @default(PROCESSING)
+  responseReference   String?
+  expiresAt           DateTime
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  organization        Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, operation, idempotencyKey])
+  @@index([organizationId, status, expiresAt])
+}
+
+model PaymentProviderEvent {
+  id                String                     @id @default(cuid())
+  organizationId    String?
+  provider          PaymentProvider
+  externalEventId   String
+  eventType         String
+  signatureVerified Boolean                    @default(false)
+  receivedAt        DateTime                   @default(now())
+  processedAt       DateTime?
+  processingStatus  PaymentProviderEventStatus @default(RECEIVED)
+  paymentIntentId   String?
+  providerPaymentId String?
+  providerOrderId   String?
+  amountMinor       BigInt?
+  currency          String?
+  payloadHash       String
+  errorCode         String?
+  organization      Organization?              @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  paymentIntent     PaymentIntent?             @relation(fields: [paymentIntentId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, externalEventId])
+  @@index([organizationId, processingStatus, receivedAt])
+  @@index([providerPaymentId])
+}
+
+model Refund {
+  id                String       @id @default(cuid())
+  paymentIntentId   String
+  amountMinor       BigInt
+  status            RefundStatus @default(REQUESTED)
+  providerRefundId  String?
+  idempotencyKey    String       @unique
+  reason            String?
+  requestedById     String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  paymentIntent     PaymentIntent @relation(fields: [paymentIntentId], references: [id], onDelete: Restrict)
+  requestedBy       User         @relation("RefundRequestedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+
+  @@index([paymentIntentId, status, createdAt])
+}
+
+model PaymentReconciliation {
+  id              String               @id @default(cuid())
+  organizationId  String
+  paymentIntentId String
+  status          ReconciliationStatus @default(PENDING)
+  reasonCode      String?
+  checkedAt       DateTime             @default(now())
+  createdAt       DateTime             @default(now())
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  paymentIntent   PaymentIntent        @relation(fields: [paymentIntentId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status, checkedAt])
+  @@index([paymentIntentId, checkedAt])
 }
 
 model AuditLog {

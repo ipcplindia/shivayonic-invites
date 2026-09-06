@@ -15,6 +15,7 @@ export const rolePermissions = {
     "CATALOGUE_MANAGE",
     "CUSTOMERS_VIEW",
     "ORDERS_MANAGE",
+    "PAYMENTS_VIEW", "PAYMENTS_REQUEST", "PAYMENTS_APPROVE", "PAYMENTS_REFUND", "PAYMENTS_MANAGE",
     "PUBLISH_CONTENT",
     "ANALYTICS_VIEW",
     "AUDIT_READ",
@@ -22,7 +23,7 @@ export const rolePermissions = {
   ],
   ADMIN: [
     "PROJECT_READ", "PROJECT_WRITE", "MEDIA_READ", "MEDIA_WRITE", "CONTENT_MANAGE", "CATALOGUE_MANAGE",
-    "CUSTOMERS_VIEW", "ORDERS_MANAGE", "PUBLISH_CONTENT", "ANALYTICS_VIEW", "AUDIT_READ",
+    "CUSTOMERS_VIEW", "ORDERS_MANAGE", "PAYMENTS_VIEW", "PAYMENTS_REQUEST", "PAYMENTS_APPROVE", "PUBLISH_CONTENT", "ANALYTICS_VIEW", "AUDIT_READ",
   ],
   STAFF: ["PROJECT_READ", "MEDIA_READ", "MEDIA_WRITE", "CONTENT_MANAGE", "CUSTOMERS_VIEW"],
 } as const satisfies Record<MemberRole, readonly Permission[]>;
@@ -49,6 +50,11 @@ export const permissionPolicy = {
   canHardDeleteMedia: "MEDIA_HARD_DELETE",
   canManageCatalogue: "CATALOGUE_MANAGE",
   canManageOrders: "ORDERS_MANAGE",
+  canViewPayments: "PAYMENTS_VIEW",
+  canRequestPayments: "PAYMENTS_REQUEST",
+  canApprovePayments: "PAYMENTS_APPROVE",
+  canRefundPayments: "PAYMENTS_REFUND",
+  canManagePayments: "PAYMENTS_MANAGE",
   canViewAnalytics: "ANALYTICS_VIEW",
   canPublishContent: "PUBLISH_CONTENT",
   canViewSecurity: "SECURITY_VIEW",

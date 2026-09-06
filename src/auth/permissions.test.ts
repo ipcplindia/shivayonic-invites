@@ -32,6 +32,16 @@ describe("role permission matrix", () => {
     expect(hasPermission({ role: "STAFF" }, permissionPolicy.canManageUsers)).toBe(false);
     expect(hasPermission({ role: "STAFF" }, permissionPolicy.canHardDeleteMedia)).toBe(false);
     expect(hasPermission({ role: "STAFF" }, "AUDIT_READ")).toBe(false);
+    expect(hasPermission({ role: "STAFF" }, "PAYMENTS_APPROVE")).toBe(false);
+    expect(hasPermission({ role: "STAFF" }, "PAYMENTS_REFUND")).toBe(false);
+  });
+
+  it("keeps refunds and custom approvals OWNER-only while ADMIN can approve standard requests", () => {
+    expect(hasPermission({ role: "ADMIN" }, "PAYMENTS_VIEW")).toBe(true);
+    expect(hasPermission({ role: "ADMIN" }, "PAYMENTS_REQUEST")).toBe(true);
+    expect(hasPermission({ role: "ADMIN" }, "PAYMENTS_APPROVE")).toBe(true);
+    expect(hasPermission({ role: "OWNER" }, "PAYMENTS_APPROVE")).toBe(true);
+    expect(hasPermission({ role: "OWNER" }, "PAYMENTS_REFUND")).toBe(true);
   });
 });
 

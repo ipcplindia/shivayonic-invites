@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useCart } from "@/features/public/cart";
 
@@ -16,6 +16,7 @@ export function CheckoutView() {
   const { design, plan, briefSubmitted, ready, clear } = useCart();
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const submissionKey = useRef<string | null>(null);
 
   if (!ready) return <p className="cartNote">Loading…</p>;
 
@@ -58,11 +59,11 @@ export function CheckoutView() {
     try {
       const res = await fetch("/api/public/orders", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "idempotency-key": submissionKey.current ?? (submissionKey.current = globalThis.crypto.randomUUID()) },
         body: JSON.stringify({
           customer: data,
           design,
-          plan,
+          selectedPlan: plan?.key ?? null,
           briefSubmitted,
         }),
       });
@@ -71,6 +72,7 @@ export function CheckoutView() {
         throw new Error(body?.message ?? "We could not submit your details.");
       }
       clear();
+      submissionKey.current = null;
       setState("sent");
     } catch (error) {
       setState("error");
