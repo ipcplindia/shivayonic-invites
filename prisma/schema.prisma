@@ -702,6 +702,11 @@ model PaymentIntent {
   providerPaymentId       String?
   expiresAt               DateTime?
   captureMode             PaymentCaptureMode?
+  providerEnvironment     String?
+  paymentAccessHash       String?
+  paymentAccessExpiresAt  DateTime?
+  verifiedAt              DateTime?
+  paidAt                  DateTime?
   createdById             String?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
@@ -803,6 +808,8 @@ model PaymentProviderEvent {
   amountMinor       BigInt?
   currency          String?
   payloadHash       String
+  providerEnvironment String?
+  captured          Boolean @default(false)
   errorCode         String?
   organization      Organization?              @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   paymentIntent     PaymentIntent?             @relation(fields: [paymentIntentId], references: [id], onDelete: SetNull)

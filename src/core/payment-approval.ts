@@ -4,6 +4,7 @@ import { prisma } from "@/db/client";
 import { assertPaymentTransition } from "@/core/payment";
 import { parseApprovedMinor } from "@/core/checkout";
 import type { MemberRole } from "@/shared/auth";
+import { createPaymentCapability } from "@/core/payment-capability";
 
 export async function approveCheckoutPayment(input: { organizationId: string; actorUserId: string; actorRole: MemberRole; enquiryId: string; amountMinor?: unknown }) {
   return prisma.$transaction(async (tx) => {
@@ -14,11 +15,13 @@ export async function approveCheckoutPayment(input: { organizationId: string; ac
       if (input.actorRole !== "OWNER") throw new Error("CUSTOM_AMOUNT_OWNER_REQUIRED");
       const amountMinor = parseApprovedMinor(input.amountMinor);
       if (enquiry.paymentIntent) return enquiry.paymentIntent;
+      const capability = createPaymentCapability(enquiry.id);
       const paymentIntent = await tx.paymentIntent.create({
         data: {
           organizationId: input.organizationId, enquiryId: enquiry.id, status: "READY", currency: "INR", amountMinor,
           purpose: "Custom checkout enquiry", paymentMode: "CUSTOM_APPROVED_AMOUNT", totalOrderAmountMinor: amountMinor,
           approvedAmountMinor: amountMinor, amountAlreadyPaidMinor: 0n, balanceDueMinor: amountMinor,
+          paymentAccessHash: capability.hash, paymentAccessExpiresAt: capability.expiresAt,
           createdById: input.actorUserId,
         },
       });

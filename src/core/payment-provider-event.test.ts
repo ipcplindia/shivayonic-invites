@@ -8,7 +8,7 @@ import { applyVerifiedProviderEvent } from "@/core/payment";
 describe("verified provider event authority", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ paymentProviderEvent: { findFirst: mocks.findEvent, update: mocks.updateEvent }, paymentIntent: { findUnique: mocks.findIntent, update: mocks.updateIntent }, auditLog: { create: mocks.audit } }));
+    mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ paymentProviderEvent: { findFirst: async () => { const event = await mocks.findEvent(); return event ? { captured: true, providerEnvironment: "TEST", eventType: "payment.captured", processingStatus: "RECEIVED", ...event } : null; }, update: mocks.updateEvent }, paymentIntent: { findUnique: async () => ({ providerEnvironment: "TEST", ...await mocks.findIntent() }), updateMany: async (args: unknown) => { await mocks.updateIntent(args); return { count: 1 }; } }, auditLog: { create: mocks.audit } }));
   });
 
   it("does not accept an unverified stored event", async () => {

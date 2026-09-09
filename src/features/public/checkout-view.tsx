@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { useCart } from "@/features/public/cart";
+import { PaymentCheckout } from "@/features/public/payment-checkout";
 
 /**
  * Checkout: who the commission is for and where it goes.
@@ -17,10 +18,11 @@ export function CheckoutView() {
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const submissionKey = useRef<string | null>(null);
+  const [payment, setPayment] = useState<{ paymentIntentId: string; paymentAccessToken: string } | null>(null);
 
   if (!ready) return <p className="cartNote">Loading…</p>;
 
-  if (!design && !plan) {
+  if (!design && !plan && state !== "sent") {
     return (
       <div className="cartEmpty">
         <p className="sectionLede">There is nothing to check out yet.</p>
@@ -36,6 +38,7 @@ export function CheckoutView() {
   if (state === "sent") {
     return (
       <div className="checkoutDone">
+        {payment && <PaymentCheckout {...payment} />}
         <h2 className="sectionTitle">Thank you — we have your details.</h2>
         <p className="sectionLede">
           Our team will contact you to confirm the commission and take it from here. Payment is
@@ -71,6 +74,8 @@ export function CheckoutView() {
         const body = (await res.json().catch(() => null)) as { message?: string } | null;
         throw new Error(body?.message ?? "We could not submit your details.");
       }
+      const saved = await res.json();
+      if (typeof saved.paymentIntentId === "string" && typeof saved.paymentAccessToken === "string") setPayment({ paymentIntentId: saved.paymentIntentId, paymentAccessToken: saved.paymentAccessToken });
       clear();
       submissionKey.current = null;
       setState("sent");

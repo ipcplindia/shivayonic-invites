@@ -12,14 +12,15 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  `script-src 'self' 'unsafe-inline'${devScriptSrc} https://www.googletagmanager.com https://connect.facebook.net`,
+  `script-src 'self' 'unsafe-inline'${devScriptSrc} https://www.googletagmanager.com https://connect.facebook.net https://checkout.razorpay.com`,
+  "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   // i.ytimg.com serves the poster frame for every published film. Without it the
   // film tiles render as empty boxes.
   "img-src 'self' data: blob: https://i.ytimg.com https://*.backblazeb2.com https://www.facebook.com",
   "media-src 'self' blob: https://*.backblazeb2.com",
-  "connect-src 'self' https://*.backblazeb2.com https://www.google-analytics.com https://region1.google-analytics.com https://www.facebook.com",
+  "connect-src 'self' https://*.backblazeb2.com https://www.google-analytics.com https://region1.google-analytics.com https://www.facebook.com https://api.razorpay.com https://checkout.razorpay.com",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "upgrade-insecure-requests",

@@ -38,14 +38,22 @@ export function assertPaymentsEnabled() { if (!paymentsEnabled()) throw new Erro
 /** The only path allowed to mark PAID: it reads a durable verified event itself. */
 export async function applyVerifiedProviderEvent(input: { paymentIntentId: string; providerEventId: string }) {
   return prisma.$transaction(async (tx) => {
-    const event = await tx.paymentProviderEvent.findFirst({ where: { id: input.providerEventId, paymentIntentId: input.paymentIntentId, signatureVerified: true, processingStatus: "RECEIVED" }, select: { id: true, organizationId: true, provider: true, providerPaymentId: true, providerOrderId: true, amountMinor: true, currency: true } });
+    const event = await tx.paymentProviderEvent.findFirst({ where: { id: input.providerEventId, paymentIntentId: input.paymentIntentId, signatureVerified: true }, select: { id: true, organizationId: true, provider: true, providerPaymentId: true, providerOrderId: true, amountMinor: true, currency: true, providerEnvironment: true, captured: true, eventType: true, processingStatus: true } });
     if (!event?.providerPaymentId || !event.organizationId || !event.providerOrderId || !event.amountMinor || !event.currency) throw new Error("VERIFIED_PROVIDER_EVENT_REQUIRED");
-    const intent = await tx.paymentIntent.findUnique({ where: { id: input.paymentIntentId }, select: { id: true, organizationId: true, status: true, provider: true, providerOrderId: true, providerPaymentId: true, amountMinor: true, currency: true } });
+    if (event.provider !== "RAZORPAY" || event.providerEnvironment !== "TEST" || !event.captured || !["payment.captured", "order.paid"].includes(event.eventType)) throw new Error("VERIFIED_PROVIDER_EVENT_REQUIRED");
+    const intent = await tx.paymentIntent.findUnique({ where: { id: input.paymentIntentId }, select: { id: true, organizationId: true, status: true, provider: true, providerOrderId: true, providerPaymentId: true, amountMinor: true, currency: true, providerEnvironment: true } });
     if (!intent) throw new Error("PAYMENT_INTENT_NOT_FOUND");
     if (event.organizationId !== intent.organizationId || event.provider !== intent.provider || event.providerOrderId !== intent.providerOrderId || event.amountMinor !== intent.amountMinor || event.currency !== intent.currency) throw new Error("VERIFIED_PROVIDER_EVENT_MISMATCH");
-    if (intent.status === "PAID" && intent.providerPaymentId === event.providerPaymentId) return intent;
+    if (intent.providerEnvironment !== event.providerEnvironment || (intent.providerPaymentId && intent.providerPaymentId !== event.providerPaymentId)) throw new Error("VERIFIED_PROVIDER_EVENT_MISMATCH");
+    if (intent.status === "PAID" && intent.providerPaymentId === event.providerPaymentId) {
+      await tx.paymentProviderEvent.update({ where: { id: event.id }, data: { processingStatus: "PROCESSED", processedAt: new Date() } });
+      return intent;
+    }
+    if (event.processingStatus !== "RECEIVED") throw new Error("VERIFIED_PROVIDER_EVENT_REQUIRED");
     if (intent.status !== "PROCESSING") throw new Error("INVALID_PAYMENT_STATE");
-    const updated = await tx.paymentIntent.update({ where: { id: intent.id }, data: { status: "PAID", provider: event.provider, providerPaymentId: event.providerPaymentId }, select: { id: true, status: true, providerPaymentId: true } });
+    const changed = await tx.paymentIntent.updateMany({ where: { id: intent.id, status: "PROCESSING", providerEnvironment: "TEST", OR: [{ providerPaymentId: null }, { providerPaymentId: event.providerPaymentId }] }, data: { status: "PAID", provider: event.provider, providerPaymentId: event.providerPaymentId, paidAt: new Date() } });
+    if (changed.count !== 1) throw new Error("PAYMENT_CONCURRENT_EVENT_RETRY");
+    const updated = { id: intent.id, status: "PAID" as const, providerPaymentId: event.providerPaymentId };
     await tx.paymentProviderEvent.update({ where: { id: event.id }, data: { processingStatus: "PROCESSED", processedAt: new Date() } });
     await tx.auditLog.create({ data: { organizationId: intent.organizationId, action: "PAYMENT_STATUS_CHANGED", entityType: "PaymentIntent", entityId: intent.id, metadata: { status: "PAID" } } });
     await tx.auditLog.create({ data: { organizationId: intent.organizationId, action: "PAYMENT_PROVIDER_EVENT_PROCESSED", entityType: "PaymentProviderEvent", entityId: event.id } });

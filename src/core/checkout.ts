@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { prisma } from "@/db/client";
 import { getPublicOrganizationId } from "@/core/public-organization";
+import { createPaymentCapability } from "@/core/payment-capability";
 
 const MAX_MINOR_UNITS = 100_000_000_000_000n;
 
@@ -53,6 +54,7 @@ function requestFingerprint(input: CheckoutInput) {
 }
 
 export type PersistedCheckout = {
+  paymentAccessToken?: string;
   enquiryId: string;
   paymentIntentId: string | null;
   status: string;
@@ -70,7 +72,7 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
   const existing = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true } } } });
   if (existing) {
     if (existing.requestFingerprint !== fingerprint) throw new Error("IDEMPOTENCY_KEY_REUSED");
-    return { enquiryId: existing.id, paymentIntentId: existing.paymentIntent?.id ?? null, status: existing.status, planName: plan?.name ?? null, reused: true };
+    return { enquiryId: existing.id, paymentIntentId: existing.paymentIntent?.id ?? null, paymentAccessToken: existing.paymentIntent ? createPaymentCapability(existing.id).token : undefined, status: existing.status, planName: plan?.name ?? null, reused: true };
   }
 
   try {
@@ -86,10 +88,12 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
           contactEmail: selected(input.customer.contactEmail), contactSms: selected(input.customer.contactSms), marketing: selected(input.customer.marketing), briefSubmitted: input.briefSubmitted,
         },
       });
+      const capability = plan?.amountMinor ? createPaymentCapability(enquiry.id) : undefined;
       const paymentIntent = plan?.amountMinor
         ? await tx.paymentIntent.create({
             data: {
               organizationId, enquiryId: enquiry.id, status: "PENDING_APPROVAL", currency: "INR", amountMinor: plan.amountMinor,
+              paymentAccessHash: capability!.hash, paymentAccessExpiresAt: capability!.expiresAt,
               purpose: `${plan.name} checkout enquiry`, paymentMode: "FULL", totalOrderAmountMinor: plan.amountMinor,
               approvedAmountMinor: plan.amountMinor, amountAlreadyPaidMinor: 0n, balanceDueMinor: plan.amountMinor,
             }, select: { id: true },
@@ -97,13 +101,13 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
         : null;
       await tx.auditLog.create({ data: { organizationId, action: "CHECKOUT_PERSISTED", entityType: "CheckoutEnquiry", entityId: enquiry.id, metadata: { plan: plan?.planKey ?? "CUSTOM", paymentIntentCreated: Boolean(paymentIntent) } } });
       if (paymentIntent) await tx.auditLog.create({ data: { organizationId, action: "PAYMENT_INTENT_CREATED", entityType: "PaymentIntent", entityId: paymentIntent.id, metadata: { source: "PUBLIC_CHECKOUT" } } });
-      return { enquiryId: enquiry.id, paymentIntentId: paymentIntent?.id ?? null, status: enquiry.status, planName: plan?.name ?? null, reused: false };
+      return { enquiryId: enquiry.id, paymentIntentId: paymentIntent?.id ?? null, paymentAccessToken: paymentIntent ? capability?.token : undefined, status: enquiry.status, planName: plan?.name ?? null, reused: false };
     });
   } catch (error) {
     if ((error as { code?: string }).code !== "P2002") throw error;
     const raced = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true } } } });
     if (!raced || raced.requestFingerprint !== fingerprint) throw new Error("IDEMPOTENCY_KEY_REUSED");
-    return { enquiryId: raced.id, paymentIntentId: raced.paymentIntent?.id ?? null, status: raced.status, planName: plan?.name ?? null, reused: true };
+    return { enquiryId: raced.id, paymentIntentId: raced.paymentIntent?.id ?? null, paymentAccessToken: raced.paymentIntent ? createPaymentCapability(raced.id).token : undefined, status: raced.status, planName: plan?.name ?? null, reused: true };
   }
 }
 

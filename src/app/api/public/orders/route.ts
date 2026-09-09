@@ -103,12 +103,13 @@ export async function POST(request: Request) {
         ok: true,
         enquiryId: persisted.enquiryId,
         paymentIntentId: persisted.paymentIntentId,
+        paymentAccessToken: persisted.paymentAccessToken,
         status: persisted.status,
         delivery: "pending",
       },
-      { status: 202 },
+      { status: 202, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  return NextResponse.json({ ok: true, enquiryId: persisted.enquiryId, paymentIntentId: persisted.paymentIntentId, status: persisted.status, delivery: "delivered" });
+  return NextResponse.json({ ok: true, enquiryId: persisted.enquiryId, paymentIntentId: persisted.paymentIntentId, paymentAccessToken: persisted.paymentAccessToken, status: persisted.status, delivery: "delivered" }, { headers: { "Cache-Control": "no-store" } });
 }
