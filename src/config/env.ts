@@ -49,7 +49,7 @@ const serverSchema = z.object({
 });
 
 const clientSchema = z.object({ NEXT_PUBLIC_APP_URL: z.string().url() });
-export function getDatabaseUrl(env: NodeJS.ProcessEnv = process.env) { const preview = env.VERCEL_ENV === "preview"; const url = preview ? (env.PREVIEWDB_PRISMA_DATABASE_URL ?? env.PREVIEWDB_DATABASE_URL) : (env.DATABASE_PRISMA_DATABASE_URL ?? env.DATABASE_URL); if (!url || !url.startsWith("postgres")) throw new Error(preview ? "PREVIEW_DATABASE_URL_REQUIRED" : "DATABASE_URL_REQUIRED"); return url; }
+export function getDatabaseUrl(env: Partial<NodeJS.ProcessEnv> = process.env) { const preview = env.VERCEL_ENV === "preview"; const url = preview ? (env.PREVIEWDB_PRISMA_DATABASE_URL ?? env.PREVIEWDB_DATABASE_URL) : (env.DATABASE_PRISMA_DATABASE_URL ?? env.DATABASE_URL); if (!url || !url.startsWith("postgres")) throw new Error(preview ? "PREVIEW_DATABASE_URL_REQUIRED" : "DATABASE_URL_REQUIRED"); return url; }
 
 export function getServerConfig() {
   const result = serverSchema.safeParse(process.env);
@@ -62,3 +62,4 @@ export function getClientConfig() {
   if (!result.success) throw new Error(`Invalid client configuration: ${result.error.message}`);
   return result.data;
 }
+
