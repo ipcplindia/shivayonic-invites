@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { getDatabaseUrl } from "./env";
+describe("database environment selection", () => { it("uses Preview DB only", () => expect(getDatabaseUrl({ VERCEL_ENV: "preview", PREVIEWDB_DATABASE_URL: "postgresql://preview/db", DATABASE_URL: "postgresql://prod/db" })).toBe("postgresql://preview/db")); it("fails closed", () => expect(() => getDatabaseUrl({ VERCEL_ENV: "preview", DATABASE_URL: "postgresql://prod/db" })).toThrow("PREVIEW_DATABASE_URL_REQUIRED")); it("keeps production behavior", () => expect(getDatabaseUrl({ DATABASE_URL: "postgresql://prod/db" })).toBe("postgresql://prod/db")); });
