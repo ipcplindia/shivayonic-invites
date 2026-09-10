@@ -56,7 +56,7 @@ const serverSchema = z.object({
 
 const clientSchema = z.object({ NEXT_PUBLIC_APP_URL: z.string().url() });
 type EnvironmentMap = Record<string, string | undefined>;
-export function getDatabaseUrl(env: EnvironmentMap = process.env) { const preview = env.VERCEL_ENV === "preview"; const url = preview ? (env.PREVIEWDB_PRISMA_DATABASE_URL ?? env.PREVIEWDB_DATABASE_URL) : (env.DATABASE_PRISMA_DATABASE_URL ?? env.DATABASE_URL); if (!url || !url.startsWith("postgres")) throw new Error(preview ? "PREVIEW_DATABASE_URL_REQUIRED" : "DATABASE_URL_REQUIRED"); return url; }
+export function getDatabaseUrl(env: EnvironmentMap = process.env) { const preview = env.VERCEL_ENV === "preview"; const url = preview ? (env.PREVIEWDB_PRISMA_DATABASE_URL ?? env.PREVIEWDB_DATABASE_URL) : (env.DATABASE_PRISMA_DATABASE_URL ?? env.DATABASE_URL); if (url?.startsWith("postgres")) return url; if (!preview && env.NODE_ENV === "test") return "postgresql://test:test@localhost:5432/test"; throw new Error(preview ? "PREVIEW_DATABASE_URL_REQUIRED" : "DATABASE_URL_REQUIRED"); }
 
 export function getServerConfig() {
   const result = serverSchema.safeParse(process.env);
