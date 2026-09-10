@@ -7,7 +7,7 @@ import { prisma } from "@/db/client";
 export async function bootstrapOwner() {
   const config = getServerConfig();
   const email = config.ADMIN_BOOTSTRAP_EMAIL;
-  const name = config.ADMIN_BOOTSTRAP_NAME;
+  const name = config.ADMIN_BOOTSTRAP_NAME ?? (process.env.VERCEL_ENV === "preview" ? "Preview Owner" : undefined);
   const password = config.ADMIN_BOOTSTRAP_PASSWORD;
   const organizationName = config.ADMIN_BOOTSTRAP_ORG_NAME ?? "Shivayonic";
   const organizationSlug = config.ADMIN_BOOTSTRAP_ORG_SLUG ?? "shivayonic";
