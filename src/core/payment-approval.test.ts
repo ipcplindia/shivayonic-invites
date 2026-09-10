@@ -11,10 +11,15 @@ describe("payment approval authority", () => {
     mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ checkoutEnquiry: { findFirst: mocks.findEnquiry, update: mocks.updateEnquiry }, paymentIntent: { create: mocks.createIntent, update: mocks.updateIntent }, auditLog: { create: mocks.audit } }));
   });
 
-  it("denies a custom amount to ADMIN", async () => {
+  it("denies every payment approval to ADMIN", async () => {
     mocks.findEnquiry.mockResolvedValue({ id: "enquiry-1", planKey: "CUSTOM", paymentIntent: null });
-    await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "admin", actorRole: "ADMIN", enquiryId: "enquiry-1", amountMinor: "5000000" })).rejects.toThrow("CUSTOM_AMOUNT_OWNER_REQUIRED");
+    await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "admin", actorRole: "ADMIN", enquiryId: "enquiry-1", amountMinor: "5000000" })).rejects.toThrow("PAYMENT_APPROVAL_OWNER_REQUIRED");
     expect(mocks.createIntent).not.toHaveBeenCalled();
+  });
+
+  it("denies standard-plan approval to ADMIN before any database mutation", async () => {
+    await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "admin", actorRole: "ADMIN", enquiryId: "enquiry-1" })).rejects.toThrow("PAYMENT_APPROVAL_OWNER_REQUIRED");
+    expect(mocks.findEnquiry).not.toHaveBeenCalled();
   });
 
   it("creates a custom intent only from OWNER-approved integer minor units", async () => {

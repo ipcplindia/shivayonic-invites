@@ -7,12 +7,14 @@ import type { MemberRole } from "@/shared/auth";
 import { createPaymentCapability } from "@/core/payment-capability";
 
 export async function approveCheckoutPayment(input: { organizationId: string; actorUserId: string; actorRole: MemberRole; enquiryId: string; amountMinor?: unknown }) {
+  // Approval turns a customer-facing payment capability on. Keep that decision
+  // at OWNER level even if an administrative role may view payment records.
+  if (input.actorRole !== "OWNER") throw new Error("PAYMENT_APPROVAL_OWNER_REQUIRED");
   return prisma.$transaction(async (tx) => {
     const enquiry = await tx.checkoutEnquiry.findFirst({ where: { id: input.enquiryId, organizationId: input.organizationId }, include: { paymentIntent: true } });
     if (!enquiry) throw new Error("CHECKOUT_ENQUIRY_NOT_FOUND");
 
     if (enquiry.planKey === "CUSTOM") {
-      if (input.actorRole !== "OWNER") throw new Error("CUSTOM_AMOUNT_OWNER_REQUIRED");
       const amountMinor = parseApprovedMinor(input.amountMinor);
       if (enquiry.paymentIntent) return enquiry.paymentIntent;
       const capability = createPaymentCapability(enquiry.id);
