@@ -31,6 +31,7 @@ export async function POST(request: Request) {
     idempotencyKey: request.headers.get("idempotency-key"),
   });
   if (!parsed.success) {
+    console.error("Public order validation failed", parsed.error.issues.map((issue) => ({ path: issue.path.join("."), code: issue.code })));
     return NextResponse.json(
       { message: "Please check the details and try again." },
       { status: 400 },

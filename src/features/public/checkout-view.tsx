@@ -65,7 +65,7 @@ export function CheckoutView() {
         headers: { "content-type": "application/json", "idempotency-key": submissionKey.current ?? (submissionKey.current = globalThis.crypto.randomUUID()) },
         body: JSON.stringify({
           customer: data,
-          design,
+          design: design ? { slug: design.slug, name: design.name, occasion: design.occasion, style: design.style } : null,
           selectedPlan: plan?.key ?? null,
           briefSubmitted,
         }),
@@ -157,7 +157,7 @@ export function CheckoutView() {
           <div className="checkoutRow">
             <label className="filterField">
               <span>Event date</span>
-              <input name="eventDate" type="date" />
+              <input name="eventDate" type="date" onClick={(event) => event.currentTarget.showPicker?.()} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") event.currentTarget.showPicker?.(); }} />
             </label>
             <label className="filterField">
               <span>Event city / venue</span>
