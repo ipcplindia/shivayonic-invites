@@ -40,6 +40,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The API fills these original offline forms from disk inside the Vercel
+  // function. Explicit tracing prevents deployment pruning them as static-only.
+  outputFileTracingIncludes: {
+    "/api/public/form-submissions": ["./public/forms/*.pdf"],
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

@@ -208,6 +208,10 @@ export async function fillFormPdf(
   // Draw the values into the page so they show in every viewer, not just ones
   // that regenerate appearances themselves.
   acro.updateFieldAppearances();
+  // Email recipients need a finished production brief, not viewer-dependent
+  // interactive widgets. Flatten preserves the original printed layout while
+  // making every filled value visible in Gmail, mobile, and desktop viewers.
+  acro.flatten();
 
   /*
    * The online form asks more than the printed template has boxes for — a venue
