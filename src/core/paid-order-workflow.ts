@@ -30,6 +30,12 @@ async function zohoRequest(path: string, token: string, init?: RequestInit) {
 async function createZohoInvoice(order: PaidOrder) {
   const config = zohoConfig(order.planKey);
   const token = await zohoToken();
+  // Stable provider-side reference closes the crash window between Zoho create
+  // and our local persistence: retries reuse this invoice instead of creating one.
+  const invoiceQuery = new URLSearchParams({ organization_id: config.organizationId, reference_number: order.id });
+  const existing = await zohoRequest(`${config.base}/invoices?${invoiceQuery}`, token) as { invoices?: Array<{ invoice_id?: string; invoice_number?: string; customer_id?: string }> };
+  const known = existing.invoices?.[0];
+  if (known?.invoice_id) return { token, config, customerId: known.customer_id ?? null, invoiceId: known.invoice_id, invoiceNumber: known.invoice_number ?? null };
   const query = new URLSearchParams({ organization_id: config.organizationId, email: order.customerEmail });
   const contacts = await zohoRequest(`${config.base}/contacts?${query}`, token) as { contacts?: Array<{ contact_id?: string }> };
   let customerId = contacts.contacts?.[0]?.contact_id;
