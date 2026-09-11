@@ -23,7 +23,8 @@ export type ProviderPayment = z.infer<typeof providerPaymentSchema>;
 async function api(path: string, body?: unknown) {
   const { key, secret } = razorpayConfig();
   const response = await fetch(`https://api.razorpay.com/v1/${path}`, { method: body ? "POST" : "GET", redirect: "error", cache: "no-store", signal: globalThis.AbortSignal.timeout(15000), headers: { Authorization: `Basic ${Buffer.from(`${key}:${secret}`).toString("base64")}`, "Content-Type": "application/json" }, ...(body ? { body: JSON.stringify(body) } : {}) });
-  if (!response.ok) throw new Error("RAZORPAY_PROVIDER_UNAVAILABLE");
+  // Safe transport classification only; never include body, headers, or credentials.
+  if (!response.ok) throw new Error(`RAZORPAY_PROVIDER_UNAVAILABLE_${response.status}`);
   return response.json();
 }
 
