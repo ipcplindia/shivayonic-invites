@@ -223,7 +223,10 @@ export async function fillFormPdf(
    */
   if (overflow.length > 0) await appendOverflow(doc, form, overflow);
 
-  const bytes = await doc.save();
+  // These legacy offline AcroForm templates are accepted by pdf-lib with object
+  // streams, but some real viewers reject the resulting xref/filter entries
+  // after flattening. Classic PDF serialization is broadly viewer-compatible.
+  const bytes = await doc.save({ useObjectStreams: false });
   const buffer = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(buffer).set(bytes);
   return {
