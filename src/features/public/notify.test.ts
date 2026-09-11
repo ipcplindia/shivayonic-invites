@@ -70,6 +70,7 @@ describe("delivering a submission", () => {
     expect(sent.to).toEqual(["ipcplindia@gmail.com"]);
     expect(sent.from).toBe("Shivayonic <orders@shivayonic.com>");
     expect(sent.reply_to).toEqual(["amit@example.com"]);
+    expect((email as Call).init?.headers).toMatchObject({ "user-agent": "ShivayonicInvites/1.0" });
     // The email is the system of record: it carries the body verbatim.
     expect(sent.text).toBe(submission.body);
     expect(isDelivered(results)).toBe(true);
@@ -153,7 +154,8 @@ describe("delivering a submission", () => {
   it("treats a provider rejection as a failure rather than throwing", async () => {
     vi.stubEnv("RESEND_API_KEY", "key");
     vi.stubEnv("MAIL_FROM", "orders@shivayonic.com");
-    stubFetch(() => ({ status: 422 }));
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    stubFetch(() => ({ status: 422, body: { name: "validation_error", message: "Safe provider message", statusCode: 422 } }));
 
     const results = await deliverSubmission(submission);
 
@@ -161,6 +163,15 @@ describe("delivering a submission", () => {
     expect(email?.ok).toBe(false);
     expect(email?.detail).toContain("422");
     expect(isDelivered(results)).toBe(false);
+    expect(error).toHaveBeenCalledWith("Resend email rejected", {
+      status: 422,
+      name: "validation_error",
+      type: undefined,
+      code: undefined,
+      message: "Safe provider message",
+      providerStatus: 422,
+    });
+    error.mockRestore();
   });
 
   it("does not call a WhatsApp template send without a template name", async () => {
