@@ -36,9 +36,11 @@ export type CartState = {
   plan: CartPlan | null;
   /** Set once the client form for this design has been submitted. */
   briefSubmitted: boolean;
+  /** The submitted brief's form, retained while a customer chooses its design. */
+  submittedBriefFormSlug: string | null;
 };
 
-const EMPTY: CartState = { design: null, plan: null, briefSubmitted: false };
+const EMPTY: CartState = { design: null, plan: null, briefSubmitted: false, submittedBriefFormSlug: null };
 const STORAGE_KEY = "shivayonic:cart:v1";
 
 type CartApi = CartState & {
@@ -53,6 +55,13 @@ type CartApi = CartState & {
 
 const CartContext = createContext<CartApi | null>(null);
 
+export function submittedBriefMatchesDesign(
+  submittedBriefFormSlug: string | null,
+  design: CartDesign,
+): boolean {
+  return submittedBriefFormSlug === design.formSlug;
+}
+
 function read(): CartState {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -62,6 +71,7 @@ function read(): CartState {
       design: parsed.design ?? null,
       plan: parsed.plan ?? null,
       briefSubmitted: Boolean(parsed.briefSubmitted),
+      submittedBriefFormSlug: typeof parsed.submittedBriefFormSlug === "string" ? parsed.submittedBriefFormSlug : null,
     };
   } catch {
     // Private mode, blocked storage, or a corrupt value: start empty.
@@ -93,7 +103,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       ready,
-      setDesign: (design) => persist({ ...state, design, briefSubmitted: false }),
+      setDesign: (design) =>
+        persist({
+          ...state,
+          design,
+          briefSubmitted: submittedBriefMatchesDesign(state.submittedBriefFormSlug, design),
+        }),
       setPlan: (plan) => persist({ ...state, plan }),
       // The form the customer actually chose on Order Now wins over the one
       // guessed from the design's occasion, so "Edit the brief" reopens the
@@ -102,6 +117,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         persist({
           ...state,
           briefSubmitted: true,
+          submittedBriefFormSlug: formSlug ?? state.design?.formSlug ?? null,
           design: state.design && formSlug ? { ...state.design, formSlug } : state.design,
         }),
       removeDesign: () => persist({ ...state, design: null, briefSubmitted: false }),
