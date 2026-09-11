@@ -12,11 +12,11 @@ async function loadCheckout() {
   });
 }
 export function PaymentCheckout({ paymentIntentId, paymentAccessToken }: { paymentIntentId: string; paymentAccessToken: string }) {
-  const [message, setMessage] = useState("Payment becomes available after studio approval.");
+  const [message, setMessage] = useState("Your details are confirmed. Continue to secure payment.");
   const [busy, setBusy] = useState(false); const [paid, setPaid] = useState(false); const opening = useRef(false);
   async function request(path: string, extra = {}) {
     const response = await fetch(`/api/payments/razorpay/${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentIntentId, paymentAccessToken, ...extra }), cache: "no-store" });
-    if (!response.ok) throw new Error(response.status === 409 ? "Payment awaits approval or reconciliation. Please contact the studio." : "Payment is unavailable. Please try again later.");
+    if (!response.ok) throw new Error(response.status === 409 ? "Payment is being reconciled. Please contact the studio." : "Payment is unavailable. Please try again later.");
     return response.json();
   }
   async function checkStatus() {

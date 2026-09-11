@@ -7,6 +7,7 @@ import { prisma } from "@/db/client";
 import { getPublicOrganizationId } from "@/core/public-organization";
 import { createPaymentCapability } from "@/core/payment-capability";
 import { customerOrderPath, sendOrderEmail } from "@/core/customer-order";
+import { featuredBySlug } from "@/features/public/data";
 
 const MAX_MINOR_UNITS = 100_000_000_000_000n;
 
@@ -70,6 +71,9 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
   if (!organizationId) throw new Error("CHECKOUT_ORGANIZATION_UNAVAILABLE");
   const fingerprint = requestFingerprint(input);
   const plan = resolveCanonicalPlan(input.selectedPlan);
+  const design = input.design ? featuredBySlug(input.design.slug) : null;
+  // A fixed-price checkout is only payable after its required brief exists.
+  if (plan?.amountMinor && (!design || !input.briefSubmitted)) throw new Error("CHECKOUT_BRIEF_REQUIRED");
 
   const existing = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true } } } });
   if (existing) {
@@ -82,8 +86,8 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
       const enquiry = await tx.checkoutEnquiry.create({
         data: {
           organizationId, idempotencyKey: input.idempotencyKey, requestFingerprint: fingerprint,
-          status: plan?.amountMinor ? "PAYMENT_PENDING_APPROVAL" : "RECEIVED", planKey: plan?.planKey ?? "CUSTOM",
-          designSlug: input.design?.slug ?? null, designName: input.design?.name ?? null, designOccasion: input.design?.occasion ?? null, designStyle: input.design?.style ?? null,
+          status: plan?.amountMinor ? "PAYMENT_READY" : "RECEIVED", planKey: plan?.planKey ?? "CUSTOM",
+          designSlug: design?.slug ?? null, designName: design?.name ?? null, designOccasion: design?.occasion ?? null, designStyle: design?.style ?? null,
           customerName: input.customer.name, customerEmail: input.customer.email, customerPhone: input.customer.phone, customerWhatsapp: nullable(input.customer.whatsapp),
           address1: input.customer.address1, address2: nullable(input.customer.address2), city: input.customer.city, state: input.customer.state, pincode: input.customer.pincode,
           country: input.customer.country || "India", eventDate: nullable(input.customer.eventDate), eventLocation: nullable(input.customer.eventLocation), notes: nullable(input.customer.notes),
@@ -94,7 +98,7 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
       const paymentIntent = plan?.amountMinor
         ? await tx.paymentIntent.create({
             data: {
-              organizationId, enquiryId: enquiry.id, status: "PENDING_APPROVAL", currency: "INR", amountMinor: plan.amountMinor,
+              organizationId, enquiryId: enquiry.id, status: "READY", currency: "INR", amountMinor: plan.amountMinor,
               paymentAccessHash: capability!.hash, paymentAccessExpiresAt: capability!.expiresAt,
               purpose: `${plan.name} checkout enquiry`, paymentMode: "FULL", totalOrderAmountMinor: plan.amountMinor,
               approvedAmountMinor: plan.amountMinor, amountAlreadyPaidMinor: 0n, balanceDueMinor: plan.amountMinor,
@@ -106,7 +110,7 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
       if (paymentIntent) await tx.auditLog.create({ data: { organizationId, action: "PAYMENT_INTENT_CREATED", entityType: "PaymentIntent", entityId: paymentIntent.id, metadata: { source: "PUBLIC_CHECKOUT" } } });
       return { enquiryId: enquiry.id, paymentIntentId: paymentIntent?.id ?? null, paymentAccessToken: capability.token, orderUrl: customerOrderPath(enquiry.id, capability.token), status: enquiry.status, planName: plan?.name ?? null, reused: false };
     });
-    await sendOrderEmail({ id: saved.enquiryId, customerEmail: input.customer.email, designName: input.design?.name ?? null, planKey: plan?.planKey ?? "CUSTOM" }, saved.paymentAccessToken, false);
+    await sendOrderEmail({ id: saved.enquiryId, customerEmail: input.customer.email, designName: design?.name ?? null, planKey: plan?.planKey ?? "CUSTOM" }, saved.paymentAccessToken, Boolean(plan?.amountMinor));
     return saved;
   } catch (error) {
     if ((error as { code?: string }).code !== "P2002") throw error;

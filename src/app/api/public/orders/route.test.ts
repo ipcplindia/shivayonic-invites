@@ -13,15 +13,15 @@ describe("public checkout route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.limit.mockResolvedValue({ allowed: true }); mocks.parse.mockReturnValue({ success: true, data: input });
-    mocks.persist.mockResolvedValue({ enquiryId: "enquiry-1", paymentIntentId: "intent-1", status: "PAYMENT_PENDING_APPROVAL", planName: "Silver", reused: false });
+    mocks.persist.mockResolvedValue({ enquiryId: "enquiry-1", paymentIntentId: "intent-1", paymentAccessToken: "a".repeat(64), status: "PAYMENT_READY", planName: "Silver", reused: false });
     mocks.deliver.mockResolvedValue([{ channel: "email", ok: true }]); mocks.delivered.mockReturnValue(true);
   });
 
-  it("returns only opaque persisted anchors, not financial or secret state", async () => {
+  it("returns the one-time payment capability only to the submitting browser", async () => {
     const response = await POST(new Request("https://www.shivayonic.com/api/public/orders", { method: "POST", headers: { "content-type": "application/json", "idempotency-key": "4187612f-6e12-46c8-a217-b3a2e5ac11f4" }, body: "{}" }));
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toEqual({ ok: true, enquiryId: "enquiry-1", status: "PAYMENT_PENDING_APPROVAL", delivery: "delivered" });
+    expect(body).toEqual({ ok: true, enquiryId: "enquiry-1", paymentIntentId: "intent-1", paymentAccessToken: "a".repeat(64), status: "PAYMENT_READY", delivery: "delivered" });
     expect(JSON.stringify(body)).not.toMatch(/secret|price|amount|currency|provider/i);
   });
 });

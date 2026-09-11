@@ -45,6 +45,7 @@ export async function POST(request: Request) {
     const code = error instanceof Error ? error.message : "CHECKOUT_UNAVAILABLE";
     if (code === "IDEMPOTENCY_KEY_REUSED") return NextResponse.json({ message: "This submission key cannot be reused with different details." }, { status: 409 });
     if (code === "CHECKOUT_PLAN_NOT_FOUND") return NextResponse.json({ message: "That plan is not available." }, { status: 400 });
+    if (code === "CHECKOUT_BRIEF_REQUIRED") return NextResponse.json({ message: "Complete the invitation brief before secure payment." }, { status: 400 });
     return NextResponse.json({ message: "We could not save your request right now. Please try again." }, { status: 503 });
   }
 
@@ -105,11 +106,13 @@ export async function POST(request: Request) {
         enquiryId: persisted.enquiryId,
         orderUrl: persisted.orderUrl,
         status: persisted.status,
+        paymentIntentId: persisted.paymentIntentId,
+        paymentAccessToken: persisted.paymentAccessToken,
         delivery: "pending",
       },
       { status: 202, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  return NextResponse.json({ ok: true, orderUrl: persisted.orderUrl, enquiryId: persisted.enquiryId, status: persisted.status, delivery: "delivered" }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ ok: true, orderUrl: persisted.orderUrl, enquiryId: persisted.enquiryId, status: persisted.status, paymentIntentId: persisted.paymentIntentId, paymentAccessToken: persisted.paymentAccessToken, delivery: "delivered" }, { headers: { "Cache-Control": "no-store" } });
 }

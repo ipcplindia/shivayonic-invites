@@ -10,13 +10,13 @@ import { checkoutInputSchema, parseApprovedMinor, persistPublicCheckout, resolve
 const input = {
   idempotencyKey: "4187612f-6e12-46c8-a217-b3a2e5ac11f4",
   customer: { name: "Customer", email: "customer@example.test", phone: "9999999999", whatsapp: "", address1: "1 Test Road", address2: "", city: "Mumbai", state: "MH", pincode: "400001", country: "India", eventDate: "", eventLocation: "", notes: "", contactEmail: "yes", contactSms: "", marketing: "" },
-  design: { slug: "floral", name: "Floral", occasion: "Wedding", style: "Classic" }, selectedPlan: "silver" as const, briefSubmitted: true,
+  design: { slug: "diwali-nights", name: "Forged", occasion: "Forged", style: "Forged" }, selectedPlan: "silver" as const, briefSubmitted: true,
 };
 
 describe("server-authoritative checkout", () => {
   beforeEach(() => {
     vi.clearAllMocks(); mocks.organization.mockResolvedValue("org-1"); mocks.findUnique.mockResolvedValue(null);
-    mocks.createEnquiry.mockResolvedValue({ id: "enquiry-1", status: "PAYMENT_PENDING_APPROVAL" });
+    mocks.createEnquiry.mockResolvedValue({ id: "enquiry-1", status: "PAYMENT_READY" });
     mocks.createIntent.mockResolvedValue({ id: "intent-1" });
     mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ checkoutEnquiry: { create: mocks.createEnquiry }, paymentIntent: { create: mocks.createIntent }, auditLog: { create: mocks.audit } }));
   });
@@ -31,10 +31,15 @@ describe("server-authoritative checkout", () => {
   it("uses server Silver pricing and persists an enquiry plus intent atomically", async () => {
     const result = await persistPublicCheckout(input);
     expect(result).toEqual(expect.objectContaining({ enquiryId: "enquiry-1", paymentIntentId: "intent-1", reused: false }));
-    expect(mocks.createEnquiry).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ planKey: "SILVER" }) }));
-    expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ amountMinor: 5_000_000n, currency: "INR", status: "PENDING_APPROVAL" }) }));
+    expect(mocks.createEnquiry).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ planKey: "SILVER", designName: "Diwali Nights", designOccasion: "Diwali", designStyle: "Heritage" }) }));
+    expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ amountMinor: 5_000_000n, currency: "INR", status: "READY" }) }));
     expect(result.orderUrl).toMatch(/^\/order\/enquiry-1#access=[a-f0-9]{64}$/);
     expect(JSON.stringify(mocks.createIntent.mock.calls, (_, value) => typeof value === "bigint" ? String(value) : value)).not.toContain(result.paymentAccessToken);
+  });
+
+  it("requires the completed brief before a fixed plan becomes payable", async () => {
+    await expect(persistPublicCheckout({ ...input, briefSubmitted: false })).rejects.toThrow("CHECKOUT_BRIEF_REQUIRED");
+    expect(mocks.transaction).not.toHaveBeenCalled();
   });
 
   it("reuses an idempotent checkout without another payment intent", async () => {

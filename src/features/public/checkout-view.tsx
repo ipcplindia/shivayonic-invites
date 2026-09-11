@@ -4,18 +4,18 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { useCart } from "@/features/public/cart";
+import { PaymentCheckout } from "@/features/public/payment-checkout";
 
 /**
  * Checkout: who the commission is for and where it goes.
  *
- * No payment is taken here. The details are submitted to the studio and the
- * order is confirmed by a person; the payment step is added separately, and
- * this page says so rather than implying a charge has happened.
+ * Fixed plans save first, then open the provider modal on this same page.
  */
 export function CheckoutView() {
   const { design, plan, briefSubmitted, ready, clear } = useCart();
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [payment, setPayment] = useState<{ paymentIntentId: string; paymentAccessToken: string } | null>(null);
   const submissionKey = useRef<string | null>(null);
 
   if (!ready) return <p className="cartNote">Loading…</p>;
@@ -39,9 +39,9 @@ export function CheckoutView() {
       <div className="checkoutDone">
         <h2 className="sectionTitle">Thank you — we have your details.</h2>
         <p className="sectionLede">
-          Our team will contact you to confirm the commission and take it from here. Payment is
-          arranged once the details are agreed.
+          {payment ? "Your details are confirmed. Continue to secure payment." : "Your request is saved. We will contact you about the next step."}
         </p>
+        {payment ? <PaymentCheckout paymentIntentId={payment.paymentIntentId} paymentAccessToken={payment.paymentAccessToken} /> : null}
         <div className="cartActions">
           <Link className="btn btnPrimary" href="/catalogue">
             Continue browsing
@@ -73,10 +73,12 @@ export function CheckoutView() {
         throw new Error(body?.message ?? "We could not submit your details.");
       }
       const saved = await res.json();
-      clear();
       submissionKey.current = null;
+      if (typeof saved.paymentIntentId === "string" && typeof saved.paymentAccessToken === "string") {
+        setPayment({ paymentIntentId: saved.paymentIntentId, paymentAccessToken: saved.paymentAccessToken });
+      }
+      clear();
       setState("sent");
-      if (typeof saved.orderUrl === "string" && /^\/order\/[a-zA-Z0-9_-]+#access=[a-f0-9]{64}$/.test(saved.orderUrl)) window.location.assign(saved.orderUrl);
     } catch (error) {
       setState("error");
       setMessage(error instanceof Error ? error.message : "We could not submit your details.");
@@ -214,7 +216,7 @@ export function CheckoutView() {
         ) : null}
 
         <p className="cartNote">
-          No payment is taken on this page. We email your private order link; payment becomes available after studio approval.
+          Review your details before continuing to secure payment. Fixed plans are charged only after your details are saved.
         </p>
 
         {message ? (

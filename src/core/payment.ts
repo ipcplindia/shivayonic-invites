@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/db/client";
+import { runPaidOrderWorkflow } from "@/core/paid-order-workflow";
 
 export const paymentStatuses = ["DRAFT", "PENDING_APPROVAL", "READY", "PROCESSING", "PAID", "FAILED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED"] as const;
 export const paymentModes = ["TOKEN", "FULL", "BALANCE", "CUSTOM_APPROVED_AMOUNT"] as const;
@@ -37,7 +38,7 @@ export function assertPaymentsEnabled() { if (!paymentsEnabled()) throw new Erro
 
 /** The only path allowed to mark PAID: it reads a durable verified event itself. */
 export async function applyVerifiedProviderEvent(input: { paymentIntentId: string; providerEventId: string }) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const event = await tx.paymentProviderEvent.findFirst({ where: { id: input.providerEventId, paymentIntentId: input.paymentIntentId, signatureVerified: true }, select: { id: true, organizationId: true, provider: true, providerPaymentId: true, providerOrderId: true, amountMinor: true, currency: true, providerEnvironment: true, captured: true, eventType: true, processingStatus: true } });
     if (!event?.providerPaymentId || !event.organizationId || !event.providerOrderId || !event.amountMinor || !event.currency) throw new Error("VERIFIED_PROVIDER_EVENT_REQUIRED");
     if (event.provider !== "RAZORPAY" || event.providerEnvironment !== "TEST" || !event.captured || !["payment.captured", "order.paid"].includes(event.eventType)) throw new Error("VERIFIED_PROVIDER_EVENT_REQUIRED");
@@ -59,4 +60,7 @@ export async function applyVerifiedProviderEvent(input: { paymentIntentId: strin
     await tx.auditLog.create({ data: { organizationId: intent.organizationId, action: "PAYMENT_PROVIDER_EVENT_PROCESSED", entityType: "PaymentProviderEvent", entityId: event.id } });
     return updated;
   });
+  // Never let accounting/mail transport change trusted payment authority.
+  if (result.status === "PAID") await runPaidOrderWorkflow(input.paymentIntentId).catch(() => undefined);
+  return result;
 }

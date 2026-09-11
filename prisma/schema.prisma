@@ -183,6 +183,13 @@ enum PaymentCaptureMode {
   AUTO
   MANUAL
 }
+enum InvoiceStatus {
+  PENDING
+  CREATED
+  SENT
+  FAILED
+  RETRY_REQUIRED
+}
 
 model User {
   id                 String               @id @default(cuid())
@@ -707,6 +714,13 @@ model PaymentIntent {
   paymentAccessExpiresAt  DateTime?
   verifiedAt              DateTime?
   paidAt                  DateTime?
+  invoiceStatus           InvoiceStatus?
+  zohoCustomerId          String?
+  zohoInvoiceId           String?
+  invoiceNumber           String?
+  invoiceCreatedAt        DateTime?
+  invoiceSentAt           DateTime?
+  paymentConfirmationSentAt DateTime?
   createdById             String?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
