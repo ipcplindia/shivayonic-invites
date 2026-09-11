@@ -48,6 +48,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      // Razorpay Standard Checkout uses a cross-origin authentication popup.
+      // Override the catch-all COOP policy for payment-capable public routes.
+      { source: "/checkout", headers: [{ key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" }] },
+      { source: "/order/:path*", headers: [{ key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" }] },
       { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }] },
       ...["/order/:path*", "/account/:path*"].map(source => ({ source, headers: [
         { key: "Referrer-Policy", value: "no-referrer" },
