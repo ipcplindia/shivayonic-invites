@@ -103,8 +103,7 @@ export async function POST(request: Request) {
       {
         ok: true,
         enquiryId: persisted.enquiryId,
-        paymentIntentId: persisted.paymentIntentId,
-        paymentAccessToken: persisted.paymentAccessToken,
+        orderUrl: persisted.orderUrl,
         status: persisted.status,
         delivery: "pending",
       },
@@ -112,5 +111,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, enquiryId: persisted.enquiryId, paymentIntentId: persisted.paymentIntentId, paymentAccessToken: persisted.paymentAccessToken, status: persisted.status, delivery: "delivered" }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ ok: true, orderUrl: persisted.orderUrl, enquiryId: persisted.enquiryId, status: persisted.status, delivery: "delivered" }, { headers: { "Cache-Control": "no-store" } });
 }

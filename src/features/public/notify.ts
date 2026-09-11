@@ -63,10 +63,9 @@ function templateParameter(value: string, max = 700): string {
   return flattened.length > max ? `${flattened.slice(0, max - 1)}…` : flattened;
 }
 
-async function sendEmail({ subject, body, replyTo, attachments }: Submission): Promise<DeliveryResult> {
+export async function sendEmail({ subject, body, replyTo, attachments }: Submission, target = formRecipients.email): Promise<DeliveryResult> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
-  const target = formRecipients.email;
 
   if (!key || !from) {
     return {
@@ -79,6 +78,7 @@ async function sendEmail({ subject, body, replyTo, attachments }: Submission): P
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
+      signal: AbortSignal.timeout(10_000),
       method: "POST",
       headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
       body: JSON.stringify({
@@ -104,12 +104,12 @@ async function sendEmail({ subject, body, replyTo, attachments }: Submission): P
       return { channel: "email", target, ok: false, detail: `Mail provider returned ${res.status}.` };
     }
     return { channel: "email", target, ok: true };
-  } catch (error) {
+  } catch {
     return {
       channel: "email",
       target,
       ok: false,
-      detail: error instanceof Error ? error.message : "Mail request failed.",
+      detail: "Mail request failed.",
     };
   }
 }

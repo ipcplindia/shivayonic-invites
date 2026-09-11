@@ -12,6 +12,7 @@ export async function authorizePayment(id: string, token: string) {
   if (!organizationId) throw new Error("PAYMENT_ACCESS_DENIED");
   const intent = await prisma.paymentIntent.findFirst({ where: { id, organizationId }, include: { enquiry: true } });
   if (!intent || !validPaymentCapability(token, intent.paymentAccessHash, intent.paymentAccessExpiresAt)) throw new Error("PAYMENT_ACCESS_DENIED");
+  if (intent.enquiry && (intent.enquiry.organizationId !== organizationId || intent.enquiry.id !== intent.enquiryId)) throw new Error("PAYMENT_ACCESS_DENIED");
   if (intent.providerEnvironment && intent.providerEnvironment !== "TEST") throw new Error("PAYMENT_ACCESS_DENIED");
   return intent;
 }

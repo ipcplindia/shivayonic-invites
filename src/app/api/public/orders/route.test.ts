@@ -21,7 +21,7 @@ describe("public checkout route", () => {
     const response = await POST(new Request("https://www.shivayonic.com/api/public/orders", { method: "POST", headers: { "content-type": "application/json", "idempotency-key": "4187612f-6e12-46c8-a217-b3a2e5ac11f4" }, body: "{}" }));
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body).toEqual({ ok: true, enquiryId: "enquiry-1", paymentIntentId: "intent-1", status: "PAYMENT_PENDING_APPROVAL", delivery: "delivered" });
+    expect(body).toEqual({ ok: true, enquiryId: "enquiry-1", status: "PAYMENT_PENDING_APPROVAL", delivery: "delivered" });
     expect(JSON.stringify(body)).not.toMatch(/secret|price|amount|currency|provider/i);
   });
 });

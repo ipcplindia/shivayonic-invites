@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { useCart } from "@/features/public/cart";
-import { PaymentCheckout } from "@/features/public/payment-checkout";
 
 /**
  * Checkout: who the commission is for and where it goes.
@@ -18,7 +17,6 @@ export function CheckoutView() {
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const submissionKey = useRef<string | null>(null);
-  const [payment, setPayment] = useState<{ paymentIntentId: string; paymentAccessToken: string } | null>(null);
 
   if (!ready) return <p className="cartNote">Loading…</p>;
 
@@ -27,6 +25,7 @@ export function CheckoutView() {
       <div className="cartEmpty">
         <p className="sectionLede">There is nothing to check out yet.</p>
         <div className="cartActions">
+          <a className="btn btnGhost" href="/account">View my orders by email</a>
           <Link className="btn btnPrimary" href="/catalogue">
             Browse the collection
           </Link>
@@ -38,7 +37,6 @@ export function CheckoutView() {
   if (state === "sent") {
     return (
       <div className="checkoutDone">
-        {payment && <PaymentCheckout {...payment} />}
         <h2 className="sectionTitle">Thank you — we have your details.</h2>
         <p className="sectionLede">
           Our team will contact you to confirm the commission and take it from here. Payment is
@@ -75,10 +73,10 @@ export function CheckoutView() {
         throw new Error(body?.message ?? "We could not submit your details.");
       }
       const saved = await res.json();
-      if (typeof saved.paymentIntentId === "string" && typeof saved.paymentAccessToken === "string") setPayment({ paymentIntentId: saved.paymentIntentId, paymentAccessToken: saved.paymentAccessToken });
       clear();
       submissionKey.current = null;
       setState("sent");
+      if (typeof saved.orderUrl === "string" && /^\/order\/[a-zA-Z0-9_-]+#access=[a-f0-9]{64}$/.test(saved.orderUrl)) window.location.assign(saved.orderUrl);
     } catch (error) {
       setState("error");
       setMessage(error instanceof Error ? error.message : "We could not submit your details.");
@@ -216,8 +214,7 @@ export function CheckoutView() {
         ) : null}
 
         <p className="cartNote">
-          No payment is taken on this page. We confirm the commission with you first; online
-          payment is being added shortly.
+          No payment is taken on this page. We email your private order link; payment becomes available after studio approval.
         </p>
 
         {message ? (

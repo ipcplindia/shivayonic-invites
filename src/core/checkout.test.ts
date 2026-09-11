@@ -33,13 +33,17 @@ describe("server-authoritative checkout", () => {
     expect(result).toEqual(expect.objectContaining({ enquiryId: "enquiry-1", paymentIntentId: "intent-1", reused: false }));
     expect(mocks.createEnquiry).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ planKey: "SILVER" }) }));
     expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ amountMinor: 5_000_000n, currency: "INR", status: "PENDING_APPROVAL" }) }));
+    expect(result.orderUrl).toMatch(/^\/order\/enquiry-1#access=[a-f0-9]{64}$/);
+    expect(JSON.stringify(mocks.createIntent.mock.calls, (_, value) => typeof value === "bigint" ? String(value) : value)).not.toContain(result.paymentAccessToken);
   });
 
   it("reuses an idempotent checkout without another payment intent", async () => {
     const { idempotencyKey, ...payload } = input;
     void idempotencyKey;
     mocks.findUnique.mockResolvedValue({ id: "enquiry-1", requestFingerprint: createHash("sha256").update(JSON.stringify(payload)).digest("hex"), status: "PAYMENT_PENDING_APPROVAL", paymentIntent: { id: "intent-1" } });
-    await expect(persistPublicCheckout(input)).resolves.toEqual(expect.objectContaining({ reused: true, paymentIntentId: "intent-1" }));
+    const replay = await persistPublicCheckout(input);
+    expect(replay).toEqual(expect.objectContaining({ reused: true, paymentIntentId: "intent-1" }));
+    expect(replay.paymentAccessToken).toBeUndefined(); // Idempotency keys cannot mint new access.
     expect(mocks.transaction).not.toHaveBeenCalled();
   });
 

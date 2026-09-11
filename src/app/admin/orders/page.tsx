@@ -1,4 +1,3 @@
-import Link from "next/link";
 
 import { getCurrentUserContext } from "@/auth/context";
 import { hasPermission } from "@/auth/permissions";
@@ -18,7 +17,7 @@ export default async function OrdersPage() {
   return <>
     <PageHeader title="Orders" lede="Website checkout enquiries and their payment approval state." actions={process.env.VERCEL_ENV === "preview" ? <StatusBadge label="Test mode" tone="warning" /> : undefined} />
     <Card>{enquiries.length === 0 ? <EmptyState title="No orders yet." body="Website checkout submissions appear here." /> : <DataTable caption="Website orders" rows={enquiries} rowKey={(row) => row.id} columns={[
-      { key: "customer", header: "Customer", render: row => <Link href={`/admin/orders/${row.id}`}>{row.customerName}</Link> },
+      { key: "customer", header: "Customer", render: row => <a href={`/admin/orders/${row.id}`}>{row.customerName}</a> },
       { key: "design", header: "Design", render: row => row.designName ?? row.designSlug ?? "—" },
       { key: "plan", header: "Plan", render: row => row.planKey },
       { key: "amount", header: "Amount", numeric: true, render: row => row.paymentIntent ? money(row.paymentIntent.amountMinor) : "Awaiting custom amount" },

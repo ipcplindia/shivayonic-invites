@@ -1,4 +1,6 @@
+"use client";
 import Script from "next/script";
+import { usePathname } from "next/navigation";
 
 /**
  * Analytics loaders, off by default. Nothing renders unless the matching env
@@ -9,6 +11,8 @@ import Script from "next/script";
  *   NEXT_PUBLIC_FB_PIXEL_ID  e.g. 1234567890     (Meta Pixel)
  */
 export function Analytics() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/order/") || pathname.startsWith("/account") || pathname.startsWith("/admin")) return null;
   const ga = process.env.NEXT_PUBLIC_GA_ID;
   const pixel = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
 
