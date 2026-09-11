@@ -128,6 +128,7 @@ describe("delivering a submission", () => {
     const whatsapp = calls.filter((c) => c.url.includes("graph.facebook.com"));
     // One per studio number.
     expect(whatsapp).toHaveLength(2);
+    expect(whatsapp[0].init?.signal).toBeInstanceOf(AbortSignal);
     const sent = bodyOf(whatsapp[0]);
     expect(sent.type).toBe("template");
     expect(sent).not.toHaveProperty("text");

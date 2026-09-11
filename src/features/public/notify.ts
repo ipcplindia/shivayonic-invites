@@ -173,6 +173,9 @@ async function sendWhatsApp(to: string, { short }: Submission): Promise<Delivery
 
   try {
     const res = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+      // An optional studio alert must never keep the customer-facing form
+      // submission open indefinitely. Email remains the durable record.
+      signal: AbortSignal.timeout(10_000),
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
       /*
