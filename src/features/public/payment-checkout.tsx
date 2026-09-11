@@ -33,7 +33,14 @@ export function PaymentCheckout({ paymentIntentId, paymentAccessToken }: { payme
         try { await request("verify", value); await checkStatus(); } catch { setMessage("Payment verification is pending. Contact the studio before paying again."); }
         finally { setBusy(false); opening.current = false; }
       } });
-      modal.on("payment.failed", () => setMessage("Payment attempt failed. Retry within checkout or close it."));
+      // Razorpay owns the hosted failure screen. Release the local lock so a
+      // customer can close that screen and safely retry the same server-bound
+      // payment intent; a failed browser attempt is never a paid transition.
+      modal.on("payment.failed", () => {
+        setMessage("Payment attempt failed. You can safely retry.");
+        setBusy(false);
+        opening.current = false;
+      });
       modal.open(); setMessage("Awaiting payment…");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Checkout unavailable."); setBusy(false); opening.current = false; }
   }
