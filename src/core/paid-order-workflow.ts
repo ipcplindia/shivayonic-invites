@@ -5,6 +5,9 @@ import { sendEmail } from "@/features/public/notify";
 
 type PaidOrder = { id: string; planKey: string; customerEmail: string; customerName: string; customerPhone: string; address1: string; city: string; state: string; pincode: string; designName: string | null; amountMinor: bigint; currency: string };
 
+/** Opt-in only: payment authority and confirmation email never depend on Zoho. */
+export function zohoInvoicingEnabled() { return process.env.ZOHO_INVOICING_ENABLED === "true"; }
+
 function zohoConfig(plan: string) {
   const item = process.env[`ZOHO_ITEM_${plan}_ID`];
   const required = ["ZOHO_BOOKS_ORGANIZATION_ID", "ZOHO_CLIENT_ID", "ZOHO_CLIENT_SECRET", "ZOHO_REFRESH_TOKEN"] as const;
@@ -61,6 +64,7 @@ export async function sendPaidConfirmation(paymentIntentId: string) {
 
 /** Idempotent: durable status claim prevents duplicate invoices from duplicate provider events. */
 export async function createInvoiceForPaidOrder(paymentIntentId: string) {
+  if (!zohoInvoicingEnabled()) return;
   const claimed = await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, status: "PAID", zohoInvoiceId: null, OR: [{ invoiceStatus: null }, { invoiceStatus: "RETRY_REQUIRED" }, { invoiceStatus: "FAILED" }] }, data: { invoiceStatus: "PENDING" } });
   if (!claimed.count) return;
   const payment = await prisma.paymentIntent.findUnique({ where: { id: paymentIntentId }, include: { enquiry: true } });

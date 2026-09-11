@@ -18,13 +18,22 @@ describe("paid order workflow", () => {
   });
 
   it("does no duplicate work when a previous worker owns the invoice claim", async () => {
+    process.env.ZOHO_INVOICING_ENABLED = "true";
     mocks.updateMany.mockResolvedValue({ count: 0 });
     await createInvoiceForPaidOrder("payment-1");
     expect(mocks.findUnique).not.toHaveBeenCalled();
   });
 
   it("keeps payment authority separate when Zoho configuration is absent", async () => {
+    process.env.ZOHO_INVOICING_ENABLED = "true";
     await createInvoiceForPaidOrder("payment-1");
     expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: { invoiceStatus: "FAILED" } }));
+  });
+
+  it("is disabled by default without requiring Zoho configuration", async () => {
+    delete process.env.ZOHO_INVOICING_ENABLED;
+    await createInvoiceForPaidOrder("payment-1");
+    expect(mocks.updateMany).not.toHaveBeenCalled();
+    expect(mocks.findUnique).not.toHaveBeenCalled();
   });
 });
