@@ -186,6 +186,7 @@ enum PaymentCaptureMode {
 enum InvoiceStatus {
   PENDING
   CREATED
+  PAID
   SENT
   FAILED
   RETRY_REQUIRED

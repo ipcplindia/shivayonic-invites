@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requirePermission } from "@/auth/context";
 import { prisma } from "@/db/client";
-import { createInvoiceForPaidOrder } from "@/core/paid-order-workflow";
+import { createInvoiceForPaidOrder, zohoInvoicingEnabled } from "@/core/paid-order-workflow";
 
 export const runtime = "nodejs";
 
@@ -11,6 +11,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
   try {
     const context = await requirePermission("PAYMENTS_APPROVE", { headers: request.headers });
     if (context.role !== "OWNER") return NextResponse.json({ error: { code: "PAYMENT_APPROVAL_OWNER_REQUIRED" } }, { status: 403 });
+    if (!zohoInvoicingEnabled()) return NextResponse.json({ error: { code: "INVOICING_DISABLED" } }, { status: 409 });
     const { paymentIntentId } = await params;
     const payment = await prisma.paymentIntent.findFirst({ where: { id: paymentIntentId, organizationId: context.organization.id }, select: { id: true, status: true, invoiceStatus: true } });
     if (!payment || payment.status !== "PAID" || !["RETRY_REQUIRED", "FAILED"].includes(payment.invoiceStatus ?? "")) return NextResponse.json({ error: { code: "INVOICE_RETRY_NOT_AVAILABLE" } }, { status: 409 });
