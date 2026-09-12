@@ -45,7 +45,20 @@ export async function verifyPayment(input: { paymentIntentId: string; paymentAcc
   if (payment.order_id !== intent.providerOrderId || BigInt(payment.amount) !== intent.amountMinor || !["authorized", "captured"].includes(payment.status)) throw new Error("PAYMENT_VERIFICATION_REJECTED");
   const bound = await prisma.paymentIntent.updateMany({ where: { id: intent.id, organizationId: intent.organizationId, providerEnvironment: "TEST", OR: [{ providerPaymentId: null }, { providerPaymentId: payment.id }] }, data: { providerPaymentId: payment.id, verifiedAt: new Date() } });
   if (bound.count !== 1) throw new Error("PAYMENT_VERIFICATION_REJECTED");
-  // Authentic browser callback binds identity only; it never calls the PAID helper.
+  // The callback alone cannot mark PAID. A captured status fetched directly from
+  // Razorpay is persisted as a verified event and uses the same trusted PAID path
+  // as webhooks. This also makes protected Preview deployments testable when the
+  // provider cannot reach their webhook URL.
+  if (payment.status === "captured" && payment.captured) {
+    const canonical = `${payment.id}|${payment.order_id}|${payment.amount}|${payment.currency}|captured`;
+    const payloadHash = createHash("sha256").update(canonical).digest("hex");
+    const key = { provider: "RAZORPAY" as const, externalEventId: `TEST:api:${payment.id}` };
+    await prisma.paymentProviderEvent.createMany({ data: [{ ...key, eventType: "payment.captured", signatureVerified: true, providerEnvironment: "TEST", payloadHash, organizationId: intent.organizationId, paymentIntentId: intent.id, providerOrderId: payment.order_id, providerPaymentId: payment.id, amountMinor: BigInt(payment.amount), currency: payment.currency, captured: true, processingStatus: "RECEIVED" }], skipDuplicates: true });
+    const event = await prisma.paymentProviderEvent.findUniqueOrThrow({ where: { provider_externalEventId: key } });
+    if (event.payloadHash !== payloadHash) throw new Error("PAYMENT_VERIFICATION_REJECTED");
+    const paid = await applyVerifiedProviderEvent({ paymentIntentId: intent.id, providerEventId: event.id });
+    return { status: paid.status };
+  }
   return { status: intent.status === "PAID" ? "PAID" : "PROCESSING" };
 }
 
