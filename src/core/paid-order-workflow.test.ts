@@ -10,7 +10,7 @@ const payment = { id: "payment-1", status: "PAID", amountMinor: 5_000_000n, curr
 const ok = (value: object) => new Response(JSON.stringify({ code: 0, ...value }), { status: 200, headers: { "content-type": "application/json" } });
 
 function configure() {
-  vi.stubEnv("ZOHO_INVOICING_ENABLED", "true"); vi.stubEnv("ZOHO_CLIENT_ID", "client"); vi.stubEnv("ZOHO_CLIENT_SECRET", "secret"); vi.stubEnv("ZOHO_REFRESH_TOKEN", "refresh"); vi.stubEnv("ZOHO_ORGANIZATION_ID", "organization"); vi.stubEnv("ZOHO_ACCOUNTS_BASE_URL", "https://accounts.zoho.test"); vi.stubEnv("ZOHO_BOOKS_BASE_URL", "https://books.zoho.test/books/v3"); vi.stubEnv("ZOHO_ITEM_SILVER_ID", "item-silver"); vi.stubEnv("VERCEL_ENV", "preview");
+  vi.stubEnv("ZOHO_INVOICING_ENABLED", "true"); vi.stubEnv("ZOHO_CLIENT_ID", "client"); vi.stubEnv("ZOHO_CLIENT_SECRET", "secret"); vi.stubEnv("ZOHO_REFRESH_TOKEN", "refresh"); vi.stubEnv("ZOHO_ORGANIZATION_ID", "organization"); vi.stubEnv("ZOHO_ACCOUNTS_BASE_URL", "https://accounts.zoho.test"); vi.stubEnv("ZOHO_BOOKS_BASE_URL", "https://books.zoho.test/books/v3"); vi.stubEnv("ZOHO_ITEM_SILVER_ID", "item-silver"); vi.stubEnv("ZOHO_INVOICE_TEMPLATE_ID", "template-1"); vi.stubEnv("ZOHO_BUSINESS_UNIT_TAG_ID", "tag-1"); vi.stubEnv("ZOHO_BUSINESS_UNIT_TAG_OPTION_ID", "tag-option-1"); vi.stubEnv("VERCEL_ENV", "preview");
 }
 
 function happyResponses(existingPayment = false) {

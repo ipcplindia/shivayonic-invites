@@ -7,6 +7,7 @@ import { Icon } from "@/components/icon";
 import { Card, CardHeader, PageHeader } from "@/components/ui";
 import { can } from "@/features/access";
 import { IntegrationCards } from "@/features/admin/integration-cards";
+import { ZohoPlanCatalogAction } from "@/features/admin/zoho-plan-catalog";
 import {
   isSystemConnected,
   systemStatuses,
@@ -71,6 +72,8 @@ export default async function IntegrationsPage() {
           button that would do nothing.
         </span>
       </p>
+
+      {process.env.VERCEL_ENV === "preview" && context.role === "OWNER" ? <Card><CardHeader description="Creates or reuses only the four exact Shivayonic service plan items. It cannot create invoices, payments, or customers." title="Zoho Books Preview catalog" /><div className={styles.spotlightWrap}><ZohoPlanCatalogAction /></div></Card> : null}
 
       {groupOrder.map((group) => {
         const members = systems.filter((system) => system.group === group);

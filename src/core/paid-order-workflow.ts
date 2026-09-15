@@ -4,7 +4,7 @@ import { prisma } from "@/db/client";
 import { sendEmail } from "@/features/public/notify";
 
 type PaidOrder = { id: string; planKey: string; customerEmail: string; customerName: string; customerPhone: string; address1: string; city: string; state: string; pincode: string; country: string; amountMinor: bigint; currency: string; providerPaymentId: string | null; paidAt: Date | null; zohoCustomerId: string | null; zohoInvoiceId: string | null; invoiceSentAt: Date | null };
-type ZohoConfig = { itemId: string; organizationId: string; accountsBase: string; booksBase: string };
+type ZohoConfig = { itemId: string; organizationId: string; accountsBase: string; booksBase: string; templateId: string; businessUnitTagId: string; businessUnitTagOptionId: string };
 type ZohoInvoice = { invoice_id?: string; invoice_number?: string; customer_id?: string; total?: number; balance?: number };
 type ZohoPayment = { payment_id?: string; amount?: number };
 
@@ -23,8 +23,11 @@ function zohoConfig(plan: string): ZohoConfig {
   const organizationId = process.env.ZOHO_ORGANIZATION_ID;
   const accountsBase = httpsBase(process.env.ZOHO_ACCOUNTS_BASE_URL);
   const booksBase = httpsBase(process.env.ZOHO_BOOKS_BASE_URL);
-  if (!itemId || !organizationId || !accountsBase || !booksBase || !process.env.ZOHO_CLIENT_ID || !process.env.ZOHO_CLIENT_SECRET || !process.env.ZOHO_REFRESH_TOKEN) throw new ZohoError("ZOHO_CONFIGURATION_REQUIRED");
-  return { itemId, organizationId, accountsBase, booksBase };
+  const templateId = process.env.ZOHO_INVOICE_TEMPLATE_ID;
+  const businessUnitTagId = process.env.ZOHO_BUSINESS_UNIT_TAG_ID;
+  const businessUnitTagOptionId = process.env.ZOHO_BUSINESS_UNIT_TAG_OPTION_ID;
+  if (!itemId || !organizationId || !accountsBase || !booksBase || !templateId || !businessUnitTagId || !businessUnitTagOptionId || !process.env.ZOHO_CLIENT_ID || !process.env.ZOHO_CLIENT_SECRET || !process.env.ZOHO_REFRESH_TOKEN) throw new ZohoError("ZOHO_CONFIGURATION_REQUIRED");
+  return { itemId, organizationId, accountsBase, booksBase, templateId, businessUnitTagId, businessUnitTagOptionId };
 }
 
 function asMinor(value: unknown) {
@@ -93,7 +96,7 @@ async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrde
     customerId = contact.contact?.contact_id ?? null;
   }
   if (!customerId) throw new ZohoError("ZOHO_CUSTOMER_FAILED");
-  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100 }] }) });
+  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, tags: [{ tag_id: config.businessUnitTagId, tag_option_id: config.businessUnitTagOptionId }], line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100 }] }) });
   if (!created.invoice?.invoice_id) throw new ZohoError("ZOHO_INVOICE_FAILED");
   return getInvoice(config, token, created.invoice.invoice_id);
 }
