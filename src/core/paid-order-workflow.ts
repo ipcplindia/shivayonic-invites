@@ -96,7 +96,7 @@ async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrde
     customerId = contact.contact?.contact_id ?? null;
   }
   if (!customerId) throw new ZohoError("ZOHO_CUSTOMER_FAILED");
-  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, tags: [{ tag_id: config.businessUnitTagId, tag_option_id: config.businessUnitTagOptionId }], line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100 }] }) });
+  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, is_inclusive_tax: true, tags: [{ tag_id: config.businessUnitTagId, tag_option_id: config.businessUnitTagOptionId }], line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100 }] }) });
   if (!created.invoice?.invoice_id) throw new ZohoError("ZOHO_INVOICE_FAILED");
   return getInvoice(config, token, created.invoice.invoice_id);
 }

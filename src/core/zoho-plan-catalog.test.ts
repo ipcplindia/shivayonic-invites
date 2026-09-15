@@ -43,15 +43,29 @@ describe("Zoho plan catalog", () => {
     expect(result.transactionSeries).toBe("NOT_API_CONFIGURABLE");
   });
 
-  it("fails before item creation if Zoho does not prove tax-inclusive pricing", async () => {
-    mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? { is_inclusive_tax: false } : path === "/settings/taxes" ? taxes : path === "/invoices/templates" ? templates : tags);
-    await expect(configureZohoPlanCatalog()).rejects.toThrow();
-    expect(mocks.fetch.mock.calls.some(([path, init]) => path === "/items" && init?.method === "POST")).toBe(false);
+  it("treats a top-level inclusive preference as informational metadata", async () => {
+    mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? { is_inclusive_tax: true } : path === "/settings/taxes" ? taxes : path === "/invoices/templates" ? templates : path === "/reportingtags" ? tags : option);
+    const result = await discoverZohoPlanConfiguration();
+    expect(result.taxInclusionPreference).toBe(true);
+    expect(result.invoiceInclusiveTaxStrategy).toBe("EXPLICIT_INVOICE_FLAG");
   });
 
   it("accepts nested Zoho tax-inclusion preference", async () => {
     mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? { tax_settings: { is_tax_inclusive: true } } : path === "/settings/taxes" ? taxes : path === "/invoices/templates" ? templates : path === "/reportingtags" ? tags : option);
     const result = await discoverZohoPlanConfiguration();
     expect(result.taxes.intraState.name).toBe("GST18");
+    expect(result.taxInclusionPreference).toBe(true);
+  });
+
+  it("passes when Zoho exposes no recognizable account preference", async () => {
+    mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? { preferences: {} } : path === "/settings/taxes" ? taxes : path === "/invoices/templates" ? templates : path === "/reportingtags" ? tags : option);
+    const result = await discoverZohoPlanConfiguration();
+    expect(result.taxInclusionPreference).toBeNull();
+    expect(result.invoiceInclusiveTaxStrategy).toBe("EXPLICIT_INVOICE_FLAG");
+  });
+
+  it("keeps GST, template, and tag validation strict", async () => {
+    mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? {} : path === "/settings/taxes" ? { taxes: [] } : path === "/invoices/templates" ? templates : path === "/reportingtags" ? tags : option);
+    await expect(discoverZohoPlanConfiguration()).rejects.toThrow();
   });
 });

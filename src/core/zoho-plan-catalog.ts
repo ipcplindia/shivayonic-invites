@@ -17,6 +17,8 @@ export type ZohoPlanCatalog = {
   taxes: { intraState: { id: string; name: string; rate: number | string; type?: string }; interState: { id: string; name: string; rate: number | string; type?: string } };
   template: { id: string; name: string };
   businessUnit: { tagId: string; tagOptionId: string; name: string };
+  taxInclusionPreference: boolean | null;
+  invoiceInclusiveTaxStrategy: "EXPLICIT_INVOICE_FLAG";
   transactionSeries: "NOT_API_CONFIGURABLE";
 };
 
@@ -67,10 +69,10 @@ export async function discoverZohoPlanConfiguration(): Promise<ZohoPlanConfigura
   const preferenceRecord = preferencesResult as Record<string, unknown>;
   const nested = [preferenceRecord.preferences, preferenceRecord.tax_settings, preferenceRecord.settings]
     .filter((value): value is Record<string, unknown> => !!value && typeof value === "object");
-  const inclusive = [preferenceRecord, ...nested].some(value =>
-    value.is_inclusive_tax === true || value.is_tax_inclusive === true || value.is_tax_inclusive_enabled === true,
+  const preferenceValues = [preferenceRecord, ...nested].flatMap(value =>
+    [value.is_inclusive_tax, value.is_tax_inclusive, value.is_tax_inclusive_enabled],
   );
-  if (!inclusive) throw new ZohoError("ZOHO_CONFIGURATION_INVALID");
+  const taxInclusionPreference = preferenceValues.includes(true) ? true : preferenceValues.includes(false) ? false : null;
   const intraState = exactTax(taxesResult.taxes ?? [], "GST18");
   const interState = exactTax(taxesResult.taxes ?? [], "IGST18");
   const templateValue = required(templateResult.templates?.find(template => template.template_name === "Shivayonic Invites Invoice" && template.template_id));
@@ -83,7 +85,13 @@ export async function discoverZohoPlanConfiguration(): Promise<ZohoPlanConfigura
   const option = required(tagDetail.reporting_tag?.options?.find(value => value.tag_option_name === "Shivayonic Invites" && value.tag_option_id));
   const tagOptionId = option.tag_option_id; const optionName = option.tag_option_name;
   if (!tagOptionId || !optionName) apiFailure();
-  return { taxes: { intraState, interState }, template: { id: templateId, name: templateName }, businessUnit: { tagId, tagOptionId, name: optionName } };
+  return {
+    taxes: { intraState, interState },
+    template: { id: templateId, name: templateName },
+    businessUnit: { tagId, tagOptionId, name: optionName },
+    taxInclusionPreference,
+    invoiceInclusiveTaxStrategy: "EXPLICIT_INVOICE_FLAG",
+  };
 }
 
 /** Creates only exact-name service catalog entries. It cannot create invoices, payments, or contacts. */

@@ -48,6 +48,8 @@ describe("paid order workflow", () => {
     await createInvoiceForPaidOrder("payment-1");
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/contacts"))).toBe(false);
     expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/customerpayments") && init?.method === "POST")).toBe(true);
+    const invoiceCreate = fetchMock.mock.calls.find(([url, init]) => String(url).includes("/invoices?") && init?.method === "POST");
+    expect(JSON.parse(String(invoiceCreate?.[1]?.body))).toEqual(expect.objectContaining({ is_inclusive_tax: true }));
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ zohoCustomerId: "customer-1", zohoInvoiceId: "invoice-1", invoiceNumber: "INV-1", invoiceStatus: "PAID" }) }));
     expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ invoiceStatus: "SENT", invoiceSentAt: expect.any(Date) }) }));
   });
