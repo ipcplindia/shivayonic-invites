@@ -6,7 +6,7 @@ vi.mock("@/lib/zoho", () => ({
   zohoBooksFetch: mocks.fetch,
 }));
 
-import { configureZohoPlanCatalog } from "@/core/zoho-plan-catalog";
+import { configureZohoPlanCatalog, discoverZohoPlanConfiguration } from "@/core/zoho-plan-catalog";
 
 const taxes = { taxes: [{ tax_id: "gst18", tax_name: "GST18", tax_percentage: 18, tax_type: "tax_group" }, { tax_id: "igst18", tax_name: "IGST18", tax_percentage: 18, tax_type: "tax" }] };
 const templates = { templates: [{ template_id: "template-1", template_name: "Shivayonic Invites Invoice" }] };
@@ -47,5 +47,11 @@ describe("Zoho plan catalog", () => {
     mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? { is_inclusive_tax: false } : path === "/settings/taxes" ? taxes : path === "/invoices/templates" ? templates : tags);
     await expect(configureZohoPlanCatalog()).rejects.toThrow();
     expect(mocks.fetch.mock.calls.some(([path, init]) => path === "/items" && init?.method === "POST")).toBe(false);
+  });
+
+  it("accepts nested Zoho tax-inclusion preference", async () => {
+    mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? { tax_settings: { is_tax_inclusive: true } } : path === "/settings/taxes" ? taxes : path === "/invoices/templates" ? templates : path === "/reportingtags" ? tags : option);
+    const result = await discoverZohoPlanConfiguration();
+    expect(result.taxes.intraState.name).toBe("GST18");
   });
 });

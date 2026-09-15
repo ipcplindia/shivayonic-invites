@@ -64,7 +64,12 @@ export async function discoverZohoPlanConfiguration(): Promise<ZohoPlanConfigura
     zohoBooksFetch<{ reporting_tags?: Array<{ tag_id?: string; tag_name?: string }> }>("/reportingtags"),
     zohoBooksFetch<Record<string, unknown>>("/settings/preferences"),
   ]);
-  const inclusive = preferencesResult.is_inclusive_tax === true || preferencesResult.is_tax_inclusive === true;
+  const preferenceRecord = preferencesResult as Record<string, unknown>;
+  const nested = [preferenceRecord.preferences, preferenceRecord.tax_settings, preferenceRecord.settings]
+    .filter((value): value is Record<string, unknown> => !!value && typeof value === "object");
+  const inclusive = [preferenceRecord, ...nested].some(value =>
+    value.is_inclusive_tax === true || value.is_tax_inclusive === true || value.is_tax_inclusive_enabled === true,
+  );
   if (!inclusive) throw new ZohoError("ZOHO_CONFIGURATION_INVALID");
   const intraState = exactTax(taxesResult.taxes ?? [], "GST18");
   const interState = exactTax(taxesResult.taxes ?? [], "IGST18");
