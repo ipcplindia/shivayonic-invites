@@ -20,6 +20,8 @@ export type ZohoPlanCatalog = {
   transactionSeries: "NOT_API_CONFIGURABLE";
 };
 
+export type ZohoPlanConfiguration = Omit<ZohoPlanCatalog, "items" | "transactionSeries">;
+
 function apiFailure(): never { throw new ZohoError("ZOHO_UNAVAILABLE"); }
 function required<T>(value: T | null | undefined): NonNullable<T> { if (value === null || value === undefined) apiFailure(); return value as NonNullable<T>; }
 function exactTax(taxes: Tax[], name: string) {
@@ -54,7 +56,8 @@ async function readOrCreateItem(plan: typeof PLANS[number], intraTax: { id: stri
 }
 
 /** Creates only exact-name service catalog entries. It cannot create invoices, payments, or contacts. */
-export async function configureZohoPlanCatalog(): Promise<ZohoPlanCatalog> {
+/** Read-only configuration discovery; it never creates accounting records. */
+export async function discoverZohoPlanConfiguration(): Promise<ZohoPlanConfiguration> {
   const [taxesResult, templateResult, tagsResult, preferencesResult] = await Promise.all([
     zohoBooksFetch<{ taxes?: Tax[] }>("/settings/taxes"),
     zohoBooksFetch<{ templates?: Array<{ template_id?: string; template_name?: string }> }>("/invoices/templates"),
@@ -75,7 +78,13 @@ export async function configureZohoPlanCatalog(): Promise<ZohoPlanCatalog> {
   const option = required(tagDetail.reporting_tag?.options?.find(value => value.tag_option_name === "Shivayonic Invites" && value.tag_option_id));
   const tagOptionId = option.tag_option_id; const optionName = option.tag_option_name;
   if (!tagOptionId || !optionName) apiFailure();
+  return { taxes: { intraState, interState }, template: { id: templateId, name: templateName }, businessUnit: { tagId, tagOptionId, name: optionName } };
+}
+
+/** Creates only exact-name service catalog entries. It cannot create invoices, payments, or contacts. */
+export async function configureZohoPlanCatalog(): Promise<ZohoPlanCatalog> {
+  const configuration = await discoverZohoPlanConfiguration();
   const items = [];
-  for (const plan of PLANS) items.push(await readOrCreateItem(plan, intraState, interState));
-  return { items, taxes: { intraState, interState }, template: { id: templateId, name: templateName }, businessUnit: { tagId, tagOptionId, name: optionName }, transactionSeries: "NOT_API_CONFIGURABLE" };
+  for (const plan of PLANS) items.push(await readOrCreateItem(plan, configuration.taxes.intraState, configuration.taxes.interState));
+  return { items, ...configuration, transactionSeries: "NOT_API_CONFIGURABLE" };
 }
