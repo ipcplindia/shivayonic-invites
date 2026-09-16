@@ -57,6 +57,11 @@ describe("Zoho plan catalog", () => {
     expect(result.taxInclusionPreference).toBe(true);
   });
 
+  it("accepts the tags collection without weakening exact tag matching", async () => {
+    mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? {} : path === "/settings/taxes" ? taxes : path === "/invoices/templates" ? templates : path === "/reportingtags" ? { tags: tags.reporting_tags } : option);
+    expect((await discoverZohoPlanConfiguration()).businessUnit.tagId).toBe("tag-1");
+  });
+
   it("passes when Zoho exposes no recognizable account preference", async () => {
     mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? { preferences: {} } : path === "/settings/taxes" ? taxes : path === "/invoices/templates" ? templates : path === "/reportingtags" ? tags : option);
     const result = await discoverZohoPlanConfiguration();

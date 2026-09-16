@@ -10,6 +10,7 @@ const PLANS = [
 ] as const;
 
 type Tax = { tax_id?: string; tax_name?: string; tax_percentage?: number | string; tax_type?: string; tax_specific_type?: string };
+type ReportingTag = { tag_id?: string; tag_name?: string };
 type Item = { item_id?: string; name?: string; rate?: number; hsn_or_sac?: string; is_taxable?: boolean; tax_id?: string; tax_name?: string; tax_percentage?: number | string; item_tax_preferences?: Array<{ tax_id?: string; tax_specification?: string }> };
 
 export type ZohoPlanCatalog = {
@@ -63,7 +64,7 @@ export async function discoverZohoPlanConfiguration(): Promise<ZohoPlanConfigura
   const [taxesResult, templateResult, tagsResult, preferencesResult] = await Promise.all([
     zohoBooksFetch<{ taxes?: Tax[] }>("/settings/taxes"),
     zohoBooksFetch<{ templates?: Array<{ template_id?: string; template_name?: string }> }>("/invoices/templates"),
-    zohoBooksFetch<{ reporting_tags?: Array<{ tag_id?: string; tag_name?: string }> }>("/reportingtags"),
+    zohoBooksFetch<{ reporting_tags?: ReportingTag[]; tags?: ReportingTag[] }>("/reportingtags"),
     zohoBooksFetch<Record<string, unknown>>("/settings/preferences").catch(() => ({})),
   ]);
   const preferenceRecord = preferencesResult as Record<string, unknown>;
@@ -78,7 +79,9 @@ export async function discoverZohoPlanConfiguration(): Promise<ZohoPlanConfigura
   const templateValue = required(templateResult.templates?.find(template => template.template_name === "Shivayonic Invites Invoice" && template.template_id), "invoice_template");
   const templateId = templateValue.template_id; const templateName = templateValue.template_name;
   if (!templateId || !templateName) apiFailure();
-  const tag = required(tagsResult.reporting_tags?.find(value => value.tag_name === "Business Unit" && value.tag_id), "business_unit_tag");
+  const reportingTags = tagsResult.reporting_tags ?? tagsResult.tags;
+  if (!tagsResult.reporting_tags && tagsResult.tags) console.info("Zoho reporting tag collection", { field: "tags" });
+  const tag = required(reportingTags?.find(value => value.tag_name === "Business Unit" && value.tag_id), "business_unit_tag");
   const tagId = tag.tag_id;
   if (!tagId) apiFailure();
   const tagDetail = await zohoBooksFetch<{ results?: Array<{ option_id?: string; option_name?: string }> }>(`/reportingtags/${encodeURIComponent(tagId)}/options/all?tag_id=${encodeURIComponent(tagId)}`);
