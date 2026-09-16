@@ -24,10 +24,10 @@ export type ZohoPlanCatalog = {
 
 export type ZohoPlanConfiguration = Omit<ZohoPlanCatalog, "items" | "transactionSeries">;
 
-function apiFailure(): never { throw new ZohoError("ZOHO_UNAVAILABLE"); }
-function required<T>(value: T | null | undefined): NonNullable<T> { if (value === null || value === undefined) apiFailure(); return value as NonNullable<T>; }
+function apiFailure(stage = "catalog_item"): never { console.error("Zoho discovery validation failed", { stage }); throw new ZohoError("ZOHO_UNAVAILABLE"); }
+function required<T>(value: T | null | undefined, stage?: string): NonNullable<T> { if (value === null || value === undefined) apiFailure(stage); return value as NonNullable<T>; }
 function exactTax(taxes: Tax[], name: string) {
-  const tax = required(taxes.find(value => value.tax_name?.trim().toLowerCase() === name.toLowerCase() && Number(value.tax_percentage) === 18 && value.tax_id));
+  const tax = required(taxes.find(value => value.tax_name?.trim().toLowerCase() === name.toLowerCase() && Number(value.tax_percentage) === 18 && value.tax_id), name === "GST18" ? "GST18" : "IGST18");
   const id = tax.tax_id; const taxName = tax.tax_name;
   if (!id || !taxName) apiFailure();
   return { id, name: taxName, rate: tax.tax_percentage ?? 18, type: tax.tax_type ?? tax.tax_specific_type };
@@ -75,14 +75,14 @@ export async function discoverZohoPlanConfiguration(): Promise<ZohoPlanConfigura
   const taxInclusionPreference = preferenceValues.includes(true) ? true : preferenceValues.includes(false) ? false : null;
   const intraState = exactTax(taxesResult.taxes ?? [], "GST18");
   const interState = exactTax(taxesResult.taxes ?? [], "IGST18");
-  const templateValue = required(templateResult.templates?.find(template => template.template_name === "Shivayonic Invites Invoice" && template.template_id));
+  const templateValue = required(templateResult.templates?.find(template => template.template_name === "Shivayonic Invites Invoice" && template.template_id), "invoice_template");
   const templateId = templateValue.template_id; const templateName = templateValue.template_name;
   if (!templateId || !templateName) apiFailure();
-  const tag = required(tagsResult.reporting_tags?.find(value => value.tag_name === "Business Unit" && value.tag_id));
+  const tag = required(tagsResult.reporting_tags?.find(value => value.tag_name === "Business Unit" && value.tag_id), "business_unit_tag");
   const tagId = tag.tag_id;
   if (!tagId) apiFailure();
   const tagDetail = await zohoBooksFetch<{ results?: Array<{ option_id?: string; option_name?: string }> }>(`/reportingtags/${encodeURIComponent(tagId)}/options/all?tag_id=${encodeURIComponent(tagId)}`);
-  const option = required(tagDetail.results?.find(value => value.option_name === "Shivayonic Invites" && value.option_id));
+  const option = required(tagDetail.results?.find(value => value.option_name === "Shivayonic Invites" && value.option_id), "business_unit_option");
   const tagOptionId = option.option_id; const optionName = option.option_name;
   if (!tagOptionId || !optionName) apiFailure();
   return {
