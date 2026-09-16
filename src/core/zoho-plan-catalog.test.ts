@@ -11,7 +11,7 @@ import { configureZohoPlanCatalog, discoverZohoPlanConfiguration } from "@/core/
 const taxes = { taxes: [{ tax_id: "gst18", tax_name: "GST18", tax_percentage: 18, tax_type: "tax_group" }, { tax_id: "igst18", tax_name: "IGST18", tax_percentage: 18, tax_type: "tax" }] };
 const templates = { templates: [{ template_id: "template-1", template_name: "Shivayonic Invites Invoice" }] };
 const tags = { reporting_tags: [{ tag_id: "tag-1", tag_name: "Business Unit" }] };
-const option = { reporting_tag: { options: [{ tag_option_id: "option-1", tag_option_name: "Shivayonic Invites" }] } };
+const option = { results: [{ option_id: "option-1", option_name: "Shivayonic Invites" }] };
 const plans = [["Silver", 50000], ["Gold", 75000], ["Platinum", 100000], ["Custom", 0]] as const;
 
 describe("Zoho plan catalog", () => {
@@ -23,7 +23,7 @@ describe("Zoho plan catalog", () => {
       if (path === "/invoices/templates") return templates;
       if (path === "/reportingtags") return tags;
       if (path === "/settings/preferences") return { is_inclusive_tax: true };
-      if (path === "/reportingtags/tag-1") return option;
+      if (path === "/reportingtags/tag-1/options/all?tag_id=tag-1") return option;
       if (path.startsWith("/items?")) return { items: [] };
       if (path === "/items" && init?.method === "POST") {
         const body = JSON.parse(String(init.body));
@@ -67,5 +67,32 @@ describe("Zoho plan catalog", () => {
   it("keeps GST, template, and tag validation strict", async () => {
     mocks.fetch.mockImplementation(async (path: string) => path === "/settings/preferences" ? {} : path === "/settings/taxes" ? { taxes: [] } : path === "/invoices/templates" ? templates : path === "/reportingtags" ? tags : option);
     await expect(discoverZohoPlanConfiguration()).rejects.toThrow();
+  });
+
+  it("ignores optional preferences failure and uses documented read-only options", async () => {
+    mocks.fetch.mockImplementation(async (path: string) => {
+      if (path === "/settings/preferences") throw new Error("unavailable");
+      if (path === "/settings/taxes") return taxes;
+      if (path === "/invoices/templates") return templates;
+      if (path === "/reportingtags") return tags;
+      if (path === "/reportingtags/tag-1/options/all?tag_id=tag-1") return option;
+      throw new Error("Unexpected endpoint");
+    });
+    const result = await discoverZohoPlanConfiguration();
+    expect(result.taxInclusionPreference).toBeNull();
+    expect(result.businessUnit).toEqual({ tagId: "tag-1", tagOptionId: "option-1", name: "Shivayonic Invites" });
+    expect(mocks.fetch.mock.calls).toHaveLength(5);
+    expect(mocks.fetch.mock.calls.every(([, init]) => !init || init.method === "GET")).toBe(true);
+  });
+
+  it.each(["GST18", "IGST18", "template", "tag", "option"])("rejects missing required %s", async missing => {
+    mocks.fetch.mockImplementation(async (path: string) => {
+      if (path === "/settings/preferences") return {};
+      if (path === "/settings/taxes") return { taxes: taxes.taxes.filter(tax => tax.tax_name !== missing) };
+      if (path === "/invoices/templates") return missing === "template" ? { templates: [] } : templates;
+      if (path === "/reportingtags") return missing === "tag" ? { reporting_tags: [] } : tags;
+      return missing === "option" ? { results: [] } : option;
+    });
+    await expect(discoverZohoPlanConfiguration()).rejects.toThrow("ZOHO_UNAVAILABLE");
   });
 });

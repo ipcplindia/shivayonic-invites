@@ -56,9 +56,19 @@ export async function zohoBooksFetch<T>(path: string, init: RequestInit = {}): P
     headers.set("Authorization", `Zoho-oauthtoken ${token}`); headers.set("Accept", "application/json");
     if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
     const response = await fetch(url, { ...init, headers, cache: "no-store", redirect: "error", signal: init.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000) });
-    const data = await response.json().catch(() => null) as { code?: unknown } | null;
+    const data = await response.json().catch(() => null) as { code?: unknown; message?: unknown } | null;
     if (response.status === 401 && cached?.token === token) cached = undefined;
-    if (!response.ok || !data || (typeof data.code === "number" && data.code !== 0)) throw new ZohoError("ZOHO_UNAVAILABLE");
+    if (!response.ok || !data || (data.code !== undefined && String(data.code) !== "0")) {
+      // Provider messages may echo secrets or customer data: log only known static messages.
+      const safeMessages = ["Invalid URL Passed", "Invalid URL Passed.", "Invalid OAuth scope.", "You are not authorized to perform this operation."];
+      console.error("Zoho Books request failed", {
+        path: url.pathname.slice(base.pathname.length - 1),
+        status: response.status,
+        zohoCode: typeof data?.code === "number" || (typeof data?.code === "string" && /^\d{1,10}$/.test(data.code)) ? data.code : null,
+        message: typeof data?.message === "string" && safeMessages.includes(data.message) ? data.message : "Provider message withheld",
+      });
+      throw new ZohoError("ZOHO_UNAVAILABLE");
+    }
     return data as T;
   } catch (error) { if (error instanceof ZohoError) throw error; throw new ZohoError("ZOHO_UNAVAILABLE"); }
 }

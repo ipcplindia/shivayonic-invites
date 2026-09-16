@@ -64,7 +64,7 @@ export async function discoverZohoPlanConfiguration(): Promise<ZohoPlanConfigura
     zohoBooksFetch<{ taxes?: Tax[] }>("/settings/taxes"),
     zohoBooksFetch<{ templates?: Array<{ template_id?: string; template_name?: string }> }>("/invoices/templates"),
     zohoBooksFetch<{ reporting_tags?: Array<{ tag_id?: string; tag_name?: string }> }>("/reportingtags"),
-    zohoBooksFetch<Record<string, unknown>>("/settings/preferences"),
+    zohoBooksFetch<Record<string, unknown>>("/settings/preferences").catch(() => ({})),
   ]);
   const preferenceRecord = preferencesResult as Record<string, unknown>;
   const nested = [preferenceRecord.preferences, preferenceRecord.tax_settings, preferenceRecord.settings]
@@ -81,9 +81,9 @@ export async function discoverZohoPlanConfiguration(): Promise<ZohoPlanConfigura
   const tag = required(tagsResult.reporting_tags?.find(value => value.tag_name === "Business Unit" && value.tag_id));
   const tagId = tag.tag_id;
   if (!tagId) apiFailure();
-  const tagDetail = await zohoBooksFetch<{ reporting_tag?: { options?: Array<{ tag_option_id?: string; tag_option_name?: string }> } }>(`/reportingtags/${encodeURIComponent(tagId)}`);
-  const option = required(tagDetail.reporting_tag?.options?.find(value => value.tag_option_name === "Shivayonic Invites" && value.tag_option_id));
-  const tagOptionId = option.tag_option_id; const optionName = option.tag_option_name;
+  const tagDetail = await zohoBooksFetch<{ results?: Array<{ option_id?: string; option_name?: string }> }>(`/reportingtags/${encodeURIComponent(tagId)}/options/all?tag_id=${encodeURIComponent(tagId)}`);
+  const option = required(tagDetail.results?.find(value => value.option_name === "Shivayonic Invites" && value.option_id));
+  const tagOptionId = option.option_id; const optionName = option.option_name;
   if (!tagOptionId || !optionName) apiFailure();
   return {
     taxes: { intraState, interState },
