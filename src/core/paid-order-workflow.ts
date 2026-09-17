@@ -12,6 +12,10 @@ function safeZohoMessage(value: unknown) {
   if (typeof value !== "string" || value.length > 160) return "WITHHELD";
   return value.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]").replace(/\b\d{5,}\b/g, "[id]").replace(/(['"]).*?\1/g, "[value]");
 }
+function samePhone(left?: string, right?: string) {
+  const a = left?.replace(/\D/g, ""); const b = right?.replace(/\D/g, "");
+  return Boolean(a && b && (a === b || a.endsWith(b) || b.endsWith(a)));
+}
 
 class ZohoError extends Error { constructor(readonly code: string) { super(code); } }
 
@@ -105,7 +109,7 @@ async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrde
   let customerId = order.zohoCustomerId;
   if (!customerId) {
     const matches = await zohoRequest<{ contacts?: Array<{ contact_id?: string; email?: string; phone?: string }> }>(`${config.booksBase}/contacts?${orgQuery(config, { search_text: order.customerName })}`, token);
-    customerId = matches.contacts?.find(contact => contact.contact_id && (contact.email?.trim().toLowerCase() === order.customerEmail.trim().toLowerCase() || contact.phone?.trim() === order.customerPhone.trim()))?.contact_id ?? null;
+    customerId = matches.contacts?.find(contact => contact.contact_id && (contact.email?.trim().toLowerCase() === order.customerEmail.trim().toLowerCase() || samePhone(contact.phone, order.customerPhone)))?.contact_id ?? null;
   }
   if (!customerId) {
     const contact = await zohoRequest<{ contact?: { contact_id?: string } }>(`${config.booksBase}/contacts?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ contact_name: order.customerName, contact_type: "customer", email: order.customerEmail, phone: order.customerPhone, billing_address: { address: order.address1, city: order.city, state: order.state, zip: order.pincode, country: order.country } }) });

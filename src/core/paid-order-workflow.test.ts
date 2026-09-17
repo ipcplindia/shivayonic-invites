@@ -67,7 +67,7 @@ describe("paid order workflow", () => {
 
   it("reuses a matching Zoho customer found through documented search_text", async () => {
     configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); mocks.findUnique.mockResolvedValue({ ...payment, zohoCustomerId: null });
-    [ok({ access_token: "access" }), ok({ invoices: [] }), ok({ contacts: [{ contact_id: "customer-existing", email: "customer@example.test" }] }), ...happyResponses().slice(2)].forEach(response => fetchMock.mockResolvedValueOnce(response));
+    [ok({ access_token: "access" }), ok({ invoices: [] }), ok({ contacts: [{ contact_id: "customer-existing", phone: "+91-999" }] }), ...happyResponses().slice(2)].forEach(response => fetchMock.mockResolvedValueOnce(response));
     await createInvoiceForPaidOrder("payment-1");
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("search_text=Customer"))).toBe(true);
     expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/contacts?") && init?.method === "POST")).toBe(false);
