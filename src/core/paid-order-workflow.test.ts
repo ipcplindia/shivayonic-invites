@@ -35,7 +35,14 @@ describe("paid order workflow", () => {
   it("sends confirmation once after a durable PAID transition", async () => {
     await sendPaidConfirmation("payment-1");
     expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ status: "PAID", paymentConfirmationSentAt: null }) }));
-    expect(mocks.email).toHaveBeenCalledOnce();
+    expect(mocks.email).toHaveBeenCalledTimes(2);
+    expect(mocks.email).toHaveBeenCalledWith(expect.objectContaining({ subject: "Payment received — Shivayonic Invites" }), "customer@example.test");
+  });
+
+  it("leaves the durable claim retryable when either notification fails", async () => {
+    mocks.email.mockResolvedValueOnce({ ok: true }).mockResolvedValueOnce({ ok: false });
+    await sendPaidConfirmation("payment-1");
+    expect(mocks.updateMany).toHaveBeenLastCalledWith(expect.objectContaining({ where: { id: "payment-1", paymentConfirmationSentAt: expect.any(Date) }, data: { paymentConfirmationSentAt: null } }));
   });
 
   it("does zero Zoho work while disabled", async () => {

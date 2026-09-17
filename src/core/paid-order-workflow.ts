@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/db/client";
+import { formRecipients } from "@/features/public/data";
 import { sendEmail } from "@/features/public/notify";
 
 type PaidOrder = { id: string; planKey: string; customerEmail: string; customerName: string; customerPhone: string; address1: string; city: string; state: string; pincode: string; country: string; amountMinor: bigint; currency: string; providerPaymentId: string | null; paidAt: Date | null; zohoCustomerId: string | null; zohoInvoiceId: string | null; invoiceSentAt: Date | null };
@@ -187,11 +188,26 @@ async function createZohoInvoice(order: PaidOrder) {
 }
 
 export async function sendPaidConfirmation(paymentIntentId: string) {
-  const claimed = await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, status: "PAID", paymentConfirmationSentAt: null }, data: { paymentConfirmationSentAt: new Date() } });
+  const claimTime = new Date();
+  const claimed = await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, status: "PAID", paymentConfirmationSentAt: null }, data: { paymentConfirmationSentAt: claimTime } });
   if (!claimed.count) return;
   const payment = await prisma.paymentIntent.findUnique({ where: { id: paymentIntentId }, include: { enquiry: true } });
-  if (!payment?.enquiry) return;
-  await sendEmail({ subject: "Payment received — Shivayonic Invites", short: "", body: `Thank you for your purchase.\n\nDesign: ${payment.enquiry.designName || "Invitation"}\nPlan: ${payment.enquiry.planKey}\nAmount: ${payment.currency} ${(payment.amountMinor / 100n).toLocaleString("en-IN")}\nReference: ${payment.enquiry.id}\n\nYour payment has been received. Keep your private order link or sign in to My Orders for updates.` }, payment.enquiry.customerEmail).catch(() => undefined);
+  if (!payment?.enquiry) {
+    await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, paymentConfirmationSentAt: claimTime }, data: { paymentConfirmationSentAt: null } });
+    return;
+  }
+  const customerBody = `Thank you for your purchase.\n\nDesign: ${payment.enquiry.designName || "Invitation"}\nPlan: ${payment.enquiry.planKey}\nAmount: ${payment.currency} ${(payment.amountMinor / 100n).toLocaleString("en-IN")}\nReference: ${payment.enquiry.id}\n\nYour payment has been received. Keep your private order link or sign in to My Orders for updates.`;
+  const ownerBody = `A payment was received for a Shivayonic Invites order.\n\nCustomer: ${payment.enquiry.customerName}\nEmail: ${payment.enquiry.customerEmail}\nDesign: ${payment.enquiry.designName || "Invitation"}\nPlan: ${payment.enquiry.planKey}\nAmount: ${payment.currency} ${(payment.amountMinor / 100n).toLocaleString("en-IN")}\nReference: ${payment.enquiry.id}\nProvider payment: ${payment.providerPaymentId || "not available"}`;
+  const targets = [payment.enquiry.customerEmail, formRecipients.email].filter((target, index, values) => target && values.indexOf(target) === index);
+  const results = await Promise.all([
+    sendEmail({ subject: "Payment received — Shivayonic Invites", short: "", body: customerBody }, payment.enquiry.customerEmail),
+    ...(targets.includes(formRecipients.email) && formRecipients.email !== payment.enquiry.customerEmail
+      ? [sendEmail({ subject: `Payment received — ${payment.enquiry.id}`, short: "", body: ownerBody }, formRecipients.email)]
+      : []),
+  ]);
+  if (results.every(result => result.ok)) return;
+  console.error("Paid notification delivery failed", { code: "DELIVERY_FAILED" });
+  await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, paymentConfirmationSentAt: claimTime }, data: { paymentConfirmationSentAt: null } });
 }
 
 function failureStatus(error: unknown) {
