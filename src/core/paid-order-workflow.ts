@@ -130,7 +130,7 @@ async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrde
     customerId = contact.contact?.contact_id ?? null;
   }
   if (!customerId) throw new ZohoError("ZOHO_CUSTOMER_FAILED");
-  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, is_inclusive_tax: true, tags: [{ tag_id: businessUnit.tagId, tag_option_id: businessUnit.optionId }], line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100, tags: [{ tag_id: businessUnit.tagId, tag_option_id: businessUnit.optionId }] }] }) });
+  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, is_inclusive_tax: true, line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100, tags: [{ tag_id: businessUnit.tagId, tag_option_id: businessUnit.optionId }] }] }) });
   if (!created.invoice?.invoice_id) throw new ZohoError("ZOHO_INVOICE_FAILED");
   return getInvoice(config, token, created.invoice.invoice_id);
 }
@@ -185,8 +185,7 @@ export async function createInvoiceForPaidOrder(paymentIntentId: string) {
     const created = await createZohoInvoice(order);
     const invoiceId = created.invoice.invoice_id!;
     await prisma.paymentIntent.update({ where: { id: payment.id }, data: { invoiceStatus: "PAID", zohoCustomerId: created.customerId, zohoInvoiceId: invoiceId, invoiceNumber: created.invoice.invoice_number ?? null, invoiceCreatedAt: payment.invoiceCreatedAt ?? new Date() } });
-    // Preview accounting tests must never send invoices to customer addresses.
-    if (process.env.VERCEL_ENV === "preview" || order.invoiceSentAt) return;
+    if (order.invoiceSentAt) return;
     try {
       await zohoRequest(`${created.config.booksBase}/invoices/${encodeURIComponent(invoiceId)}/email?${orgQuery(created.config, {})}`, created.token, { method: "POST", body: JSON.stringify({ to_mail_ids: [order.customerEmail] }) });
       await prisma.paymentIntent.update({ where: { id: payment.id }, data: { invoiceStatus: "SENT", invoiceSentAt: new Date() } });

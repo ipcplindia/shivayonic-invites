@@ -51,16 +51,17 @@ describe("paid order workflow", () => {
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/contacts"))).toBe(false);
     expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/customerpayments") && init?.method === "POST")).toBe(true);
     const invoiceCreate = fetchMock.mock.calls.find(([url, init]) => String(url).includes("/invoices?") && init?.method === "POST");
-    expect(JSON.parse(String(invoiceCreate?.[1]?.body))).toEqual(expect.objectContaining({ is_inclusive_tax: true, tags: [{ tag_id: "tag-actual", tag_option_id: "option-actual" }], line_items: [expect.objectContaining({ tags: [{ tag_id: "tag-actual", tag_option_id: "option-actual" }] })] }));
+    expect(JSON.parse(String(invoiceCreate?.[1]?.body))).toEqual(expect.objectContaining({ is_inclusive_tax: true, line_items: [expect.objectContaining({ tags: [{ tag_id: "tag-actual", tag_option_id: "option-actual" }] })] }));
+    expect(JSON.parse(String(invoiceCreate?.[1]?.body))).not.toHaveProperty("tags");
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ zohoCustomerId: "customer-1", zohoInvoiceId: "invoice-1", invoiceNumber: "INV-1", invoiceStatus: "PAID" }) }));
     expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ invoiceStatus: "SENT", invoiceSentAt: expect.any(Date) }) }));
   });
 
-  it("never emails a Preview invoice and repeated completed work performs no provider calls", async () => {
+  it("emails a Preview invoice and repeated completed work performs no provider calls", async () => {
     configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); happyResponses().forEach(response => fetchMock.mockResolvedValueOnce(response));
     await createInvoiceForPaidOrder("payment-1");
-    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/email"))).toBe(false);
-    expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ invoiceStatus: "PAID" }) }));
+    expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/email") && init?.method === "POST")).toBe(true);
+    expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ invoiceStatus: "SENT", invoiceSentAt: expect.any(Date) }) }));
     const calls = fetchMock.mock.calls.length;
     mocks.updateMany.mockResolvedValue({ count: 0 });
     await createInvoiceForPaidOrder("payment-1");
