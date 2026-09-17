@@ -113,4 +113,12 @@ describe("paid order workflow", () => {
     expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain("client_id=client");
     expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain("refresh_token=refresh");
   });
+
+  it("logs only a safe provider rejection category", async () => {
+    configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockResolvedValueOnce(ok({ access_token: "access" })).mockResolvedValueOnce(ok({ invoices: [] })).mockResolvedValueOnce(new Response(JSON.stringify({ code: -1, message: "Invoice template is not valid for this customer" }), { status: 400, headers: { "content-type": "application/json" } }));
+    await createInvoiceForPaidOrder("payment-1");
+    expect(console.error).toHaveBeenCalledWith("Zoho Books request rejected", expect.objectContaining({ message: "TEMPLATE_REJECTED" }));
+    expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: { invoiceStatus: "FAILED" } }));
+  });
 });

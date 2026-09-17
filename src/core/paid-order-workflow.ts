@@ -9,8 +9,14 @@ type ZohoInvoice = { invoice_id?: string; invoice_number?: string; customer_id?:
 type ZohoPayment = { payment_id?: string; amount?: number };
 
 function safeZohoMessage(value: unknown) {
-  if (typeof value !== "string" || value.length > 160) return "WITHHELD";
-  return value.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]").replace(/\b\d{5,}\b/g, "[id]").replace(/(['"]).*?\1/g, "[value]");
+  if (typeof value !== "string") return "WITHHELD";
+  const message = value.toLowerCase();
+  if (message.includes("template")) return "TEMPLATE_REJECTED";
+  if (message.includes("tax")) return "TAX_REJECTED";
+  if (message.includes("tag")) return "TAG_REJECTED";
+  if (message.includes("customer") || message.includes("contact")) return "CUSTOMER_REJECTED";
+  if (message.includes("item") || message.includes("line") || message.includes("rate") || message.includes("amount")) return "LINE_ITEM_REJECTED";
+  return "WITHHELD";
 }
 function samePhone(left?: string, right?: string) {
   const a = left?.replace(/\D/g, ""); const b = right?.replace(/\D/g, "");
