@@ -6,7 +6,7 @@ import { createInvoiceForPaidOrder, zohoInvoicingEnabled } from "@/core/paid-ord
 
 export const runtime = "nodejs";
 
-/** OWNER-only retry. It cannot charge, alter PAID, or create a second invoice. */
+/** OWNER-only invoice run. It cannot charge, alter PAID, or create a second invoice. */
 export async function POST(request: Request, { params }: { params: Promise<{ paymentIntentId: string }> }) {
   try {
     const context = await requirePermission("PAYMENTS_APPROVE", { headers: request.headers });
@@ -14,7 +14,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pay
     if (!zohoInvoicingEnabled()) return NextResponse.json({ error: { code: "INVOICING_DISABLED" } }, { status: 409 });
     const { paymentIntentId } = await params;
     const payment = await prisma.paymentIntent.findFirst({ where: { id: paymentIntentId, organizationId: context.organization.id }, select: { id: true, status: true, invoiceStatus: true } });
-    if (!payment || payment.status !== "PAID" || !["RETRY_REQUIRED", "FAILED"].includes(payment.invoiceStatus ?? "")) return NextResponse.json({ error: { code: "INVOICE_RETRY_NOT_AVAILABLE" } }, { status: 409 });
+    if (!payment || payment.status !== "PAID" || ![null, "RETRY_REQUIRED", "FAILED"].includes(payment.invoiceStatus)) return NextResponse.json({ error: { code: "INVOICE_RETRY_NOT_AVAILABLE" } }, { status: 409 });
     await createInvoiceForPaidOrder(payment.id);
     return NextResponse.json({ ok: true });
   } catch {
