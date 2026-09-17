@@ -44,7 +44,7 @@ describe("paid order workflow", () => {
   });
 
   it("claims once, reuses the saved customer, reconciles amount, records one payment, and emails once", async () => {
-    configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); happyResponses().forEach(response => fetchMock.mockResolvedValueOnce(response));
+    configure(); vi.stubEnv("VERCEL_ENV", "production"); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); happyResponses().forEach(response => fetchMock.mockResolvedValueOnce(response));
     await createInvoiceForPaidOrder("payment-1");
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/contacts"))).toBe(false);
     expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/customerpayments") && init?.method === "POST")).toBe(true);
@@ -52,6 +52,17 @@ describe("paid order workflow", () => {
     expect(JSON.parse(String(invoiceCreate?.[1]?.body))).toEqual(expect.objectContaining({ is_inclusive_tax: true }));
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ zohoCustomerId: "customer-1", zohoInvoiceId: "invoice-1", invoiceNumber: "INV-1", invoiceStatus: "PAID" }) }));
     expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ invoiceStatus: "SENT", invoiceSentAt: expect.any(Date) }) }));
+  });
+
+  it("never emails a Preview invoice and repeated completed work performs no provider calls", async () => {
+    configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); happyResponses().forEach(response => fetchMock.mockResolvedValueOnce(response));
+    await createInvoiceForPaidOrder("payment-1");
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/email"))).toBe(false);
+    expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ invoiceStatus: "PAID" }) }));
+    const calls = fetchMock.mock.calls.length;
+    mocks.updateMany.mockResolvedValue({ count: 0 });
+    await createInvoiceForPaidOrder("payment-1");
+    expect(fetchMock).toHaveBeenCalledTimes(calls);
   });
 
   it("does not create a duplicate invoice or payment when another worker owns the claim", async () => {
