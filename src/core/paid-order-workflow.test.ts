@@ -16,6 +16,8 @@ function configure() {
 function happyResponses(existingPayment = false) {
   return [
     ok({ access_token: "access" }),
+    ok({ reporting_tags: [{ tag_id: "tag-actual", tag_name: "Business Unit" }] }),
+    ok({ results: [{ option_id: "option-actual", option_name: "Shivayonic Invites" }] }),
     ok({ invoices: [] }),
     ok({ invoice: { invoice_id: "invoice-1" } }),
     ok({ invoice: { invoice_id: "invoice-1", invoice_number: "INV-1", customer_id: "customer-1", total: 50000, balance: 50000 } }),
@@ -49,7 +51,7 @@ describe("paid order workflow", () => {
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/contacts"))).toBe(false);
     expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/customerpayments") && init?.method === "POST")).toBe(true);
     const invoiceCreate = fetchMock.mock.calls.find(([url, init]) => String(url).includes("/invoices?") && init?.method === "POST");
-    expect(JSON.parse(String(invoiceCreate?.[1]?.body))).toEqual(expect.objectContaining({ is_inclusive_tax: true }));
+    expect(JSON.parse(String(invoiceCreate?.[1]?.body))).toEqual(expect.objectContaining({ is_inclusive_tax: true, tags: [{ tag_id: "tag-actual", tag_option_id: "option-actual" }] }));
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ zohoCustomerId: "customer-1", zohoInvoiceId: "invoice-1", invoiceNumber: "INV-1", invoiceStatus: "PAID" }) }));
     expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ invoiceStatus: "SENT", invoiceSentAt: expect.any(Date) }) }));
   });
@@ -67,7 +69,7 @@ describe("paid order workflow", () => {
 
   it("reuses a matching Zoho customer found through documented search_text", async () => {
     configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); mocks.findUnique.mockResolvedValue({ ...payment, zohoCustomerId: null });
-    [ok({ access_token: "access" }), ok({ invoices: [] }), ok({ contacts: [{ contact_id: "customer-existing", phone: "+91-999" }] }), ...happyResponses().slice(2)].forEach(response => fetchMock.mockResolvedValueOnce(response));
+    [ok({ access_token: "access" }), ok({ reporting_tags: [{ tag_id: "tag-actual", tag_name: "Business Unit" }] }), ok({ results: [{ option_id: "option-actual", option_name: "Shivayonic Invites" }] }), ok({ invoices: [] }), ok({ contacts: [{ contact_id: "customer-existing", phone: "+91-999" }] }), ...happyResponses().slice(4)].forEach(response => fetchMock.mockResolvedValueOnce(response));
     await createInvoiceForPaidOrder("payment-1");
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("search_text=Customer"))).toBe(true);
     expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/contacts?") && init?.method === "POST")).toBe(false);
@@ -88,7 +90,7 @@ describe("paid order workflow", () => {
 
   it("marks an exact Zoho total mismatch failed without recording a customer payment", async () => {
     configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
-    [ok({ access_token: "access" }), ok({ invoices: [] }), ok({ invoice: { invoice_id: "invoice-1" } }), ok({ invoice: { invoice_id: "invoice-1", customer_id: "customer-1", total: 50001, balance: 50001 } })].forEach(response => fetchMock.mockResolvedValueOnce(response));
+    [ok({ access_token: "access" }), ok({ reporting_tags: [{ tag_id: "tag-actual", tag_name: "Business Unit" }] }), ok({ results: [{ option_id: "option-actual", option_name: "Shivayonic Invites" }] }), ok({ invoices: [] }), ok({ invoice: { invoice_id: "invoice-1" } }), ok({ invoice: { invoice_id: "invoice-1", customer_id: "customer-1", total: 50001, balance: 50001 } })].forEach(response => fetchMock.mockResolvedValueOnce(response));
     await createInvoiceForPaidOrder("payment-1");
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/customerpayments"))).toBe(false);
     expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: { invoiceStatus: "FAILED" } }));
@@ -116,7 +118,7 @@ describe("paid order workflow", () => {
 
   it("logs only a safe provider rejection category", async () => {
     configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockResolvedValueOnce(ok({ access_token: "access" })).mockResolvedValueOnce(ok({ invoices: [] })).mockResolvedValueOnce(new Response(JSON.stringify({ code: -1, message: "Invoice template is not valid for this customer" }), { status: 400, headers: { "content-type": "application/json" } }));
+    fetchMock.mockResolvedValueOnce(ok({ access_token: "access" })).mockResolvedValueOnce(ok({ reporting_tags: [{ tag_id: "tag-actual", tag_name: "Business Unit" }] })).mockResolvedValueOnce(ok({ results: [{ option_id: "option-actual", option_name: "Shivayonic Invites" }] })).mockResolvedValueOnce(ok({ invoices: [] })).mockResolvedValueOnce(new Response(JSON.stringify({ code: -1, message: "Invoice template is not valid for this customer" }), { status: 400, headers: { "content-type": "application/json" } }));
     await createInvoiceForPaidOrder("payment-1");
     expect(console.error).toHaveBeenCalledWith("Zoho Books request rejected", expect.objectContaining({ message: "TEMPLATE_REJECTED" }));
     expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: { invoiceStatus: "FAILED" } }));

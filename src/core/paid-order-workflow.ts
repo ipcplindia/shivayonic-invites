@@ -4,7 +4,7 @@ import { prisma } from "@/db/client";
 import { sendEmail } from "@/features/public/notify";
 
 type PaidOrder = { id: string; planKey: string; customerEmail: string; customerName: string; customerPhone: string; address1: string; city: string; state: string; pincode: string; country: string; amountMinor: bigint; currency: string; providerPaymentId: string | null; paidAt: Date | null; zohoCustomerId: string | null; zohoInvoiceId: string | null; invoiceSentAt: Date | null };
-type ZohoConfig = { itemId: string; organizationId: string; accountsBase: string; booksBase: string; templateId: string; businessUnitTagId: string; businessUnitTagOptionId: string };
+type ZohoConfig = { itemId: string; organizationId: string; accountsBase: string; booksBase: string; templateId: string };
 type ZohoInvoice = { invoice_id?: string; invoice_number?: string; customer_id?: string; total?: number; balance?: number };
 type ZohoPayment = { payment_id?: string; amount?: number };
 
@@ -39,10 +39,8 @@ function zohoConfig(plan: string): ZohoConfig {
   const accountsBase = httpsBase(process.env.ZOHO_ACCOUNTS_BASE_URL);
   const booksBase = httpsBase(process.env.ZOHO_BOOKS_BASE_URL);
   const templateId = process.env.ZOHO_INVOICE_TEMPLATE_ID;
-  const businessUnitTagId = process.env.ZOHO_BUSINESS_UNIT_TAG_ID;
-  const businessUnitTagOptionId = process.env.ZOHO_BUSINESS_UNIT_TAG_OPTION_ID;
-  if (!itemId || !organizationId || !accountsBase || !booksBase || !templateId || !businessUnitTagId || !businessUnitTagOptionId || !process.env.ZOHO_CLIENT_ID || !process.env.ZOHO_CLIENT_SECRET || !process.env.ZOHO_REFRESH_TOKEN) throw new ZohoError("ZOHO_CONFIGURATION_REQUIRED");
-  return { itemId, organizationId, accountsBase, booksBase, templateId, businessUnitTagId, businessUnitTagOptionId };
+  if (!itemId || !organizationId || !accountsBase || !booksBase || !templateId || !process.env.ZOHO_CLIENT_ID || !process.env.ZOHO_CLIENT_SECRET || !process.env.ZOHO_REFRESH_TOKEN) throw new ZohoError("ZOHO_CONFIGURATION_REQUIRED");
+  return { itemId, organizationId, accountsBase, booksBase, templateId };
 }
 
 function asMinor(value: unknown) {
@@ -107,7 +105,17 @@ async function getInvoice(config: ZohoConfig, token: string, id: string) {
   return result.invoice;
 }
 
-async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrder) {
+async function resolveBusinessUnitTag(config: ZohoConfig, token: string) {
+  const tags = await zohoRequest<{ reporting_tags?: Array<{ tag_id?: string; tag_name?: string }>; tags?: Array<{ tag_id?: string; tag_name?: string }> }>(`${config.booksBase}/reportingtags?${orgQuery(config, {})}`, token);
+  const tag = (tags.reporting_tags ?? tags.tags ?? []).find(value => value.tag_name === "Business Unit" && value.tag_id);
+  if (!tag?.tag_id) throw new ZohoError("ZOHO_BUSINESS_UNIT_TAG_REQUIRED");
+  const options = await zohoRequest<{ results?: Array<{ option_id?: string; option_name?: string }> }>(`${config.booksBase}/reportingtags/${encodeURIComponent(tag.tag_id)}/options/all?${orgQuery(config, { tag_id: tag.tag_id })}`, token);
+  const option = options.results?.find(value => value.option_name === "Shivayonic Invites" && value.option_id);
+  if (!option?.option_id) throw new ZohoError("ZOHO_BUSINESS_UNIT_OPTION_REQUIRED");
+  return { tagId: tag.tag_id, optionId: option.option_id };
+}
+
+async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrder, businessUnit: { tagId: string; optionId: string }) {
   if (order.zohoInvoiceId) return getInvoice(config, token, order.zohoInvoiceId);
   const found = await zohoRequest<{ invoices?: ZohoInvoice[] }>(`${config.booksBase}/invoices?${orgQuery(config, { reference_number: reference(order) })}`, token);
   const existing = found.invoices?.find(invoice => invoice.invoice_id);
@@ -122,7 +130,7 @@ async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrde
     customerId = contact.contact?.contact_id ?? null;
   }
   if (!customerId) throw new ZohoError("ZOHO_CUSTOMER_FAILED");
-  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, is_inclusive_tax: true, tags: [{ tag_id: config.businessUnitTagId, tag_option_id: config.businessUnitTagOptionId }], line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100 }] }) });
+  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, is_inclusive_tax: true, tags: [{ tag_id: businessUnit.tagId, tag_option_id: businessUnit.optionId }], line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100 }] }) });
   if (!created.invoice?.invoice_id) throw new ZohoError("ZOHO_INVOICE_FAILED");
   return getInvoice(config, token, created.invoice.invoice_id);
 }
@@ -143,7 +151,7 @@ async function resolveCustomerPayment(config: ZohoConfig, token: string, order: 
 async function createZohoInvoice(order: PaidOrder) {
   const config = zohoConfig(order.planKey);
   return withZohoToken(config, async token => {
-    const invoice = await resolveInvoice(config, token, order);
+    const invoice = await resolveInvoice(config, token, order, await resolveBusinessUnitTag(config, token));
     if (!invoice.invoice_id || asMinor(invoice.total) !== order.amountMinor) throw new ZohoError("ZOHO_AMOUNT_MISMATCH");
     const payment = await resolveCustomerPayment(config, token, order, invoice);
     const paidInvoice = await getInvoice(config, token, invoice.invoice_id);
