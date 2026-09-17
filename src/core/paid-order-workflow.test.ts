@@ -97,4 +97,12 @@ describe("paid order workflow", () => {
     await createInvoiceForPaidOrder("payment-1");
     expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: { invoiceStatus: "RETRY_REQUIRED" } }));
   });
+
+  it("trims Vercel OAuth secret whitespace before refreshing", async () => {
+    configure(); vi.stubEnv("ZOHO_CLIENT_ID", " client "); vi.stubEnv("ZOHO_CLIENT_SECRET", " secret "); vi.stubEnv("ZOHO_REFRESH_TOKEN", " refresh ");
+    const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); happyResponses().forEach(response => fetchMock.mockResolvedValueOnce(response));
+    await createInvoiceForPaidOrder("payment-1");
+    expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain("client_id=client");
+    expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain("refresh_token=refresh");
+  });
 });

@@ -39,7 +39,8 @@ function asDate(value: Date | null) { return (value ?? new Date()).toISOString()
 function reference(order: PaidOrder) { return `${process.env.VERCEL_ENV === "preview" ? "SHIVAYONIC TEST" : "SHIVAYONIC"} ${order.id}`; }
 
 async function zohoToken(config: ZohoConfig) {
-  const body = new URLSearchParams({ refresh_token: process.env.ZOHO_REFRESH_TOKEN!, client_id: process.env.ZOHO_CLIENT_ID!, client_secret: process.env.ZOHO_CLIENT_SECRET!, grant_type: "refresh_token" });
+  // Vercel secret entries can retain surrounding whitespace; OAuth credentials cannot.
+  const body = new URLSearchParams({ refresh_token: process.env.ZOHO_REFRESH_TOKEN!.trim(), client_id: process.env.ZOHO_CLIENT_ID!.trim(), client_secret: process.env.ZOHO_CLIENT_SECRET!.trim(), grant_type: "refresh_token" });
   let response: Response;
   try { response = await fetch(`${config.accountsBase}/oauth/v2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body, cache: "no-store", signal: AbortSignal.timeout(10_000) }); } catch { throw new ZohoError("ZOHO_TRANSIENT"); }
   const value = await response.json().catch(() => null) as { access_token?: string; error?: unknown } | null;
