@@ -61,7 +61,14 @@ async function zohoRequest<T>(url: string, token: string, init?: RequestInit): P
   if (response.status === 401 || response.status === 403) throw new ZohoError("ZOHO_AUTH_RETRY");
   if (response.status === 429) throw new ZohoError("ZOHO_RATE_LIMITED");
   if (response.status >= 500) throw new ZohoError("ZOHO_TRANSIENT");
-  if (!response.ok || !value || (typeof value.code === "number" && value.code !== 0)) throw new ZohoError("ZOHO_API_REJECTED");
+  if (!response.ok || !value || (typeof value.code === "number" && value.code !== 0)) {
+    console.error("Zoho Books request rejected", {
+      path: new URL(url).pathname,
+      status: response.status,
+      code: typeof value?.code === "number" ? value.code : "UNKNOWN",
+    });
+    throw new ZohoError("ZOHO_API_REJECTED");
+  }
   return value as T;
 }
 
