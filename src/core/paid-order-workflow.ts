@@ -57,7 +57,7 @@ async function zohoToken(config: ZohoConfig) {
 async function zohoRequest<T>(url: string, token: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try { response = await fetch(url, { ...init, headers: { Authorization: `Zoho-oauthtoken ${token}`, "content-type": "application/json", ...(init?.headers ?? {}) }, cache: "no-store", signal: AbortSignal.timeout(15_000) }); } catch { throw new ZohoError("ZOHO_TRANSIENT"); }
-  const value = await response.json().catch(() => null) as { code?: number } | null;
+  const value = await response.json().catch(() => null) as { code?: number; message?: unknown } | null;
   if (response.status === 401 || response.status === 403) throw new ZohoError("ZOHO_AUTH_RETRY");
   if (response.status === 429) throw new ZohoError("ZOHO_RATE_LIMITED");
   if (response.status >= 500) throw new ZohoError("ZOHO_TRANSIENT");
@@ -66,6 +66,7 @@ async function zohoRequest<T>(url: string, token: string, init?: RequestInit): P
       path: new URL(url).pathname,
       status: response.status,
       code: typeof value?.code === "number" ? value.code : "UNKNOWN",
+      message: typeof value?.message === "string" && value.message.length <= 160 && !value.message.includes("@") && !/\d{7,}/.test(value.message) ? value.message : "WITHHELD",
     });
     throw new ZohoError("ZOHO_API_REJECTED");
   }
