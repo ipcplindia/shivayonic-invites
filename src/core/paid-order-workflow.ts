@@ -8,6 +8,11 @@ type ZohoConfig = { itemId: string; organizationId: string; accountsBase: string
 type ZohoInvoice = { invoice_id?: string; invoice_number?: string; customer_id?: string; total?: number; balance?: number };
 type ZohoPayment = { payment_id?: string; amount?: number };
 
+function safeZohoMessage(value: unknown) {
+  if (typeof value !== "string" || value.length > 160) return "WITHHELD";
+  return value.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]").replace(/\b\d{5,}\b/g, "[id]").replace(/(['"]).*?\1/g, "[value]");
+}
+
 class ZohoError extends Error { constructor(readonly code: string) { super(code); } }
 
 /** Opt-in only: payment authority and confirmation email never depend on Zoho. */
@@ -66,7 +71,7 @@ async function zohoRequest<T>(url: string, token: string, init?: RequestInit): P
       path: new URL(url).pathname,
       status: response.status,
       code: typeof value?.code === "number" ? value.code : "UNKNOWN",
-      message: typeof value?.message === "string" && value.message.length <= 160 && !value.message.includes("@") && !/\d{7,}/.test(value.message) ? value.message : "WITHHELD",
+      message: safeZohoMessage(value?.message),
     });
     throw new ZohoError("ZOHO_API_REJECTED");
   }
