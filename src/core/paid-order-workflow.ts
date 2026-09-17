@@ -42,8 +42,14 @@ async function zohoToken(config: ZohoConfig) {
   const body = new URLSearchParams({ refresh_token: process.env.ZOHO_REFRESH_TOKEN!, client_id: process.env.ZOHO_CLIENT_ID!, client_secret: process.env.ZOHO_CLIENT_SECRET!, grant_type: "refresh_token" });
   let response: Response;
   try { response = await fetch(`${config.accountsBase}/oauth/v2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body, cache: "no-store", signal: AbortSignal.timeout(10_000) }); } catch { throw new ZohoError("ZOHO_TRANSIENT"); }
-  const value = await response.json().catch(() => null) as { access_token?: string } | null;
-  if (!response.ok || !value?.access_token) throw new ZohoError(response.status >= 500 ? "ZOHO_TRANSIENT" : "ZOHO_AUTH_FAILED");
+  const value = await response.json().catch(() => null) as { access_token?: string; error?: unknown } | null;
+  if (!response.ok || !value?.access_token) {
+    console.error("Zoho OAuth token request failed", {
+      status: response.status,
+      code: typeof value?.error === "string" ? value.error : "UNKNOWN",
+    });
+    throw new ZohoError(response.status >= 500 ? "ZOHO_TRANSIENT" : "ZOHO_AUTH_FAILED");
+  }
   return value.access_token;
 }
 
