@@ -104,12 +104,8 @@ async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrde
   if (existing?.invoice_id) return getInvoice(config, token, existing.invoice_id);
   let customerId = order.zohoCustomerId;
   if (!customerId) {
-    const byEmail = await zohoRequest<{ contacts?: Array<{ contact_id?: string }> }>(`${config.booksBase}/contacts?${orgQuery(config, { email: order.customerEmail })}`, token);
-    customerId = byEmail.contacts?.find(contact => contact.contact_id)?.contact_id ?? null;
-  }
-  if (!customerId && order.customerPhone) {
-    const byPhone = await zohoRequest<{ contacts?: Array<{ contact_id?: string }> }>(`${config.booksBase}/contacts?${orgQuery(config, { phone: order.customerPhone })}`, token);
-    customerId = byPhone.contacts?.find(contact => contact.contact_id)?.contact_id ?? null;
+    const matches = await zohoRequest<{ contacts?: Array<{ contact_id?: string; email?: string; phone?: string }> }>(`${config.booksBase}/contacts?${orgQuery(config, { search_text: order.customerName })}`, token);
+    customerId = matches.contacts?.find(contact => contact.contact_id && (contact.email?.trim().toLowerCase() === order.customerEmail.trim().toLowerCase() || contact.phone?.trim() === order.customerPhone.trim()))?.contact_id ?? null;
   }
   if (!customerId) {
     const contact = await zohoRequest<{ contact?: { contact_id?: string } }>(`${config.booksBase}/contacts?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ contact_name: order.customerName, contact_type: "customer", email: order.customerEmail, phone: order.customerPhone, billing_address: { address: order.address1, city: order.city, state: order.state, zip: order.pincode, country: order.country } }) });
