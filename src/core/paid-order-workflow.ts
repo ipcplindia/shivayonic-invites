@@ -23,7 +23,9 @@ function samePhone(left?: string, right?: string) {
   return Boolean(a && b && (a === b || a.endsWith(b) || b.endsWith(a)));
 }
 
-class ZohoError extends Error { constructor(readonly code: string) { super(code); } }
+class ZohoError extends Error {
+  constructor(readonly code: string, readonly providerCode?: number | string) { super(code); }
+}
 
 /** Opt-in only: payment authority and confirmation email never depend on Zoho. */
 export function zohoInvoicingEnabled() { return process.env.ZOHO_INVOICING_ENABLED === "true"; }
@@ -81,7 +83,7 @@ async function zohoRequest<T>(url: string, token: string, init?: RequestInit): P
       code: typeof value?.code === "number" ? value.code : "UNKNOWN",
       message: safeZohoMessage(value?.message),
     });
-    throw new ZohoError("ZOHO_API_REJECTED");
+    throw new ZohoError("ZOHO_API_REJECTED", typeof value?.code === "number" || typeof value?.code === "string" ? value.code : undefined);
   }
   return value as T;
 }
@@ -115,19 +117,43 @@ async function resolveBusinessUnitTag(config: ZohoConfig, token: string) {
   return { tagId: tag.tag_id, optionId: option.option_id };
 }
 
+type ZohoContact = { contact_id?: string; contact_name?: string; email?: string; phone?: string };
+
+async function findCustomerContact(config: ZohoConfig, token: string, order: PaidOrder) {
+  const searches: Array<Record<string, string>> = [
+    { email: order.customerEmail },
+    { phone: order.customerPhone },
+    { contact_name: order.customerName },
+  ];
+  for (const search of searches) {
+    const matches = await zohoRequest<{ contacts?: ZohoContact[] }>(`${config.booksBase}/contacts?${orgQuery(config, search)}`, token);
+    const found = matches.contacts?.find(contact => {
+      if (!contact.contact_id) return false;
+      const emailMatches = contact.email?.trim().toLowerCase() === order.customerEmail.trim().toLowerCase();
+      const phoneMatches = samePhone(contact.phone, order.customerPhone);
+      const nameMatches = contact.contact_name?.trim().toLowerCase() === order.customerName.trim().toLowerCase();
+      return emailMatches || phoneMatches || nameMatches;
+    });
+    if (found?.contact_id) return found.contact_id;
+  }
+  return null;
+}
+
 async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrder, businessUnit: { tagId: string; optionId: string }) {
   if (order.zohoInvoiceId) return getInvoice(config, token, order.zohoInvoiceId);
   const found = await zohoRequest<{ invoices?: ZohoInvoice[] }>(`${config.booksBase}/invoices?${orgQuery(config, { reference_number: reference(order) })}`, token);
   const existing = found.invoices?.find(invoice => invoice.invoice_id);
   if (existing?.invoice_id) return getInvoice(config, token, existing.invoice_id);
   let customerId = order.zohoCustomerId;
+  if (!customerId) customerId = await findCustomerContact(config, token, order);
   if (!customerId) {
-    const matches = await zohoRequest<{ contacts?: Array<{ contact_id?: string; email?: string; phone?: string }> }>(`${config.booksBase}/contacts?${orgQuery(config, { search_text: order.customerName })}`, token);
-    customerId = matches.contacts?.find(contact => contact.contact_id && (contact.email?.trim().toLowerCase() === order.customerEmail.trim().toLowerCase() || samePhone(contact.phone, order.customerPhone)))?.contact_id ?? null;
-  }
-  if (!customerId) {
-    const contact = await zohoRequest<{ contact?: { contact_id?: string } }>(`${config.booksBase}/contacts?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ contact_name: order.customerName, contact_type: "customer", email: order.customerEmail, phone: order.customerPhone, billing_address: { address: order.address1, city: order.city, state: order.state, zip: order.pincode, country: order.country } }) });
-    customerId = contact.contact?.contact_id ?? null;
+    try {
+      const contact = await zohoRequest<{ contact?: { contact_id?: string } }>(`${config.booksBase}/contacts?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ contact_name: order.customerName, contact_type: "customer", email: order.customerEmail, phone: order.customerPhone, billing_address: { address: order.address1, city: order.city, state: order.state, zip: order.pincode, country: order.country } }) });
+      customerId = contact.contact?.contact_id ?? null;
+    } catch (error) {
+      if (!(error instanceof ZohoError) || String(error.providerCode) !== "3062") throw error;
+      customerId = await findCustomerContact(config, token, order);
+    }
   }
   if (!customerId) throw new ZohoError("ZOHO_CUSTOMER_FAILED");
   const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, is_inclusive_tax: true, line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100, tags: [{ tag_id: businessUnit.tagId, tag_option_id: businessUnit.optionId }] }] }) });

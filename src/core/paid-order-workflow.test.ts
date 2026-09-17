@@ -68,12 +68,32 @@ describe("paid order workflow", () => {
     expect(fetchMock).toHaveBeenCalledTimes(calls);
   });
 
-  it("reuses a matching Zoho customer found through documented search_text", async () => {
+  it("reuses a matching Zoho customer found through documented contact filters", async () => {
     configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); mocks.findUnique.mockResolvedValue({ ...payment, zohoCustomerId: null });
     [ok({ access_token: "access" }), ok({ reporting_tags: [{ tag_id: "tag-actual", tag_name: "Business Unit" }] }), ok({ results: [{ option_id: "option-actual", option_name: "Shivayonic Invites" }] }), ok({ invoices: [] }), ok({ contacts: [{ contact_id: "customer-existing", phone: "+91-999" }] }), ...happyResponses().slice(4)].forEach(response => fetchMock.mockResolvedValueOnce(response));
     await createInvoiceForPaidOrder("payment-1");
-    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("search_text=Customer"))).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("email=customer%40example.test"))).toBe(true);
     expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/contacts?") && init?.method === "POST")).toBe(false);
+  });
+
+  it("recovers an existing contact when Zoho rejects a duplicate create", async () => {
+    configure(); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); mocks.findUnique.mockResolvedValue({ ...payment, zohoCustomerId: null });
+    [
+      ok({ access_token: "access" }),
+      ok({ reporting_tags: [{ tag_id: "tag-actual", tag_name: "Business Unit" }] }),
+      ok({ results: [{ option_id: "option-actual", option_name: "Shivayonic Invites" }] }),
+      ok({ invoices: [] }),
+      ok({ contacts: [] }),
+      ok({ contacts: [] }),
+      ok({ contacts: [] }),
+      new Response(JSON.stringify({ code: 3062, message: "The contact already exists" }), { status: 400 }),
+      ok({ contacts: [{ contact_id: "customer-existing", contact_name: "Customer", email: "customer@example.test" }] }),
+      ...happyResponses().slice(4),
+    ].forEach(response => fetchMock.mockResolvedValueOnce(response));
+    await createInvoiceForPaidOrder("payment-1");
+    expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/contacts?") && init?.method === "POST")).toBe(true);
+    const invoiceCreate = fetchMock.mock.calls.find(([url, init]) => String(url).includes("/invoices?") && init?.method === "POST");
+    expect(JSON.parse(String(invoiceCreate?.[1]?.body))).toEqual(expect.objectContaining({ customer_id: "customer-existing" }));
   });
 
   it("does not create a duplicate invoice or payment when another worker owns the claim", async () => {
