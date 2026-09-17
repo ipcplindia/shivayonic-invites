@@ -109,8 +109,8 @@ async function resolveBusinessUnitTag(config: ZohoConfig, token: string) {
   const tags = await zohoRequest<{ reporting_tags?: Array<{ tag_id?: string; tag_name?: string }>; tags?: Array<{ tag_id?: string; tag_name?: string }> }>(`${config.booksBase}/reportingtags?${orgQuery(config, {})}`, token);
   const tag = (tags.reporting_tags ?? tags.tags ?? []).find(value => value.tag_name === "Business Unit" && value.tag_id);
   if (!tag?.tag_id) throw new ZohoError("ZOHO_BUSINESS_UNIT_TAG_REQUIRED");
-  const options = await zohoRequest<{ results?: Array<{ option_id?: string; option_name?: string }> }>(`${config.booksBase}/reportingtags/${encodeURIComponent(tag.tag_id)}/options/all?${orgQuery(config, { tag_id: tag.tag_id })}`, token);
-  const option = options.results?.find(value => value.option_name === "Shivayonic Invites" && value.option_id);
+  const options = await zohoRequest<{ results?: Array<{ option_id?: string; option_name?: string; is_active?: boolean }> }>(`${config.booksBase}/reportingtags/${encodeURIComponent(tag.tag_id)}/options/all?${orgQuery(config, { tag_id: tag.tag_id })}`, token);
+  const option = options.results?.find(value => value.option_name === "Shivayonic Invites" && value.option_id && value.is_active !== false);
   if (!option?.option_id) throw new ZohoError("ZOHO_BUSINESS_UNIT_OPTION_REQUIRED");
   return { tagId: tag.tag_id, optionId: option.option_id };
 }
@@ -130,7 +130,7 @@ async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrde
     customerId = contact.contact?.contact_id ?? null;
   }
   if (!customerId) throw new ZohoError("ZOHO_CUSTOMER_FAILED");
-  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, is_inclusive_tax: true, line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100, tags: [{ tag_id: businessUnit.tagId, tag_option_id: businessUnit.optionId }] }] }) });
+  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, is_inclusive_tax: true, tags: [{ tag_id: businessUnit.tagId, tag_option_id: businessUnit.optionId }], line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100, tags: [{ tag_id: businessUnit.tagId, tag_option_id: businessUnit.optionId }] }] }) });
   if (!created.invoice?.invoice_id) throw new ZohoError("ZOHO_INVOICE_FAILED");
   return getInvoice(config, token, created.invoice.invoice_id);
 }
