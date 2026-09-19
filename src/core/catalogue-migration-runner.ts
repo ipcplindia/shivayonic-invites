@@ -54,7 +54,7 @@ export async function runCatalogueMigration(db: MigrationDb = prisma): Promise<C
 
     return await db.$transaction(async (tx) => {
       stage = "acquire_lock";
-      await tx.$queryRawUnsafe("SELECT pg_advisory_xact_lock($1)", MIGRATION_LOCK_KEY);
+      await tx.$executeRawUnsafe("SELECT pg_advisory_xact_lock($1)", MIGRATION_LOCK_KEY);
       stage = "check_failed_migrations";
       const failed = await tx.$queryRawUnsafe<MigrationRow[]>(
         'SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations" WHERE finished_at IS NULL AND rolled_back_at IS NULL',
