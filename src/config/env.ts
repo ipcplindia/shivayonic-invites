@@ -1,9 +1,10 @@
 import { z } from "zod";
 
 import { tokenEncryptionKeyBytes } from "@/core/token-encryption";
+import { razorpayConfig } from "@/config/razorpay";
 
 const serverSchema = z.object({
-  DATABASE_URL: z.string().url().startsWith("postgres"),
+  DATABASE_URL: z.string().url().startsWith("postgres").optional(),
   OBJECT_STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
   LOCAL_MEDIA_STORAGE_PATH: z.string().min(1).default(".shivayonic-media"),
   OBJECT_STORAGE_ENDPOINT: z.string().url().optional(),
@@ -27,7 +28,17 @@ const serverSchema = z.object({
   RAZORPAY_KEY_ID: z.string().min(1).optional(),
   RAZORPAY_KEY_SECRET: z.string().min(1).optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1).optional(),
+  RAZORPAY_MODE: z.enum(["TEST", "LIVE"]).optional(),
 }).superRefine((value, context) => {
+  if (value.PAYMENTS_ENABLED === "true") {
+    try { razorpayConfig(); } catch { context.addIssue({ code: "custom", path: ["RAZORPAY_MODE"], message: "Payment mode, deployment environment and credentials must agree." }); }
+  }
+  const selectedDatabaseUrl = process.env.VERCEL_ENV === "preview"
+    ? (process.env.PREVIEWDB_PRISMA_DATABASE_URL ?? process.env.PREVIEWDB_DATABASE_URL)
+    : (process.env.DATABASE_PRISMA_DATABASE_URL ?? value.DATABASE_URL);
+  if (!selectedDatabaseUrl || !selectedDatabaseUrl.startsWith("postgres")) {
+    context.addIssue({ code: "custom", path: ["DATABASE_URL"], message: process.env.VERCEL_ENV === "preview" ? "Preview database URL is required." : "DATABASE_URL is required." });
+  }
   if (process.env.NODE_ENV === "production" && value.OBJECT_STORAGE_DRIVER !== "s3") {
     context.addIssue({ code: "custom", path: ["OBJECT_STORAGE_DRIVER"], message: "OBJECT_STORAGE_DRIVER must be s3 in production." });
   }
@@ -48,6 +59,8 @@ const serverSchema = z.object({
 });
 
 const clientSchema = z.object({ NEXT_PUBLIC_APP_URL: z.string().url() });
+type EnvironmentMap = Record<string, string | undefined>;
+export function getDatabaseUrl(env: EnvironmentMap = process.env) { const preview = env.VERCEL_ENV === "preview"; const url = preview ? (env.PREVIEWDB_PRISMA_DATABASE_URL ?? env.PREVIEWDB_DATABASE_URL) : (env.DATABASE_PRISMA_DATABASE_URL ?? env.DATABASE_URL); if (url?.startsWith("postgres")) return url; if (!preview && env.NODE_ENV === "test") return "postgresql://test:test@localhost:5432/test"; throw new Error(preview ? "PREVIEW_DATABASE_URL_REQUIRED" : "DATABASE_URL_REQUIRED"); }
 
 export function getServerConfig() {
   const result = serverSchema.safeParse(process.env);
@@ -60,3 +73,4 @@ export function getClientConfig() {
   if (!result.success) throw new Error(`Invalid client configuration: ${result.error.message}`);
   return result.data;
 }
+

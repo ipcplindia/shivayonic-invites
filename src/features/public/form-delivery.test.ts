@@ -74,12 +74,8 @@ describe("form delivery", () => {
     const reopened = await PDFDocument.load(decoded);
     expect(reopened.getPageCount()).toBe(8);
 
-    const acro = reopened.getForm();
-    expect(acro.getTextField("wedding_01_client_name_001").getText()).toBe("Amit Poddar");
-    expect(acro.getTextField("wedding_01_first_draft_due_008").getText()).toBe("15/12/2026");
-    expect(acro.getCheckBox("wedding_01_occasion_3_haldi_013").isChecked()).toBe(true);
-
-    // Every widget needs a drawn appearance, or a viewer shows the fields blank.
-    expect(acro.getFields().length).toBeGreaterThan(300);
+    // Values are painted into the original offline layout. No viewer-dependent
+    // widgets remain, so the emailed attachment opens consistently.
+    expect(reopened.getForm().getFields()).toHaveLength(0);
   }, 60000);
 });

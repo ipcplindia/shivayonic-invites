@@ -19,7 +19,7 @@ export default function Page() {
         <SectionHead
           center={false}
           eyebrow="Checkout"
-          lede="Tell us where to reach you. We confirm every commission personally before any payment is taken."
+          lede="Tell us where to reach you, then review your details before secure payment."
           title="Your details"
         />
       </Band>

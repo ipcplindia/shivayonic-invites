@@ -4,6 +4,7 @@ import { auth } from "@/auth/auth";
 import { recordSecurityAudit } from "@/auth/audit";
 import { checkLoginRateLimit } from "@/auth/rate-limit";
 import { prisma } from "@/db/client";
+import { ensurePreviewBaseline } from "@/auth/ensure-preview-baseline";
 
 const loginInputSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    await ensurePreviewBaseline();
     const response = await auth.api.signInEmail({ body: parsed.data, asResponse: true, headers: request.headers });
     if (!response.ok) throw new Error("INVALID_CREDENTIALS");
     const user = await prisma.user.findUnique({ where: { email }, include: { memberships: { take: 1 } } });

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 
 const mocks = vi.hoisted(() => ({ findUnique: vi.fn(), createEnquiry: vi.fn(), createIntent: vi.fn(), audit: vi.fn(), transaction: vi.fn(), organization: vi.fn() }));
@@ -10,16 +10,18 @@ import { checkoutInputSchema, parseApprovedMinor, persistPublicCheckout, resolve
 const input = {
   idempotencyKey: "4187612f-6e12-46c8-a217-b3a2e5ac11f4",
   customer: { name: "Customer", email: "customer@example.test", phone: "9999999999", whatsapp: "", address1: "1 Test Road", address2: "", city: "Mumbai", state: "MH", pincode: "400001", country: "India", eventDate: "", eventLocation: "", notes: "", contactEmail: "yes", contactSms: "", marketing: "" },
-  design: { slug: "floral", name: "Floral", occasion: "Wedding", style: "Classic" }, selectedPlan: "silver" as const, briefSubmitted: true,
+  design: { slug: "diwali-nights", name: "Forged", occasion: "Forged", style: "Forged" }, selectedPlan: "silver" as const, briefSubmitted: true,
 };
 
 describe("server-authoritative checkout", () => {
   beforeEach(() => {
     vi.clearAllMocks(); mocks.organization.mockResolvedValue("org-1"); mocks.findUnique.mockResolvedValue(null);
-    mocks.createEnquiry.mockResolvedValue({ id: "enquiry-1", status: "PAYMENT_PENDING_APPROVAL" });
+    vi.stubEnv("RAZORPAY_MODE", "TEST"); vi.stubEnv("VERCEL_ENV", "preview");
+    mocks.createEnquiry.mockResolvedValue({ id: "enquiry-1", status: "PAYMENT_READY" });
     mocks.createIntent.mockResolvedValue({ id: "intent-1" });
     mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ checkoutEnquiry: { create: mocks.createEnquiry }, paymentIntent: { create: mocks.createIntent }, auditLog: { create: mocks.audit } }));
   });
+  afterEach(() => vi.unstubAllEnvs());
 
   it("rejects client price, money, currency, status, and provider fields", () => {
     for (const forbidden of ["price", "amount", "currency", "status", "provider", "providerPaymentId", "providerOrderId", "approvedAmount"]) {
@@ -31,15 +33,24 @@ describe("server-authoritative checkout", () => {
   it("uses server Silver pricing and persists an enquiry plus intent atomically", async () => {
     const result = await persistPublicCheckout(input);
     expect(result).toEqual(expect.objectContaining({ enquiryId: "enquiry-1", paymentIntentId: "intent-1", reused: false }));
-    expect(mocks.createEnquiry).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ planKey: "SILVER" }) }));
-    expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ amountMinor: 5_000_000n, currency: "INR", status: "PENDING_APPROVAL" }) }));
+    expect(mocks.createEnquiry).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ planKey: "SILVER", designName: "Diwali Nights", designOccasion: "Diwali", designStyle: "Heritage" }) }));
+    expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ amountMinor: 5_000_000n, currency: "INR", status: "READY" }) }));
+    expect(result.orderUrl).toMatch(/^\/order\/enquiry-1#access=[a-f0-9]{64}$/);
+    expect(JSON.stringify(mocks.createIntent.mock.calls, (_, value) => typeof value === "bigint" ? String(value) : value)).not.toContain(result.paymentAccessToken);
+  });
+
+  it("requires the completed brief before a fixed plan becomes payable", async () => {
+    await expect(persistPublicCheckout({ ...input, briefSubmitted: false })).rejects.toThrow("CHECKOUT_BRIEF_REQUIRED");
+    expect(mocks.transaction).not.toHaveBeenCalled();
   });
 
   it("reuses an idempotent checkout without another payment intent", async () => {
     const { idempotencyKey, ...payload } = input;
     void idempotencyKey;
-    mocks.findUnique.mockResolvedValue({ id: "enquiry-1", requestFingerprint: createHash("sha256").update(JSON.stringify(payload)).digest("hex"), status: "PAYMENT_PENDING_APPROVAL", paymentIntent: { id: "intent-1" } });
-    await expect(persistPublicCheckout(input)).resolves.toEqual(expect.objectContaining({ reused: true, paymentIntentId: "intent-1" }));
+    mocks.findUnique.mockResolvedValue({ id: "enquiry-1", requestFingerprint: createHash("sha256").update(JSON.stringify(payload)).digest("hex"), status: "PAYMENT_PENDING_APPROVAL", paymentIntent: { id: "intent-1", providerEnvironment: "TEST" } });
+    const replay = await persistPublicCheckout(input);
+    expect(replay).toEqual(expect.objectContaining({ reused: true, paymentIntentId: "intent-1" }));
+    expect(replay.paymentAccessToken).toBeUndefined(); // Idempotency keys cannot mint new access.
     expect(mocks.transaction).not.toHaveBeenCalled();
   });
 
@@ -48,5 +59,16 @@ describe("server-authoritative checkout", () => {
     expect(() => parseApprovedMinor("1.5")).toThrow("INVALID_PAYMENT_AMOUNT");
     expect(() => parseApprovedMinor("-1")).toThrow("INVALID_PAYMENT_AMOUNT");
     expect(() => parseApprovedMinor("100000000000001")).toThrow("INVALID_PAYMENT_AMOUNT");
+  });
+  it.each(["TEST", "LIVE"])("pins new fixed-plan intents to %s", async mode => {
+    vi.stubEnv("RAZORPAY_MODE", mode); vi.stubEnv("VERCEL_ENV", mode === "TEST" ? "preview" : "production");
+    await persistPublicCheckout(input);
+    expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ providerEnvironment: mode, status: "READY", amountMinor: 5_000_000n }) }));
+  });
+  it.each(["LIVE", null])("rejects an idempotent checkout from environment %s", async providerEnvironment => {
+    const { idempotencyKey, ...payload } = input; void idempotencyKey;
+    mocks.findUnique.mockResolvedValue({ id: "enquiry-1", requestFingerprint: createHash("sha256").update(JSON.stringify(payload)).digest("hex"), paymentIntent: { id: "intent-1", providerEnvironment } });
+    await expect(persistPublicCheckout(input)).rejects.toThrow("PAYMENT_ENVIRONMENT_MISMATCH");
+    expect(mocks.transaction).not.toHaveBeenCalled();
   });
 });

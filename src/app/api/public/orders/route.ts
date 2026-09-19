@@ -31,6 +31,7 @@ export async function POST(request: Request) {
     idempotencyKey: request.headers.get("idempotency-key"),
   });
   if (!parsed.success) {
+    console.error("Public order validation failed", parsed.error.issues.map((issue) => ({ path: issue.path.join("."), code: issue.code })));
     return NextResponse.json(
       { message: "Please check the details and try again." },
       { status: 400 },
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
     const code = error instanceof Error ? error.message : "CHECKOUT_UNAVAILABLE";
     if (code === "IDEMPOTENCY_KEY_REUSED") return NextResponse.json({ message: "This submission key cannot be reused with different details." }, { status: 409 });
     if (code === "CHECKOUT_PLAN_NOT_FOUND") return NextResponse.json({ message: "That plan is not available." }, { status: 400 });
+    if (code === "CHECKOUT_BRIEF_REQUIRED") return NextResponse.json({ message: "Complete the invitation brief before secure payment." }, { status: 400 });
     return NextResponse.json({ message: "We could not save your request right now. Please try again." }, { status: 503 });
   }
 
@@ -102,13 +104,15 @@ export async function POST(request: Request) {
       {
         ok: true,
         enquiryId: persisted.enquiryId,
-        paymentIntentId: persisted.paymentIntentId,
+        orderUrl: persisted.orderUrl,
         status: persisted.status,
+        paymentIntentId: persisted.paymentIntentId,
+        paymentAccessToken: persisted.paymentAccessToken,
         delivery: "pending",
       },
-      { status: 202 },
+      { status: 202, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  return NextResponse.json({ ok: true, enquiryId: persisted.enquiryId, paymentIntentId: persisted.paymentIntentId, status: persisted.status, delivery: "delivered" });
+  return NextResponse.json({ ok: true, orderUrl: persisted.orderUrl, enquiryId: persisted.enquiryId, status: persisted.status, paymentIntentId: persisted.paymentIntentId, paymentAccessToken: persisted.paymentAccessToken, delivery: "delivered" }, { headers: { "Cache-Control": "no-store" } });
 }

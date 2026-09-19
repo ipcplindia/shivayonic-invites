@@ -144,7 +144,7 @@ export function CartView() {
           </div>
         </dl>
         <p className="cartNote">
-          Nothing is charged here. We confirm every commission with you before any payment.
+          Your details are saved at checkout. Fixed plans then continue to secure payment; custom commissions are quoted separately.
         </p>
         <div className="cartActions">
           <Link className="btn btnPrimary" href="/checkout">

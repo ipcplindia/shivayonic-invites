@@ -1,0 +1,249 @@
+import "server-only";
+
+import { prisma } from "@/db/client";
+import { formRecipients } from "@/features/public/data";
+import { sendEmail } from "@/features/public/notify";
+import { assertPaymentEnvironment, razorpayMode, type RazorpayMode } from "@/config/razorpay";
+
+type PaidOrder = { id: string; planKey: string; customerEmail: string; customerName: string; customerPhone: string; address1: string; city: string; state: string; pincode: string; country: string; amountMinor: bigint; currency: string; providerEnvironment: RazorpayMode; providerPaymentId: string | null; paidAt: Date | null; zohoCustomerId: string | null; zohoInvoiceId: string | null; invoiceSentAt: Date | null };
+type ZohoConfig = { itemId: string; organizationId: string; accountsBase: string; booksBase: string; templateId: string };
+type ZohoInvoice = { invoice_id?: string; invoice_number?: string; customer_id?: string; total?: number; balance?: number };
+type ZohoPayment = { payment_id?: string; amount?: number };
+
+function safeZohoMessage(value: unknown) {
+  if (typeof value !== "string") return "WITHHELD";
+  const message = value.toLowerCase();
+  if (message.includes("template")) return "TEMPLATE_REJECTED";
+  if (message.includes("tax")) return "TAX_REJECTED";
+  if (message.includes("tag")) return "TAG_REJECTED";
+  if (message.includes("customer") || message.includes("contact")) return "CUSTOMER_REJECTED";
+  if (message.includes("item") || message.includes("line") || message.includes("rate") || message.includes("amount")) return "LINE_ITEM_REJECTED";
+  return "WITHHELD";
+}
+function samePhone(left?: string, right?: string) {
+  const a = left?.replace(/\D/g, ""); const b = right?.replace(/\D/g, "");
+  return Boolean(a && b && (a === b || a.endsWith(b) || b.endsWith(a)));
+}
+
+class ZohoError extends Error {
+  constructor(readonly code: string, readonly providerCode?: number | string) { super(code); }
+}
+
+/** Opt-in only: payment authority and confirmation email never depend on Zoho. */
+export function zohoInvoicingEnabled() { return process.env.ZOHO_INVOICING_ENABLED === "true"; }
+
+function httpsBase(value: string | undefined) {
+  try { const url = new URL(value ?? ""); return url.protocol === "https:" ? url.toString().replace(/\/$/, "") : null; } catch { return null; }
+}
+
+function zohoConfig(plan: string): ZohoConfig {
+  if (!/^(SILVER|GOLD|PLATINUM|CUSTOM)$/.test(plan)) throw new ZohoError("ZOHO_CONFIGURATION_REQUIRED");
+  const itemId = process.env[`ZOHO_ITEM_${plan}_ID`];
+  const organizationId = process.env.ZOHO_ORGANIZATION_ID;
+  const accountsBase = httpsBase(process.env.ZOHO_ACCOUNTS_BASE_URL);
+  const booksBase = httpsBase(process.env.ZOHO_BOOKS_BASE_URL);
+  const templateId = process.env.ZOHO_INVOICE_TEMPLATE_ID;
+  if (!itemId || !organizationId || !accountsBase || !booksBase || !templateId || !process.env.ZOHO_CLIENT_ID || !process.env.ZOHO_CLIENT_SECRET || !process.env.ZOHO_REFRESH_TOKEN) throw new ZohoError("ZOHO_CONFIGURATION_REQUIRED");
+  return { itemId, organizationId, accountsBase, booksBase, templateId };
+}
+
+function asMinor(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) throw new ZohoError("ZOHO_AMOUNT_MISMATCH");
+  return BigInt(Math.round(value * 100));
+}
+
+function asDate(value: Date | null) { return (value ?? new Date()).toISOString().slice(0, 10); }
+function reference(order: PaidOrder) { return `${order.providerEnvironment === "TEST" ? "SHIVAYONIC TEST" : "SHIVAYONIC"} ${order.id}`; }
+
+async function zohoToken(config: ZohoConfig) {
+  // Vercel secret entries can retain surrounding whitespace; OAuth credentials cannot.
+  const body = new URLSearchParams({ refresh_token: process.env.ZOHO_REFRESH_TOKEN!.trim(), client_id: process.env.ZOHO_CLIENT_ID!.trim(), client_secret: process.env.ZOHO_CLIENT_SECRET!.trim(), grant_type: "refresh_token" });
+  let response: Response;
+  try { response = await fetch(`${config.accountsBase}/oauth/v2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body, cache: "no-store", signal: AbortSignal.timeout(10_000) }); } catch { throw new ZohoError("ZOHO_TRANSIENT"); }
+  const value = await response.json().catch(() => null) as { access_token?: string; error?: unknown } | null;
+  if (!response.ok || !value?.access_token) {
+    console.error("Zoho OAuth token request failed", {
+      status: response.status,
+      code: typeof value?.error === "string" ? value.error : "UNKNOWN",
+    });
+    throw new ZohoError(response.status >= 500 ? "ZOHO_TRANSIENT" : "ZOHO_AUTH_FAILED");
+  }
+  return value.access_token;
+}
+
+async function zohoRequest<T>(url: string, token: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+  try { response = await fetch(url, { ...init, headers: { Authorization: `Zoho-oauthtoken ${token}`, "content-type": "application/json", ...(init?.headers ?? {}) }, cache: "no-store", signal: AbortSignal.timeout(15_000) }); } catch { throw new ZohoError("ZOHO_TRANSIENT"); }
+  const value = await response.json().catch(() => null) as { code?: number; message?: unknown } | null;
+  if (response.status === 401 || response.status === 403) throw new ZohoError("ZOHO_AUTH_RETRY");
+  if (response.status === 429) throw new ZohoError("ZOHO_RATE_LIMITED");
+  if (response.status >= 500) throw new ZohoError("ZOHO_TRANSIENT");
+  if (!response.ok || !value || (typeof value.code === "number" && value.code !== 0)) {
+    console.error("Zoho Books request rejected", {
+      path: new URL(url).pathname,
+      status: response.status,
+      code: typeof value?.code === "number" ? value.code : "UNKNOWN",
+      message: safeZohoMessage(value?.message),
+    });
+    throw new ZohoError("ZOHO_API_REJECTED", typeof value?.code === "number" || typeof value?.code === "string" ? value.code : undefined);
+  }
+  return value as T;
+}
+
+async function withZohoToken<T>(config: ZohoConfig, work: (token: string) => Promise<T>) {
+  let token = await zohoToken(config);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try { return await work(token); } catch (error) {
+      if (!(error instanceof ZohoError) || error.code !== "ZOHO_AUTH_RETRY" || attempt) throw error;
+      token = await zohoToken(config);
+    }
+  }
+  throw new ZohoError("ZOHO_AUTH_FAILED");
+}
+
+function orgQuery(config: ZohoConfig, values: Record<string, string>) { return new URLSearchParams({ organization_id: config.organizationId, ...values }); }
+
+async function getInvoice(config: ZohoConfig, token: string, id: string) {
+  const result = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices/${encodeURIComponent(id)}?${orgQuery(config, {})}`, token);
+  if (!result.invoice?.invoice_id) throw new ZohoError("ZOHO_INVOICE_FAILED");
+  return result.invoice;
+}
+
+async function resolveBusinessUnitTag(config: ZohoConfig, token: string) {
+  const tags = await zohoRequest<{ reporting_tags?: Array<{ tag_id?: string; tag_name?: string }>; tags?: Array<{ tag_id?: string; tag_name?: string }> }>(`${config.booksBase}/reportingtags?${orgQuery(config, {})}`, token);
+  const tag = (tags.reporting_tags ?? tags.tags ?? []).find(value => value.tag_name === "Business Unit" && value.tag_id);
+  if (!tag?.tag_id) throw new ZohoError("ZOHO_BUSINESS_UNIT_TAG_REQUIRED");
+  const options = await zohoRequest<{ results?: Array<{ option_id?: string; option_name?: string; is_active?: boolean }> }>(`${config.booksBase}/reportingtags/${encodeURIComponent(tag.tag_id)}/options/all?${orgQuery(config, { tag_id: tag.tag_id })}`, token);
+  const option = options.results?.find(value => value.option_name === "Shivayonic Invites" && value.option_id && value.is_active !== false);
+  if (!option?.option_id) throw new ZohoError("ZOHO_BUSINESS_UNIT_OPTION_REQUIRED");
+  return { tagId: tag.tag_id, optionId: option.option_id };
+}
+
+type ZohoContact = { contact_id?: string; contact_name?: string; email?: string; phone?: string };
+
+async function findCustomerContact(config: ZohoConfig, token: string, order: PaidOrder) {
+  const searches: Array<Record<string, string>> = [
+    { email: order.customerEmail },
+    { phone: order.customerPhone },
+    { contact_name: order.customerName },
+  ];
+  for (const search of searches) {
+    const matches = await zohoRequest<{ contacts?: ZohoContact[] }>(`${config.booksBase}/contacts?${orgQuery(config, search)}`, token);
+    const found = matches.contacts?.find(contact => {
+      if (!contact.contact_id) return false;
+      const emailMatches = contact.email?.trim().toLowerCase() === order.customerEmail.trim().toLowerCase();
+      const phoneMatches = samePhone(contact.phone, order.customerPhone);
+      const nameMatches = contact.contact_name?.trim().toLowerCase() === order.customerName.trim().toLowerCase();
+      return emailMatches || phoneMatches || nameMatches;
+    });
+    if (found?.contact_id) return found.contact_id;
+  }
+  return null;
+}
+
+async function resolveInvoice(config: ZohoConfig, token: string, order: PaidOrder, businessUnit: { tagId: string; optionId: string }) {
+  if (order.zohoInvoiceId) return getInvoice(config, token, order.zohoInvoiceId);
+  const found = await zohoRequest<{ invoices?: ZohoInvoice[] }>(`${config.booksBase}/invoices?${orgQuery(config, { reference_number: reference(order) })}`, token);
+  const existing = found.invoices?.find(invoice => invoice.invoice_id);
+  if (existing?.invoice_id) return getInvoice(config, token, existing.invoice_id);
+  let customerId = order.zohoCustomerId;
+  if (!customerId) customerId = await findCustomerContact(config, token, order);
+  if (!customerId) {
+    try {
+      const contact = await zohoRequest<{ contact?: { contact_id?: string } }>(`${config.booksBase}/contacts?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ contact_name: order.customerName, contact_type: "customer", email: order.customerEmail, phone: order.customerPhone, billing_address: { address: order.address1, city: order.city, state: order.state, zip: order.pincode, country: order.country } }) });
+      customerId = contact.contact?.contact_id ?? null;
+    } catch (error) {
+      if (!(error instanceof ZohoError) || String(error.providerCode) !== "3062") throw error;
+      customerId = await findCustomerContact(config, token, order);
+    }
+  }
+  if (!customerId) throw new ZohoError("ZOHO_CUSTOMER_FAILED");
+  const created = await zohoRequest<{ invoice?: ZohoInvoice }>(`${config.booksBase}/invoices?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: customerId, reference_number: reference(order), template_id: config.templateId, is_inclusive_tax: true, line_items: [{ item_id: config.itemId, quantity: 1, rate: Number(order.amountMinor) / 100, tags: [{ tag_id: businessUnit.tagId, tag_option_id: businessUnit.optionId }] }] }) });
+  if (!created.invoice?.invoice_id) throw new ZohoError("ZOHO_INVOICE_FAILED");
+  return getInvoice(config, token, created.invoice.invoice_id);
+}
+
+async function resolveCustomerPayment(config: ZohoConfig, token: string, order: PaidOrder, invoice: ZohoInvoice) {
+  if (!order.providerPaymentId || !invoice.invoice_id || !invoice.customer_id) throw new ZohoError("ZOHO_PAYMENT_REFERENCE_REQUIRED");
+  const found = await zohoRequest<{ payments?: ZohoPayment[] }>(`${config.booksBase}/customerpayments?${orgQuery(config, { reference_number: order.providerPaymentId })}`, token);
+  const existing = found.payments?.find(payment => payment.payment_id);
+  if (existing) {
+    if (existing.amount !== undefined && asMinor(existing.amount) !== order.amountMinor) throw new ZohoError("ZOHO_AMOUNT_MISMATCH");
+    return existing;
+  }
+  const created = await zohoRequest<{ payment?: ZohoPayment }>(`${config.booksBase}/customerpayments?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: invoice.customer_id, payment_mode: "others", amount: Number(order.amountMinor) / 100, date: asDate(order.paidAt), reference_number: order.providerPaymentId, description: `${order.providerEnvironment === "TEST" ? "SHIVAYONIC TEST " : ""}Razorpay payment`, invoices: [{ invoice_id: invoice.invoice_id, amount_applied: Number(order.amountMinor) / 100 }] }) });
+  if (!created.payment?.payment_id) throw new ZohoError("ZOHO_CUSTOMER_PAYMENT_FAILED");
+  return created.payment;
+}
+
+async function createZohoInvoice(order: PaidOrder) {
+  const config = zohoConfig(order.planKey);
+  return withZohoToken(config, async token => {
+    const invoice = await resolveInvoice(config, token, order, await resolveBusinessUnitTag(config, token));
+    if (!invoice.invoice_id || asMinor(invoice.total) !== order.amountMinor) throw new ZohoError("ZOHO_AMOUNT_MISMATCH");
+    const payment = await resolveCustomerPayment(config, token, order, invoice);
+    const paidInvoice = await getInvoice(config, token, invoice.invoice_id);
+    if (asMinor(paidInvoice.total) !== order.amountMinor || asMinor(paidInvoice.balance) !== 0n) throw new ZohoError("ZOHO_PAYMENT_RECONCILIATION_REQUIRED");
+    return { token, config, invoice: paidInvoice, customerId: paidInvoice.customer_id ?? invoice.customer_id ?? null, payment };
+  });
+}
+
+export async function sendPaidConfirmation(paymentIntentId: string) {
+  const providerEnvironment = razorpayMode();
+  const claimTime = new Date();
+  const claimed = await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, status: "PAID", providerEnvironment, paymentConfirmationSentAt: null }, data: { paymentConfirmationSentAt: claimTime } });
+  if (!claimed.count) return;
+  const payment = await prisma.paymentIntent.findUnique({ where: { id: paymentIntentId }, include: { enquiry: true } });
+  if (!payment?.enquiry) {
+    await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, providerEnvironment, paymentConfirmationSentAt: claimTime }, data: { paymentConfirmationSentAt: null } });
+    return;
+  }
+  assertPaymentEnvironment(payment.providerEnvironment);
+  const customerBody = `Thank you for your purchase.\n\nDesign: ${payment.enquiry.designName || "Invitation"}\nPlan: ${payment.enquiry.planKey}\nAmount: ${payment.currency} ${(payment.amountMinor / 100n).toLocaleString("en-IN")}\nReference: ${payment.enquiry.id}\n\nYour payment has been received. Keep your private order link or sign in to My Orders for updates.`;
+  const ownerBody = `A payment was received for a Shivayonic Invites order.\n\nCustomer: ${payment.enquiry.customerName}\nEmail: ${payment.enquiry.customerEmail}\nDesign: ${payment.enquiry.designName || "Invitation"}\nPlan: ${payment.enquiry.planKey}\nAmount: ${payment.currency} ${(payment.amountMinor / 100n).toLocaleString("en-IN")}\nReference: ${payment.enquiry.id}\nProvider payment: ${payment.providerPaymentId || "not available"}`;
+  const targets = [payment.enquiry.customerEmail, formRecipients.email].filter((target, index, values) => target && values.indexOf(target) === index);
+  const results = await Promise.all([
+    sendEmail({ subject: "Payment received — Shivayonic Invites", short: "", body: customerBody }, payment.enquiry.customerEmail),
+    ...(targets.includes(formRecipients.email) && formRecipients.email !== payment.enquiry.customerEmail
+      ? [sendEmail({ subject: `Payment received — ${payment.enquiry.id}`, short: "", body: ownerBody }, formRecipients.email)]
+      : []),
+  ]);
+  if (results.every(result => result.ok)) return;
+  console.error("Paid notification delivery failed", { code: "DELIVERY_FAILED" });
+  await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, providerEnvironment, paymentConfirmationSentAt: claimTime }, data: { paymentConfirmationSentAt: null } });
+}
+
+function failureStatus(error: unknown) {
+  const code = error instanceof ZohoError ? error.code : "ZOHO_TRANSIENT";
+  return ["ZOHO_CONFIGURATION_REQUIRED", "ZOHO_AMOUNT_MISMATCH", "ZOHO_PAYMENT_REFERENCE_REQUIRED", "ZOHO_API_REJECTED", "ZOHO_AUTH_FAILED"].includes(code) ? "FAILED" as const : "RETRY_REQUIRED" as const;
+}
+
+/** Idempotent: durable claims and stable Zoho references prevent duplicate invoices or payments. */
+export async function createInvoiceForPaidOrder(paymentIntentId: string) {
+  if (!zohoInvoicingEnabled()) return;
+  const providerEnvironment = razorpayMode();
+  const claimed = await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, status: "PAID", providerEnvironment, OR: [{ invoiceStatus: null }, { invoiceStatus: "RETRY_REQUIRED" }, { invoiceStatus: "FAILED" }] }, data: { invoiceStatus: "PENDING" } });
+  if (!claimed.count) return;
+  const payment = await prisma.paymentIntent.findUnique({ where: { id: paymentIntentId }, include: { enquiry: true } });
+  if (!payment?.enquiry) return;
+  assertPaymentEnvironment(payment.providerEnvironment);
+  const order: PaidOrder = { id: payment.id, planKey: payment.enquiry.planKey, customerEmail: payment.enquiry.customerEmail, customerName: payment.enquiry.customerName, customerPhone: payment.enquiry.customerPhone, address1: payment.enquiry.address1, city: payment.enquiry.city, state: payment.enquiry.state, pincode: payment.enquiry.pincode, country: payment.enquiry.country, amountMinor: payment.amountMinor, currency: payment.currency, providerEnvironment, providerPaymentId: payment.providerPaymentId, paidAt: payment.paidAt, zohoCustomerId: payment.zohoCustomerId, zohoInvoiceId: payment.zohoInvoiceId, invoiceSentAt: payment.invoiceSentAt };
+  try {
+    const created = await createZohoInvoice(order);
+    const invoiceId = created.invoice.invoice_id!;
+    await prisma.paymentIntent.update({ where: { id: payment.id, providerEnvironment }, data: { invoiceStatus: "PAID", zohoCustomerId: created.customerId, zohoInvoiceId: invoiceId, invoiceNumber: created.invoice.invoice_number ?? null, invoiceCreatedAt: payment.invoiceCreatedAt ?? new Date() } });
+    if (order.invoiceSentAt) return;
+    try {
+      await zohoRequest(`${created.config.booksBase}/invoices/${encodeURIComponent(invoiceId)}/email?${orgQuery(created.config, {})}`, created.token, { method: "POST", body: JSON.stringify({ to_mail_ids: [order.customerEmail] }) });
+      await prisma.paymentIntent.update({ where: { id: payment.id, providerEnvironment }, data: { invoiceStatus: "SENT", invoiceSentAt: new Date() } });
+    } catch { await prisma.paymentIntent.update({ where: { id: payment.id, providerEnvironment }, data: { invoiceStatus: "RETRY_REQUIRED" } }); }
+  } catch (error) {
+    const code = error instanceof ZohoError ? error.code : "ZOHO_TRANSIENT";
+    console.error("Zoho invoice workflow failed", { code });
+    await prisma.paymentIntent.update({ where: { id: payment.id, providerEnvironment }, data: { invoiceStatus: failureStatus(error) } });
+  }
+}
+
+export async function runPaidOrderWorkflow(paymentIntentId: string) {
+  await Promise.allSettled([sendPaidConfirmation(paymentIntentId), createInvoiceForPaidOrder(paymentIntentId)]);
+}

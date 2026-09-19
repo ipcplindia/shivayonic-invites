@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ transaction: vi.fn(), findEvent: vi.fn(), findIntent: vi.fn(), updateIntent: vi.fn(), updateEvent: vi.fn(), audit: vi.fn() }));
 vi.mock("@/db/client", () => ({ prisma: { $transaction: mocks.transaction } }));
@@ -8,8 +8,10 @@ import { applyVerifiedProviderEvent } from "@/core/payment";
 describe("verified provider event authority", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ paymentProviderEvent: { findFirst: mocks.findEvent, update: mocks.updateEvent }, paymentIntent: { findUnique: mocks.findIntent, update: mocks.updateIntent }, auditLog: { create: mocks.audit } }));
+    vi.stubEnv("RAZORPAY_MODE", "TEST"); vi.stubEnv("VERCEL_ENV", "preview");
+    mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ paymentProviderEvent: { findFirst: async () => { const event = await mocks.findEvent(); return event ? { captured: true, providerEnvironment: "TEST", eventType: "payment.captured", processingStatus: "RECEIVED", ...event } : null; }, update: mocks.updateEvent }, paymentIntent: { findUnique: async () => ({ providerEnvironment: "TEST", ...await mocks.findIntent() }), updateMany: async (args: unknown) => { await mocks.updateIntent(args); return { count: 1 }; } }, auditLog: { create: mocks.audit } }));
   });
+  afterEach(() => vi.unstubAllEnvs());
 
   it("does not accept an unverified stored event", async () => {
     mocks.findEvent.mockResolvedValue(null);

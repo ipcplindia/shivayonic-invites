@@ -161,7 +161,7 @@ export const legalDocs: Record<string, LegalDoc> = {
       {
         heading: "Prices, taxes and quotations",
         body:
-          "Prices shown on the site are indicative starting points for the level of service described. The price for your commission is the one we confirm to you in writing, and it depends on scope, complexity and delivery timeline. All prices are in Indian Rupees. Applicable taxes are charged as required by law and shown separately on the invoice. Nothing is charged through this website today; payment is arranged with you directly, and we will tell you plainly before any amount becomes due.",
+          "Fixed-plan totals are shown before you submit your details and are charged only after you review them and continue to secure payment. Custom commissions are quoted and approved before payment. All amounts are in Indian Rupees. Applicable taxes are included or shown on the invoice as required by law, and the invoice is sent to the email address you provide.",
       },
       {
         heading: "Delivery",

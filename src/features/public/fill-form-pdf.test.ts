@@ -49,13 +49,10 @@ describe("fillFormPdf", () => {
     expect(blob.type).toBe("application/pdf");
     expect(blob.size).toBeGreaterThan(1000);
 
-    // Read it back through pdf-lib rather than trusting the write.
+    // Completed email PDFs are flattened so every PDF viewer shows the values.
     const { PDFDocument } = await import("pdf-lib");
     const filled = await PDFDocument.load(await blob.arrayBuffer());
-    const acro = filled.getForm();
-    expect(acro.getTextField("wedding_01_client_name_001").getText()).toBe("Amit Poddar");
-    expect(acro.getTextField("wedding_01_first_draft_due_008").getText()).toBe("15/12/2026");
-    expect(acro.getCheckBox("wedding_01_occasion_3_haldi_013").isChecked()).toBe(true);
+    expect(filled.getForm().getFields()).toHaveLength(0);
   }, 30000);
 
   it("keeps a long answer instead of leaving the capped box empty", async () => {
@@ -77,10 +74,7 @@ describe("fillFormPdf", () => {
     const before = await PDFDocument.load(await short.blob.arrayBuffer());
     const after = await PDFDocument.load(await overlong.blob.arrayBuffer());
 
-    const written = after.getForm().getTextField(capped).getText() ?? "";
-    expect(written.length).toBeLessThanOrEqual(100);
-    expect(written.startsWith("Aarav and Meera")).toBe(true);
-    expect(written.endsWith("…")).toBe(true);
+    expect(after.getForm().getFields()).toHaveLength(0);
 
     // ...and the full answer is carried on an appended page rather than lost.
     expect(after.getPageCount()).toBeGreaterThan(before.getPageCount());

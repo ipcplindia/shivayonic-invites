@@ -4,7 +4,11 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 
 import { prisma } from "@/db/client";
+import { assertPaymentEnvironment, newPaymentEnvironment } from "@/config/razorpay";
 import { getPublicOrganizationId } from "@/core/public-organization";
+import { createPaymentCapability } from "@/core/payment-capability";
+import { customerOrderPath, sendOrderEmail } from "@/core/customer-order";
+import { featuredBySlug } from "@/features/public/data";
 
 const MAX_MINOR_UNITS = 100_000_000_000_000n;
 
@@ -53,6 +57,8 @@ function requestFingerprint(input: CheckoutInput) {
 }
 
 export type PersistedCheckout = {
+  orderUrl?: string;
+  paymentAccessToken?: string;
   enquiryId: string;
   paymentIntentId: string | null;
   status: string;
@@ -66,43 +72,54 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
   if (!organizationId) throw new Error("CHECKOUT_ORGANIZATION_UNAVAILABLE");
   const fingerprint = requestFingerprint(input);
   const plan = resolveCanonicalPlan(input.selectedPlan);
+  const design = input.design ? featuredBySlug(input.design.slug) : null;
+  // A fixed-price checkout is only payable after its required brief exists.
+  if (plan?.amountMinor && (!design || !input.briefSubmitted)) throw new Error("CHECKOUT_BRIEF_REQUIRED");
 
-  const existing = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true } } } });
+  const environment = newPaymentEnvironment();
+  const existing = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true, providerEnvironment: true } } } });
   if (existing) {
     if (existing.requestFingerprint !== fingerprint) throw new Error("IDEMPOTENCY_KEY_REUSED");
+    if (existing.paymentIntent) assertPaymentEnvironment(existing.paymentIntent.providerEnvironment);
     return { enquiryId: existing.id, paymentIntentId: existing.paymentIntent?.id ?? null, status: existing.status, planName: plan?.name ?? null, reused: true };
   }
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    const saved = await prisma.$transaction(async (tx) => {
       const enquiry = await tx.checkoutEnquiry.create({
         data: {
           organizationId, idempotencyKey: input.idempotencyKey, requestFingerprint: fingerprint,
-          status: plan?.amountMinor ? "PAYMENT_PENDING_APPROVAL" : "RECEIVED", planKey: plan?.planKey ?? "CUSTOM",
-          designSlug: input.design?.slug ?? null, designName: input.design?.name ?? null, designOccasion: input.design?.occasion ?? null, designStyle: input.design?.style ?? null,
+          status: plan?.amountMinor ? "PAYMENT_READY" : "RECEIVED", planKey: plan?.planKey ?? "CUSTOM",
+          designSlug: design?.slug ?? null, designName: design?.name ?? null, designOccasion: design?.occasion ?? null, designStyle: design?.style ?? null,
           customerName: input.customer.name, customerEmail: input.customer.email, customerPhone: input.customer.phone, customerWhatsapp: nullable(input.customer.whatsapp),
           address1: input.customer.address1, address2: nullable(input.customer.address2), city: input.customer.city, state: input.customer.state, pincode: input.customer.pincode,
           country: input.customer.country || "India", eventDate: nullable(input.customer.eventDate), eventLocation: nullable(input.customer.eventLocation), notes: nullable(input.customer.notes),
           contactEmail: selected(input.customer.contactEmail), contactSms: selected(input.customer.contactSms), marketing: selected(input.customer.marketing), briefSubmitted: input.briefSubmitted,
         },
       });
+      const capability = createPaymentCapability(enquiry.id);
       const paymentIntent = plan?.amountMinor
         ? await tx.paymentIntent.create({
             data: {
-              organizationId, enquiryId: enquiry.id, status: "PENDING_APPROVAL", currency: "INR", amountMinor: plan.amountMinor,
+              organizationId, enquiryId: enquiry.id, status: "READY", currency: "INR", amountMinor: plan.amountMinor, providerEnvironment: environment,
+              paymentAccessHash: capability!.hash, paymentAccessExpiresAt: capability!.expiresAt,
               purpose: `${plan.name} checkout enquiry`, paymentMode: "FULL", totalOrderAmountMinor: plan.amountMinor,
               approvedAmountMinor: plan.amountMinor, amountAlreadyPaidMinor: 0n, balanceDueMinor: plan.amountMinor,
             }, select: { id: true },
           })
         : null;
+      if (!paymentIntent) await tx.verification.create({ data: { id: `order-access:${enquiry.id}`, identifier: organizationId, value: capability.hash, expiresAt: capability.expiresAt } });
       await tx.auditLog.create({ data: { organizationId, action: "CHECKOUT_PERSISTED", entityType: "CheckoutEnquiry", entityId: enquiry.id, metadata: { plan: plan?.planKey ?? "CUSTOM", paymentIntentCreated: Boolean(paymentIntent) } } });
       if (paymentIntent) await tx.auditLog.create({ data: { organizationId, action: "PAYMENT_INTENT_CREATED", entityType: "PaymentIntent", entityId: paymentIntent.id, metadata: { source: "PUBLIC_CHECKOUT" } } });
-      return { enquiryId: enquiry.id, paymentIntentId: paymentIntent?.id ?? null, status: enquiry.status, planName: plan?.name ?? null, reused: false };
+      return { enquiryId: enquiry.id, paymentIntentId: paymentIntent?.id ?? null, paymentAccessToken: capability.token, orderUrl: customerOrderPath(enquiry.id, capability.token), status: enquiry.status, planName: plan?.name ?? null, reused: false };
     });
+    await sendOrderEmail({ id: saved.enquiryId, customerEmail: input.customer.email, designName: design?.name ?? null, planKey: plan?.planKey ?? "CUSTOM" }, saved.paymentAccessToken, Boolean(plan?.amountMinor));
+    return saved;
   } catch (error) {
     if ((error as { code?: string }).code !== "P2002") throw error;
-    const raced = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true } } } });
+    const raced = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true, providerEnvironment: true } } } });
     if (!raced || raced.requestFingerprint !== fingerprint) throw new Error("IDEMPOTENCY_KEY_REUSED");
+    if (raced.paymentIntent) assertPaymentEnvironment(raced.paymentIntent.providerEnvironment);
     return { enquiryId: raced.id, paymentIntentId: raced.paymentIntent?.id ?? null, status: raced.status, planName: plan?.name ?? null, reused: true };
   }
 }

@@ -208,6 +208,10 @@ export async function fillFormPdf(
   // Draw the values into the page so they show in every viewer, not just ones
   // that regenerate appearances themselves.
   acro.updateFieldAppearances();
+  // Email recipients need a finished production brief, not viewer-dependent
+  // interactive widgets. Flatten preserves the original printed layout while
+  // making every filled value visible in Gmail, mobile, and desktop viewers.
+  acro.flatten();
 
   /*
    * The online form asks more than the printed template has boxes for — a venue
@@ -219,7 +223,10 @@ export async function fillFormPdf(
    */
   if (overflow.length > 0) await appendOverflow(doc, form, overflow);
 
-  const bytes = await doc.save();
+  // These legacy offline AcroForm templates are accepted by pdf-lib with object
+  // streams, but some real viewers reject the resulting xref/filter entries
+  // after flattening. Classic PDF serialization is broadly viewer-compatible.
+  const bytes = await doc.save({ useObjectStreams: false });
   const buffer = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(buffer).set(bytes);
   return {

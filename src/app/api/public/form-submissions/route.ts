@@ -48,23 +48,18 @@ const schema = z.object({
 /**
  * Fills the studio's own PDF with the submitted answers.
  *
- * Returns nothing rather than throwing: a template that will not fill must not
- * cost the studio the submission, so delivery continues with the text body.
+ * A completed brief must include its completed studio PDF. A failed build is
+ * surfaced safely instead of silently emailing an unusable text-only fallback.
  */
 async function buildFormPdf(slug: string, values: Record<string, string | string[]> | undefined) {
   if (!values || Object.keys(values).length === 0) return undefined;
   const form = clientForms.find((candidate) => candidate.slug === slug);
   if (!form) return undefined;
 
-  try {
-    const { blob, fileName } = await fillFormPdf(form, values, async (pdfPath) =>
-      readFile(path.join(process.cwd(), "public", pdfPath.replace(/^\//, ""))),
-    );
-    return { filename: fileName, content: new Uint8Array(await blob.arrayBuffer()) };
-  } catch (error) {
-    console.error("Could not fill the client form PDF:", error);
-    return undefined;
-  }
+  const { blob, fileName } = await fillFormPdf(form, values, async (pdfPath) =>
+    readFile(path.join(process.cwd(), "public", pdfPath.replace(/^\//, ""))),
+  );
+  return { filename: fileName, content: new Uint8Array(await blob.arrayBuffer()) };
 }
 
 export async function POST(request: Request) {
@@ -97,7 +92,14 @@ export async function POST(request: Request) {
     .filter((line) => line !== null)
     .join("\n");
 
-  const attachment = await buildFormPdf(form.formSlug, form.values);
+  let attachment;
+  try {
+    attachment = await buildFormPdf(form.formSlug, form.values);
+  } catch {
+    // No answers, secrets, filesystem paths, or PDF internals in runtime logs.
+    console.error("Client form PDF build failed", { formSlug: form.formSlug });
+    return NextResponse.json({ message: "We could not prepare your completed form. Please try again." }, { status: 503 });
+  }
 
   const results = await deliverSubmission({
     subject: `Client form — ${form.formName}${form.contactName ? ` — ${form.contactName}` : ""}`,

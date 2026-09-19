@@ -4,27 +4,28 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { useCart } from "@/features/public/cart";
+import { PaymentCheckout } from "@/features/public/payment-checkout";
 
 /**
  * Checkout: who the commission is for and where it goes.
  *
- * No payment is taken here. The details are submitted to the studio and the
- * order is confirmed by a person; the payment step is added separately, and
- * this page says so rather than implying a charge has happened.
+ * Fixed plans save first, then open the provider modal on this same page.
  */
 export function CheckoutView() {
   const { design, plan, briefSubmitted, ready, clear } = useCart();
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [payment, setPayment] = useState<{ paymentIntentId: string; paymentAccessToken: string } | null>(null);
   const submissionKey = useRef<string | null>(null);
 
   if (!ready) return <p className="cartNote">Loading…</p>;
 
-  if (!design && !plan) {
+  if (!design && !plan && state !== "sent") {
     return (
       <div className="cartEmpty">
         <p className="sectionLede">There is nothing to check out yet.</p>
         <div className="cartActions">
+          <a className="btn btnGhost" href="/account">View my orders by email</a>
           <Link className="btn btnPrimary" href="/catalogue">
             Browse the collection
           </Link>
@@ -38,9 +39,9 @@ export function CheckoutView() {
       <div className="checkoutDone">
         <h2 className="sectionTitle">Thank you — we have your details.</h2>
         <p className="sectionLede">
-          Our team will contact you to confirm the commission and take it from here. Payment is
-          arranged once the details are agreed.
+          {payment ? "Your details are confirmed. Continue to secure payment." : "Your request is saved. We will contact you about the next step."}
         </p>
+        {payment ? <PaymentCheckout paymentIntentId={payment.paymentIntentId} paymentAccessToken={payment.paymentAccessToken} /> : null}
         <div className="cartActions">
           <Link className="btn btnPrimary" href="/catalogue">
             Continue browsing
@@ -62,7 +63,7 @@ export function CheckoutView() {
         headers: { "content-type": "application/json", "idempotency-key": submissionKey.current ?? (submissionKey.current = globalThis.crypto.randomUUID()) },
         body: JSON.stringify({
           customer: data,
-          design,
+          design: design ? { slug: design.slug, name: design.name, occasion: design.occasion, style: design.style } : null,
           selectedPlan: plan?.key ?? null,
           briefSubmitted,
         }),
@@ -71,8 +72,12 @@ export function CheckoutView() {
         const body = (await res.json().catch(() => null)) as { message?: string } | null;
         throw new Error(body?.message ?? "We could not submit your details.");
       }
-      clear();
+      const saved = await res.json();
       submissionKey.current = null;
+      if (typeof saved.paymentIntentId === "string" && typeof saved.paymentAccessToken === "string") {
+        setPayment({ paymentIntentId: saved.paymentIntentId, paymentAccessToken: saved.paymentAccessToken });
+      }
+      clear();
       setState("sent");
     } catch (error) {
       setState("error");
@@ -152,7 +157,7 @@ export function CheckoutView() {
           <div className="checkoutRow">
             <label className="filterField">
               <span>Event date</span>
-              <input name="eventDate" type="date" />
+              <input name="eventDate" type="date" onClick={(event) => event.currentTarget.showPicker?.()} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") event.currentTarget.showPicker?.(); }} />
             </label>
             <label className="filterField">
               <span>Event city / venue</span>
@@ -211,8 +216,7 @@ export function CheckoutView() {
         ) : null}
 
         <p className="cartNote">
-          No payment is taken on this page. We confirm the commission with you first; online
-          payment is being added shortly.
+          Review your details before continuing to secure payment. Fixed plans are charged only after your details are saved.
         </p>
 
         {message ? (

@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ transaction: vi.fn(), findEnquiry: vi.fn(), createIntent: vi.fn(), updateEnquiry: vi.fn(), updateIntent: vi.fn(), audit: vi.fn() }));
+const mocks = vi.hoisted(() => ({ transaction: vi.fn(), findEnquiry: vi.fn(), createIntent: vi.fn(), updateEnquiry: vi.fn(), updateIntent: vi.fn(), audit: vi.fn(), email: vi.fn() }));
+vi.mock("@/core/customer-order", () => ({ sendOrderEmail: mocks.email }));
 vi.mock("@/db/client", () => ({ prisma: { $transaction: mocks.transaction } }));
 
 import { approveCheckoutPayment } from "@/core/payment-approval";
@@ -8,13 +9,20 @@ import { approveCheckoutPayment } from "@/core/payment-approval";
 describe("payment approval authority", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ checkoutEnquiry: { findFirst: mocks.findEnquiry, update: mocks.updateEnquiry }, paymentIntent: { create: mocks.createIntent, update: mocks.updateIntent }, auditLog: { create: mocks.audit } }));
+    vi.stubEnv("RAZORPAY_MODE", "TEST"); vi.stubEnv("VERCEL_ENV", "preview");
+    mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ checkoutEnquiry: { findFirst: mocks.findEnquiry, update: mocks.updateEnquiry }, paymentIntent: { create: mocks.createIntent, updateMany: mocks.updateIntent }, auditLog: { create: mocks.audit } }));
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("denies every payment approval to ADMIN", async () => {
+    mocks.findEnquiry.mockResolvedValue({ id: "enquiry-1", planKey: "CUSTOM", paymentIntent: null });
+    await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "admin", actorRole: "ADMIN", enquiryId: "enquiry-1", amountMinor: "5000000" })).rejects.toThrow("PAYMENT_APPROVAL_OWNER_REQUIRED");
+    expect(mocks.createIntent).not.toHaveBeenCalled();
   });
 
-  it("denies a custom amount to ADMIN", async () => {
-    mocks.findEnquiry.mockResolvedValue({ id: "enquiry-1", planKey: "CUSTOM", paymentIntent: null });
-    await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "admin", actorRole: "ADMIN", enquiryId: "enquiry-1", amountMinor: "5000000" })).rejects.toThrow("CUSTOM_AMOUNT_OWNER_REQUIRED");
-    expect(mocks.createIntent).not.toHaveBeenCalled();
+  it("denies standard-plan approval to ADMIN before any database mutation", async () => {
+    await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "admin", actorRole: "ADMIN", enquiryId: "enquiry-1" })).rejects.toThrow("PAYMENT_APPROVAL_OWNER_REQUIRED");
+    expect(mocks.findEnquiry).not.toHaveBeenCalled();
   });
 
   it("creates a custom intent only from OWNER-approved integer minor units", async () => {
@@ -22,5 +30,23 @@ describe("payment approval authority", () => {
     mocks.createIntent.mockResolvedValue({ id: "intent-1", status: "READY" });
     await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "owner", actorRole: "OWNER", enquiryId: "enquiry-1", amountMinor: "5000000" })).resolves.toEqual(expect.objectContaining({ id: "intent-1" }));
     expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ amountMinor: 5_000_000n, status: "READY", paymentMode: "CUSTOM_APPROVED_AMOUNT" }) }));
+  });
+  it("rejects standard-plan approval because fixed plans are auto-ready", async () => {
+    const enquiry = { id: "enquiry-1", planKey: "GOLD", customerEmail: "customer@example.test", paymentIntent: { id: "intent-1", organizationId: "org-a", status: "PENDING_APPROVAL", paymentMode: "FULL", paymentAccessExpiresAt: new Date(0) } };
+    mocks.findEnquiry.mockResolvedValue(enquiry);
+    await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "owner", actorRole: "OWNER", enquiryId: enquiry.id })).rejects.toThrow("STANDARD_PAYMENT_AUTO_READY");
+    expect(mocks.updateIntent).not.toHaveBeenCalled();
+  });
+  it.each(["TEST", "LIVE"])("pins OWNER-approved custom intent to %s", async mode => {
+    vi.stubEnv("RAZORPAY_MODE", mode); vi.stubEnv("VERCEL_ENV", mode === "TEST" ? "preview" : "production");
+    mocks.findEnquiry.mockResolvedValue({ id: "enquiry-1", planKey: "CUSTOM", paymentIntent: null });
+    mocks.createIntent.mockResolvedValue({ id: "intent-1" });
+    await approveCheckoutPayment({ organizationId: "org-a", actorUserId: "owner", actorRole: "OWNER", enquiryId: "enquiry-1", amountMinor: "5000000" });
+    expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ providerEnvironment: mode, paymentMode: "CUSTOM_APPROVED_AMOUNT" }) }));
+  });
+  it("does not reuse a custom intent from another environment", async () => {
+    mocks.findEnquiry.mockResolvedValue({ id: "enquiry-1", planKey: "CUSTOM", paymentIntent: { providerEnvironment: "LIVE" } });
+    await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "owner", actorRole: "OWNER", enquiryId: "enquiry-1", amountMinor: "5000000" })).rejects.toThrow("PAYMENT_ENVIRONMENT_MISMATCH");
+    expect(mocks.createIntent).not.toHaveBeenCalled(); expect(mocks.email).not.toHaveBeenCalled();
   });
 });

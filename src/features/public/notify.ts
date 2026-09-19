@@ -57,16 +57,44 @@ export type Submission = {
   attachments?: { filename: string; content: Uint8Array }[];
 };
 
+type SafeProviderError = {
+  name?: string;
+  message?: string;
+  type?: string;
+  code?: string;
+  status?: number;
+  statusCode?: number;
+};
+
+async function safeResendError(response: Response): Promise<SafeProviderError> {
+  try {
+    const value: unknown = await response.json();
+    if (!value || typeof value !== "object") return {};
+    const record = value as Record<string, unknown>;
+    const pick = (key: keyof SafeProviderError) =>
+      typeof record[key] === "string" || typeof record[key] === "number" ? record[key] : undefined;
+    return {
+      name: pick("name") as string | undefined,
+      message: pick("message") as string | undefined,
+      type: pick("type") as string | undefined,
+      code: pick("code") as string | undefined,
+      status: pick("status") as number | undefined,
+      statusCode: pick("statusCode") as number | undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 /** WhatsApp template parameters must be a single line, and are length-capped. */
 function templateParameter(value: string, max = 700): string {
   const flattened = value.replace(/\s+/g, " ").trim();
   return flattened.length > max ? `${flattened.slice(0, max - 1)}…` : flattened;
 }
 
-async function sendEmail({ subject, body, replyTo, attachments }: Submission): Promise<DeliveryResult> {
+export async function sendEmail({ subject, body, replyTo, attachments }: Submission, target = formRecipients.email): Promise<DeliveryResult> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
-  const target = formRecipients.email;
 
   if (!key || !from) {
     return {
@@ -79,8 +107,13 @@ async function sendEmail({ subject, body, replyTo, attachments }: Submission): P
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
+      signal: AbortSignal.timeout(10_000),
       method: "POST",
-      headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+      headers: {
+        authorization: `Bearer ${key}`,
+        "content-type": "application/json",
+        "user-agent": "ShivayonicInvites/1.0",
+      },
       body: JSON.stringify({
         from,
         to: [target],
@@ -101,15 +134,24 @@ async function sendEmail({ subject, body, replyTo, attachments }: Submission): P
       }),
     });
     if (!res.ok) {
+      const error = await safeResendError(res);
+      console.error("Resend email rejected", {
+        status: res.status,
+        name: error.name,
+        type: error.type,
+        code: error.code,
+        message: error.message,
+        providerStatus: error.statusCode ?? error.status,
+      });
       return { channel: "email", target, ok: false, detail: `Mail provider returned ${res.status}.` };
     }
     return { channel: "email", target, ok: true };
-  } catch (error) {
+  } catch {
     return {
       channel: "email",
       target,
       ok: false,
-      detail: error instanceof Error ? error.message : "Mail request failed.",
+      detail: "Mail request failed.",
     };
   }
 }
@@ -131,6 +173,9 @@ async function sendWhatsApp(to: string, { short }: Submission): Promise<Delivery
 
   try {
     const res = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+      // An optional studio alert must never keep the customer-facing form
+      // submission open indefinitely. Email remains the durable record.
+      signal: AbortSignal.timeout(10_000),
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
       /*

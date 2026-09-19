@@ -19,7 +19,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ enq
     if (error instanceof AppAuthError) return authErrorResponse(error);
     const code = error instanceof Error ? error.message : "PAYMENT_APPROVAL_UNAVAILABLE";
     if (["CHECKOUT_ENQUIRY_NOT_FOUND", "PAYMENT_INTENT_NOT_FOUND"].includes(code)) return NextResponse.json({ error: { code } }, { status: 404 });
-    if (["CUSTOM_AMOUNT_OWNER_REQUIRED", "STANDARD_AMOUNT_SERVER_CONTROLLED"].includes(code)) return NextResponse.json({ error: { code } }, { status: 403 });
+    if (["PAYMENT_APPROVAL_OWNER_REQUIRED", "STANDARD_AMOUNT_SERVER_CONTROLLED"].includes(code)) return NextResponse.json({ error: { code } }, { status: 403 });
     if (code === "INVALID_PAYMENT_AMOUNT") return NextResponse.json({ error: { code } }, { status: 400 });
     return NextResponse.json({ error: { code: "PAYMENT_APPROVAL_UNAVAILABLE" } }, { status: 503 });
   }
