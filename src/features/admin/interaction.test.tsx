@@ -6,6 +6,7 @@ import { CommandPalette, commandsFor, filterCommands } from "@/features/admin/co
 import { ConfirmDialog, Dialog, Inspector } from "@/components/overlay";
 import { ToastProvider } from "@/components/toast";
 import { Button } from "@/components/ui";
+import { OrderApproval } from "@/features/admin/order-approval";
 import type { CurrentUserContext, MemberRole } from "@/shared/auth";
 
 function contextFor(role: MemberRole): CurrentUserContext {
@@ -132,6 +133,16 @@ describe("dialog foundation", () => {
     expect(markup).toMatch(/^<dialog/);
     expect(markup).toContain('id="inspector-title"');
     expect(markup).toContain('aria-label="Close inspector"');
+  });
+});
+
+describe("custom payment approval", () => {
+  it("offers the guarded amount field used for the controlled smoke amount", () => {
+    const markup = renderToStaticMarkup(<OrderApproval enquiryId="enquiry-1" />);
+    expect(markup).toContain("Approved amount (₹)");
+    expect(markup).toContain("₹200 is available for the controlled smoke test.");
+    expect(markup).toContain("Use ₹200 smoke amount");
+    expect(markup).toContain("Approve payment");
   });
 });
 

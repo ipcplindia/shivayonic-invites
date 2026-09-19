@@ -44,6 +44,7 @@ const nextConfig: NextConfig = {
   // function. Explicit tracing prevents deployment pruning them as static-only.
   outputFileTracingIncludes: {
     "/api/public/form-submissions": ["./public/forms/*.pdf"],
+    "/api/internal/catalogue-migration": ["./prisma/migrations/20260905000000_catalogue_management/migration.sql"],
   },
   async headers() {
     return [
