@@ -21,7 +21,6 @@ function failure(error: unknown) {
   const code = error instanceof Error && ["FAILED_MIGRATION_BLOCKS_DEPLOY", "MIGRATION_SQL_EMPTY"].includes(error.message)
     ? error.message
     : "MIGRATION_FAILED";
-  console.error("Catalogue migration failed", { code });
   return NextResponse.json({ migration: CATALOGUE_MIGRATION, ok: false, error: { code } }, { status: 500 });
 }
 
