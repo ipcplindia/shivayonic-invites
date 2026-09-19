@@ -3,8 +3,9 @@ import "server-only";
 import { prisma } from "@/db/client";
 import { formRecipients } from "@/features/public/data";
 import { sendEmail } from "@/features/public/notify";
+import { assertPaymentEnvironment, razorpayMode, type RazorpayMode } from "@/config/razorpay";
 
-type PaidOrder = { id: string; planKey: string; customerEmail: string; customerName: string; customerPhone: string; address1: string; city: string; state: string; pincode: string; country: string; amountMinor: bigint; currency: string; providerPaymentId: string | null; paidAt: Date | null; zohoCustomerId: string | null; zohoInvoiceId: string | null; invoiceSentAt: Date | null };
+type PaidOrder = { id: string; planKey: string; customerEmail: string; customerName: string; customerPhone: string; address1: string; city: string; state: string; pincode: string; country: string; amountMinor: bigint; currency: string; providerEnvironment: RazorpayMode; providerPaymentId: string | null; paidAt: Date | null; zohoCustomerId: string | null; zohoInvoiceId: string | null; invoiceSentAt: Date | null };
 type ZohoConfig = { itemId: string; organizationId: string; accountsBase: string; booksBase: string; templateId: string };
 type ZohoInvoice = { invoice_id?: string; invoice_number?: string; customer_id?: string; total?: number; balance?: number };
 type ZohoPayment = { payment_id?: string; amount?: number };
@@ -52,7 +53,7 @@ function asMinor(value: unknown) {
 }
 
 function asDate(value: Date | null) { return (value ?? new Date()).toISOString().slice(0, 10); }
-function reference(order: PaidOrder) { return `${process.env.VERCEL_ENV === "preview" ? "SHIVAYONIC TEST" : "SHIVAYONIC"} ${order.id}`; }
+function reference(order: PaidOrder) { return `${order.providerEnvironment === "TEST" ? "SHIVAYONIC TEST" : "SHIVAYONIC"} ${order.id}`; }
 
 async function zohoToken(config: ZohoConfig) {
   // Vercel secret entries can retain surrounding whitespace; OAuth credentials cannot.
@@ -170,7 +171,7 @@ async function resolveCustomerPayment(config: ZohoConfig, token: string, order: 
     if (existing.amount !== undefined && asMinor(existing.amount) !== order.amountMinor) throw new ZohoError("ZOHO_AMOUNT_MISMATCH");
     return existing;
   }
-  const created = await zohoRequest<{ payment?: ZohoPayment }>(`${config.booksBase}/customerpayments?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: invoice.customer_id, payment_mode: "others", amount: Number(order.amountMinor) / 100, date: asDate(order.paidAt), reference_number: order.providerPaymentId, description: `${process.env.VERCEL_ENV === "preview" ? "SHIVAYONIC TEST " : ""}Razorpay payment`, invoices: [{ invoice_id: invoice.invoice_id, amount_applied: Number(order.amountMinor) / 100 }] }) });
+  const created = await zohoRequest<{ payment?: ZohoPayment }>(`${config.booksBase}/customerpayments?${orgQuery(config, {})}`, token, { method: "POST", body: JSON.stringify({ customer_id: invoice.customer_id, payment_mode: "others", amount: Number(order.amountMinor) / 100, date: asDate(order.paidAt), reference_number: order.providerPaymentId, description: `${order.providerEnvironment === "TEST" ? "SHIVAYONIC TEST " : ""}Razorpay payment`, invoices: [{ invoice_id: invoice.invoice_id, amount_applied: Number(order.amountMinor) / 100 }] }) });
   if (!created.payment?.payment_id) throw new ZohoError("ZOHO_CUSTOMER_PAYMENT_FAILED");
   return created.payment;
 }
@@ -188,14 +189,16 @@ async function createZohoInvoice(order: PaidOrder) {
 }
 
 export async function sendPaidConfirmation(paymentIntentId: string) {
+  const providerEnvironment = razorpayMode();
   const claimTime = new Date();
-  const claimed = await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, status: "PAID", paymentConfirmationSentAt: null }, data: { paymentConfirmationSentAt: claimTime } });
+  const claimed = await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, status: "PAID", providerEnvironment, paymentConfirmationSentAt: null }, data: { paymentConfirmationSentAt: claimTime } });
   if (!claimed.count) return;
   const payment = await prisma.paymentIntent.findUnique({ where: { id: paymentIntentId }, include: { enquiry: true } });
   if (!payment?.enquiry) {
-    await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, paymentConfirmationSentAt: claimTime }, data: { paymentConfirmationSentAt: null } });
+    await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, providerEnvironment, paymentConfirmationSentAt: claimTime }, data: { paymentConfirmationSentAt: null } });
     return;
   }
+  assertPaymentEnvironment(payment.providerEnvironment);
   const customerBody = `Thank you for your purchase.\n\nDesign: ${payment.enquiry.designName || "Invitation"}\nPlan: ${payment.enquiry.planKey}\nAmount: ${payment.currency} ${(payment.amountMinor / 100n).toLocaleString("en-IN")}\nReference: ${payment.enquiry.id}\n\nYour payment has been received. Keep your private order link or sign in to My Orders for updates.`;
   const ownerBody = `A payment was received for a Shivayonic Invites order.\n\nCustomer: ${payment.enquiry.customerName}\nEmail: ${payment.enquiry.customerEmail}\nDesign: ${payment.enquiry.designName || "Invitation"}\nPlan: ${payment.enquiry.planKey}\nAmount: ${payment.currency} ${(payment.amountMinor / 100n).toLocaleString("en-IN")}\nReference: ${payment.enquiry.id}\nProvider payment: ${payment.providerPaymentId || "not available"}`;
   const targets = [payment.enquiry.customerEmail, formRecipients.email].filter((target, index, values) => target && values.indexOf(target) === index);
@@ -207,7 +210,7 @@ export async function sendPaidConfirmation(paymentIntentId: string) {
   ]);
   if (results.every(result => result.ok)) return;
   console.error("Paid notification delivery failed", { code: "DELIVERY_FAILED" });
-  await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, paymentConfirmationSentAt: claimTime }, data: { paymentConfirmationSentAt: null } });
+  await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, providerEnvironment, paymentConfirmationSentAt: claimTime }, data: { paymentConfirmationSentAt: null } });
 }
 
 function failureStatus(error: unknown) {
@@ -218,24 +221,26 @@ function failureStatus(error: unknown) {
 /** Idempotent: durable claims and stable Zoho references prevent duplicate invoices or payments. */
 export async function createInvoiceForPaidOrder(paymentIntentId: string) {
   if (!zohoInvoicingEnabled()) return;
-  const claimed = await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, status: "PAID", OR: [{ invoiceStatus: null }, { invoiceStatus: "RETRY_REQUIRED" }, { invoiceStatus: "FAILED" }] }, data: { invoiceStatus: "PENDING" } });
+  const providerEnvironment = razorpayMode();
+  const claimed = await prisma.paymentIntent.updateMany({ where: { id: paymentIntentId, status: "PAID", providerEnvironment, OR: [{ invoiceStatus: null }, { invoiceStatus: "RETRY_REQUIRED" }, { invoiceStatus: "FAILED" }] }, data: { invoiceStatus: "PENDING" } });
   if (!claimed.count) return;
   const payment = await prisma.paymentIntent.findUnique({ where: { id: paymentIntentId }, include: { enquiry: true } });
   if (!payment?.enquiry) return;
-  const order: PaidOrder = { id: payment.id, planKey: payment.enquiry.planKey, customerEmail: payment.enquiry.customerEmail, customerName: payment.enquiry.customerName, customerPhone: payment.enquiry.customerPhone, address1: payment.enquiry.address1, city: payment.enquiry.city, state: payment.enquiry.state, pincode: payment.enquiry.pincode, country: payment.enquiry.country, amountMinor: payment.amountMinor, currency: payment.currency, providerPaymentId: payment.providerPaymentId, paidAt: payment.paidAt, zohoCustomerId: payment.zohoCustomerId, zohoInvoiceId: payment.zohoInvoiceId, invoiceSentAt: payment.invoiceSentAt };
+  assertPaymentEnvironment(payment.providerEnvironment);
+  const order: PaidOrder = { id: payment.id, planKey: payment.enquiry.planKey, customerEmail: payment.enquiry.customerEmail, customerName: payment.enquiry.customerName, customerPhone: payment.enquiry.customerPhone, address1: payment.enquiry.address1, city: payment.enquiry.city, state: payment.enquiry.state, pincode: payment.enquiry.pincode, country: payment.enquiry.country, amountMinor: payment.amountMinor, currency: payment.currency, providerEnvironment, providerPaymentId: payment.providerPaymentId, paidAt: payment.paidAt, zohoCustomerId: payment.zohoCustomerId, zohoInvoiceId: payment.zohoInvoiceId, invoiceSentAt: payment.invoiceSentAt };
   try {
     const created = await createZohoInvoice(order);
     const invoiceId = created.invoice.invoice_id!;
-    await prisma.paymentIntent.update({ where: { id: payment.id }, data: { invoiceStatus: "PAID", zohoCustomerId: created.customerId, zohoInvoiceId: invoiceId, invoiceNumber: created.invoice.invoice_number ?? null, invoiceCreatedAt: payment.invoiceCreatedAt ?? new Date() } });
+    await prisma.paymentIntent.update({ where: { id: payment.id, providerEnvironment }, data: { invoiceStatus: "PAID", zohoCustomerId: created.customerId, zohoInvoiceId: invoiceId, invoiceNumber: created.invoice.invoice_number ?? null, invoiceCreatedAt: payment.invoiceCreatedAt ?? new Date() } });
     if (order.invoiceSentAt) return;
     try {
       await zohoRequest(`${created.config.booksBase}/invoices/${encodeURIComponent(invoiceId)}/email?${orgQuery(created.config, {})}`, created.token, { method: "POST", body: JSON.stringify({ to_mail_ids: [order.customerEmail] }) });
-      await prisma.paymentIntent.update({ where: { id: payment.id }, data: { invoiceStatus: "SENT", invoiceSentAt: new Date() } });
-    } catch { await prisma.paymentIntent.update({ where: { id: payment.id }, data: { invoiceStatus: "RETRY_REQUIRED" } }); }
+      await prisma.paymentIntent.update({ where: { id: payment.id, providerEnvironment }, data: { invoiceStatus: "SENT", invoiceSentAt: new Date() } });
+    } catch { await prisma.paymentIntent.update({ where: { id: payment.id, providerEnvironment }, data: { invoiceStatus: "RETRY_REQUIRED" } }); }
   } catch (error) {
     const code = error instanceof ZohoError ? error.code : "ZOHO_TRANSIENT";
     console.error("Zoho invoice workflow failed", { code });
-    await prisma.paymentIntent.update({ where: { id: payment.id }, data: { invoiceStatus: failureStatus(error) } });
+    await prisma.paymentIntent.update({ where: { id: payment.id, providerEnvironment }, data: { invoiceStatus: failureStatus(error) } });
   }
 }
 

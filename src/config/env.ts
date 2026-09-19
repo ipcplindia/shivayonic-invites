@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { tokenEncryptionKeyBytes } from "@/core/token-encryption";
+import { razorpayConfig } from "@/config/razorpay";
 
 const serverSchema = z.object({
   DATABASE_URL: z.string().url().startsWith("postgres").optional(),
@@ -27,8 +28,11 @@ const serverSchema = z.object({
   RAZORPAY_KEY_ID: z.string().min(1).optional(),
   RAZORPAY_KEY_SECRET: z.string().min(1).optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1).optional(),
-  RAZORPAY_MODE: z.enum(["TEST", "LIVE"]).default("TEST"),
+  RAZORPAY_MODE: z.enum(["TEST", "LIVE"]).optional(),
 }).superRefine((value, context) => {
+  if (value.PAYMENTS_ENABLED === "true") {
+    try { razorpayConfig(); } catch { context.addIssue({ code: "custom", path: ["RAZORPAY_MODE"], message: "Payment mode, deployment environment and credentials must agree." }); }
+  }
   const selectedDatabaseUrl = process.env.VERCEL_ENV === "preview"
     ? (process.env.PREVIEWDB_PRISMA_DATABASE_URL ?? process.env.PREVIEWDB_DATABASE_URL)
     : (process.env.DATABASE_PRISMA_DATABASE_URL ?? value.DATABASE_URL);

@@ -6,6 +6,7 @@ import { createPaymentCapability } from "@/core/payment-capability";
 import { customerOrigin, customerOrderPath } from "@/core/customer-order";
 import { consumeDurableRateLimit } from "@/auth/rate-limit";
 import { sendEmail } from "@/features/public/notify";
+import { assertPaymentEnvironment, newPaymentEnvironment } from "@/config/razorpay";
 
 const digest = (token: string) => createHash("sha256").update(token).digest("hex");
 export const CUSTOMER_COOKIE = "shivayonic-customer";
@@ -53,7 +54,8 @@ export async function customerIdentity(token: string | undefined) {
 
 export async function customerOrders(session: string | undefined) {
   const identity = await customerIdentity(session);
-  return prisma.checkoutEnquiry.findMany({ where: { organizationId: identity.organizationId, customerEmail: { equals: identity.email, mode: "insensitive" } }, select: { id: true, designName: true, planKey: true, status: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 100 });
+  const providerEnvironment = newPaymentEnvironment();
+  return prisma.checkoutEnquiry.findMany({ where: { organizationId: identity.organizationId, customerEmail: { equals: identity.email, mode: "insensitive" }, OR: [{ paymentIntent: null }, ...(providerEnvironment ? [{ paymentIntent: { providerEnvironment } }] : [])] }, select: { id: true, designName: true, planKey: true, status: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 100 });
 }
 
 export async function openCustomerOrder(session: string | undefined, enquiryId: string) {
@@ -64,7 +66,9 @@ export async function openCustomerOrder(session: string | undefined, enquiryId: 
     if (!order) throw new Error("PAYMENT_ACCESS_DENIED");
     if (order.paymentIntent) {
       if (order.paymentIntent.organizationId !== identity.organizationId) throw new Error("PAYMENT_ACCESS_DENIED");
-      await tx.paymentIntent.update({ where: { id: order.paymentIntent.id }, data: { paymentAccessHash: capability.hash, paymentAccessExpiresAt: capability.expiresAt } });
+      const providerEnvironment = assertPaymentEnvironment(order.paymentIntent.providerEnvironment);
+      const changed = await tx.paymentIntent.updateMany({ where: { id: order.paymentIntent.id, organizationId: identity.organizationId, enquiryId, providerEnvironment, paymentAccessHash: order.paymentIntent.paymentAccessHash }, data: { paymentAccessHash: capability.hash, paymentAccessExpiresAt: capability.expiresAt } });
+      if (changed.count !== 1) throw new Error("PAYMENT_ACCESS_DENIED");
     } else {
       await tx.verification.upsert({ where: { id: `order-access:${order.id}` }, create: { id: `order-access:${order.id}`, identifier: identity.organizationId, value: capability.hash, expiresAt: capability.expiresAt }, update: { value: capability.hash, expiresAt: capability.expiresAt } });
     }

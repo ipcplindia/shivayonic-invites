@@ -6,7 +6,7 @@ vi.mock("@/features/public/notify", () => ({ sendEmail: mocks.email }));
 
 import { createInvoiceForPaidOrder, sendPaidConfirmation } from "@/core/paid-order-workflow";
 
-const payment = { id: "payment-1", status: "PAID", amountMinor: 5_000_000n, currency: "INR", providerPaymentId: "pay_test", paidAt: new Date("2026-09-12"), zohoCustomerId: "customer-1", zohoInvoiceId: null, invoiceSentAt: null, invoiceCreatedAt: null, enquiry: { planKey: "SILVER", customerEmail: "customer@example.test", customerName: "Customer", customerPhone: "999", address1: "1 Road", city: "Delhi", state: "DL", pincode: "110001", country: "India", designName: "Diwali Nights" } };
+const payment = { id: "payment-1", status: "PAID", providerEnvironment: "TEST", amountMinor: 5_000_000n, currency: "INR", providerPaymentId: "pay_test", paidAt: new Date("2026-09-12"), zohoCustomerId: "customer-1", zohoInvoiceId: null, invoiceSentAt: null, invoiceCreatedAt: null, enquiry: { planKey: "SILVER", customerEmail: "customer@example.test", customerName: "Customer", customerPhone: "999", address1: "1 Road", city: "Delhi", state: "DL", pincode: "110001", country: "India", designName: "Diwali Nights" } };
 const ok = (value: object) => new Response(JSON.stringify({ code: 0, ...value }), { status: 200, headers: { "content-type": "application/json" } });
 
 function configure() {
@@ -29,12 +29,12 @@ function happyResponses(existingPayment = false) {
 }
 
 describe("paid order workflow", () => {
-  beforeEach(() => { vi.resetAllMocks(); mocks.updateMany.mockResolvedValue({ count: 1 }); mocks.findUnique.mockResolvedValue(payment); mocks.email.mockResolvedValue({ ok: true }); vi.spyOn(console, "error").mockImplementation(() => undefined); });
+  beforeEach(() => { vi.resetAllMocks(); vi.stubEnv("RAZORPAY_MODE", "TEST"); vi.stubEnv("VERCEL_ENV", "preview"); vi.stubEnv("ZOHO_INVOICING_ENABLED", "false"); mocks.updateMany.mockResolvedValue({ count: 1 }); mocks.findUnique.mockResolvedValue(payment); mocks.email.mockResolvedValue({ ok: true }); vi.spyOn(console, "error").mockImplementation(() => undefined); });
   afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
   it("sends confirmation once after a durable PAID transition", async () => {
     await sendPaidConfirmation("payment-1");
-    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ status: "PAID", paymentConfirmationSentAt: null }) }));
+    expect(mocks.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ status: "PAID", providerEnvironment: "TEST", paymentConfirmationSentAt: null }) }));
     expect(mocks.email).toHaveBeenCalledTimes(2);
     expect(mocks.email).toHaveBeenCalledWith(expect.objectContaining({ subject: "Payment received — Shivayonic Invites" }), "customer@example.test");
   });
@@ -42,7 +42,7 @@ describe("paid order workflow", () => {
   it("leaves the durable claim retryable when either notification fails", async () => {
     mocks.email.mockResolvedValueOnce({ ok: true }).mockResolvedValueOnce({ ok: false });
     await sendPaidConfirmation("payment-1");
-    expect(mocks.updateMany).toHaveBeenLastCalledWith(expect.objectContaining({ where: { id: "payment-1", paymentConfirmationSentAt: expect.any(Date) }, data: { paymentConfirmationSentAt: null } }));
+    expect(mocks.updateMany).toHaveBeenLastCalledWith(expect.objectContaining({ where: { id: "payment-1", providerEnvironment: "TEST", paymentConfirmationSentAt: expect.any(Date) }, data: { paymentConfirmationSentAt: null } }));
   });
 
   it("does zero Zoho work while disabled", async () => {
@@ -52,16 +52,38 @@ describe("paid order workflow", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("claims once, reuses the saved customer, reconciles amount, records one payment, and emails once", async () => {
-    configure(); vi.stubEnv("VERCEL_ENV", "production"); const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); happyResponses().forEach(response => fetchMock.mockResolvedValueOnce(response));
+  it.each(["TEST", "LIVE"])("claims %s once and preserves its references when invoicing outside Preview", async providerEnvironment => {
+    configure(); vi.stubEnv("VERCEL_ENV", "development"); vi.stubEnv("RAZORPAY_MODE", providerEnvironment); mocks.findUnique.mockResolvedValue({ ...payment, providerEnvironment });
+    const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock); happyResponses().forEach(response => fetchMock.mockResolvedValueOnce(response));
     await createInvoiceForPaidOrder("payment-1");
+    expect(mocks.updateMany.mock.calls[0][0].where.providerEnvironment).toBe(providerEnvironment);
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/contacts"))).toBe(false);
     expect(fetchMock.mock.calls.some(([url, init]) => String(url).includes("/customerpayments") && init?.method === "POST")).toBe(true);
     const invoiceCreate = fetchMock.mock.calls.find(([url, init]) => String(url).includes("/invoices?") && init?.method === "POST");
-    expect(JSON.parse(String(invoiceCreate?.[1]?.body))).toEqual(expect.objectContaining({ is_inclusive_tax: true, line_items: [expect.objectContaining({ tags: [{ tag_id: "tag-actual", tag_option_id: "option-actual" }] })] }));
+    expect(JSON.parse(String(invoiceCreate?.[1]?.body))).toEqual(expect.objectContaining({ reference_number: `${providerEnvironment === "TEST" ? "SHIVAYONIC TEST" : "SHIVAYONIC"} payment-1`, is_inclusive_tax: true, line_items: [expect.objectContaining({ tags: [{ tag_id: "tag-actual", tag_option_id: "option-actual" }] })] }));
+    const paymentCreate = fetchMock.mock.calls.find(([url, init]) => String(url).includes("/customerpayments?") && init?.method === "POST");
+    expect(JSON.parse(String(paymentCreate?.[1]?.body))).toEqual(expect.objectContaining({ reference_number: "pay_test", description: `${providerEnvironment === "TEST" ? "SHIVAYONIC TEST " : ""}Razorpay payment` }));
     expect(JSON.parse(String(invoiceCreate?.[1]?.body))).not.toHaveProperty("tags");
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ zohoCustomerId: "customer-1", zohoInvoiceId: "invoice-1", invoiceNumber: "INV-1", invoiceStatus: "PAID" }) }));
     expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ invoiceStatus: "SENT", invoiceSentAt: expect.any(Date) }) }));
+  });
+
+  it.each([["TEST", "LIVE"], ["LIVE", "TEST"], ["TEST", null], ["LIVE", null]])("does no downstream work in %s for a stored %s payment", async (mode, providerEnvironment) => {
+    configure(); vi.stubEnv("VERCEL_ENV", "development"); vi.stubEnv("RAZORPAY_MODE", mode!); vi.stubGlobal("fetch", vi.fn());
+    mocks.updateMany.mockImplementation(async ({ where }) => ({ count: where.providerEnvironment === providerEnvironment ? 1 : 0 }));
+    await sendPaidConfirmation("payment-1"); await createInvoiceForPaidOrder("payment-1");
+    expect(mocks.updateMany).toHaveBeenCalledTimes(2);
+    expect(mocks.updateMany.mock.calls.every(([args]) => args.where.providerEnvironment === mode)).toBe(true);
+    expect(mocks.findUnique).not.toHaveBeenCalled(); expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.email).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it.each(["LIVE", null])("rejects a reread with %s environment before notifications or Zoho", async providerEnvironment => {
+    configure(); vi.stubGlobal("fetch", vi.fn()); mocks.findUnique.mockResolvedValue({ ...payment, providerEnvironment });
+    await expect(sendPaidConfirmation("payment-1")).rejects.toThrow("PAYMENT_ENVIRONMENT_MISMATCH");
+    await expect(createInvoiceForPaidOrder("payment-1")).rejects.toThrow("PAYMENT_ENVIRONMENT_MISMATCH");
+    expect(mocks.updateMany).toHaveBeenCalledTimes(2); expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.email).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
   });
 
   it("emails a Preview invoice and repeated completed work performs no provider calls", async () => {

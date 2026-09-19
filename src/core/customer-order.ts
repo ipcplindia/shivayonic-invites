@@ -3,6 +3,7 @@ import { prisma } from "@/db/client";
 import { getPublicOrganizationId } from "@/core/public-organization";
 import { createPaymentCapability, validPaymentCapability } from "@/core/payment-capability";
 import { sendEmail } from "@/features/public/notify";
+import { assertPaymentEnvironment } from "@/config/razorpay";
 
 export function customerOrigin() {
   const source = process.env.VERCEL_ENV === "preview"
@@ -42,6 +43,7 @@ export async function getCustomerOrder(id: string, token: string) {
   const quote = payment ? null : await prisma.verification.findUnique({ where: { id: `order-access:${id}` } });
   if (payment ? payment.organizationId !== organizationId || payment.enquiryId !== id || !validPaymentCapability(token, payment.paymentAccessHash, payment.paymentAccessExpiresAt)
     : quote?.identifier !== organizationId || !validPaymentCapability(token, quote?.value ?? null, quote?.expiresAt ?? null)) throw new Error("PAYMENT_ACCESS_DENIED");
+  if (payment) assertPaymentEnvironment(payment.providerEnvironment);
   return {
     reference: order.id, design: order.designName, plan: order.planKey, eventDate: order.eventDate,
     status: order.status, paymentStatus: payment?.status ?? "PENDING_APPROVAL",
@@ -57,7 +59,8 @@ export async function resendOrderPaymentLink(input: { organizationId: string; ac
     const enquiry = await tx.checkoutEnquiry.findFirst({ where: { id: input.enquiryId, organizationId: input.organizationId }, include: { paymentIntent: true } });
     const payment = enquiry?.paymentIntent;
     if (!enquiry || !payment || payment.organizationId !== input.organizationId || payment.status !== "READY") throw new Error("PAYMENT_NOT_READY");
-    const changed = await tx.paymentIntent.updateMany({ where: { id: payment.id, organizationId: input.organizationId, status: "READY", paymentAccessHash: payment.paymentAccessHash }, data: { paymentAccessHash: capability.hash, paymentAccessExpiresAt: capability.expiresAt } });
+    const providerEnvironment = assertPaymentEnvironment(payment.providerEnvironment);
+    const changed = await tx.paymentIntent.updateMany({ where: { id: payment.id, organizationId: input.organizationId, status: "READY", providerEnvironment, paymentAccessHash: payment.paymentAccessHash }, data: { paymentAccessHash: capability.hash, paymentAccessExpiresAt: capability.expiresAt } });
     if (changed.count !== 1) throw new Error("PAYMENT_NOT_READY");
     await tx.auditLog.create({ data: { organizationId: input.organizationId, actorUserId: input.actorUserId, action: "PAYMENT_LINK_REISSUED", entityType: "PaymentIntent", entityId: payment.id } });
     return enquiry;

@@ -2,14 +2,9 @@ import "server-only";
 import { Buffer } from "node:buffer";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import { razorpayConfig } from "@/config/razorpay";
 
-export function razorpayConfig() {
-  const key = process.env.RAZORPAY_KEY_ID;
-  const secret = process.env.RAZORPAY_KEY_SECRET;
-  // LIVE is represented in storage but cannot execute in this test integration.
-  if (process.env.RAZORPAY_MODE !== "TEST" || !key?.startsWith("rzp_test_") || !secret || process.env.VERCEL_ENV === "production") throw new Error("RAZORPAY_TEST_CONFIGURATION_REQUIRED");
-  return { key, secret, mode: "TEST" as const };
-}
+export { razorpayConfig };
 
 export function validHmac(body: string | Uint8Array, signature: string, secret: string) {
   if (!secret || !/^[a-f0-9]{64}$/.test(signature)) return false;
@@ -44,6 +39,5 @@ export function verifyCheckout(order: string, payment: string, signature: string
   return validHmac(`${order}|${payment}`, signature, razorpayConfig().secret);
 }
 export function verifyWebhook(raw: Uint8Array, signature: string) {
-  razorpayConfig();
-  return validHmac(raw, signature, process.env.RAZORPAY_WEBHOOK_SECRET ?? "");
+  return validHmac(raw, signature, razorpayConfig().webhookSecret);
 }

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/db/client";
+import { assertPaymentEnvironment, newPaymentEnvironment } from "@/config/razorpay";
 import { parseApprovedMinor } from "@/core/checkout";
 import type { MemberRole } from "@/shared/auth";
 import { createPaymentCapability } from "@/core/payment-capability";
@@ -18,10 +19,10 @@ export async function approveCheckoutPayment(input: { organizationId: string; ac
 
     if (enquiry.planKey === "CUSTOM") {
       const amountMinor = parseApprovedMinor(input.amountMinor);
-      if (enquiry.paymentIntent) return enquiry.paymentIntent;
+      if (enquiry.paymentIntent) { assertPaymentEnvironment(enquiry.paymentIntent.providerEnvironment); return enquiry.paymentIntent; }
       const paymentIntent = await tx.paymentIntent.create({
         data: {
-          organizationId: input.organizationId, enquiryId: enquiry.id, status: "READY", currency: "INR", amountMinor,
+          organizationId: input.organizationId, enquiryId: enquiry.id, status: "READY", currency: "INR", amountMinor, providerEnvironment: newPaymentEnvironment(),
           purpose: "Custom checkout enquiry", paymentMode: "CUSTOM_APPROVED_AMOUNT", totalOrderAmountMinor: amountMinor,
           approvedAmountMinor: amountMinor, amountAlreadyPaidMinor: 0n, balanceDueMinor: amountMinor,
           paymentAccessHash: capability.hash, paymentAccessExpiresAt: capability.expiresAt,

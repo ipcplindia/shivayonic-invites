@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 
 import { prisma } from "@/db/client";
+import { assertPaymentEnvironment, newPaymentEnvironment } from "@/config/razorpay";
 import { getPublicOrganizationId } from "@/core/public-organization";
 import { createPaymentCapability } from "@/core/payment-capability";
 import { customerOrderPath, sendOrderEmail } from "@/core/customer-order";
@@ -75,9 +76,11 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
   // A fixed-price checkout is only payable after its required brief exists.
   if (plan?.amountMinor && (!design || !input.briefSubmitted)) throw new Error("CHECKOUT_BRIEF_REQUIRED");
 
-  const existing = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true } } } });
+  const environment = newPaymentEnvironment();
+  const existing = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true, providerEnvironment: true } } } });
   if (existing) {
     if (existing.requestFingerprint !== fingerprint) throw new Error("IDEMPOTENCY_KEY_REUSED");
+    if (existing.paymentIntent) assertPaymentEnvironment(existing.paymentIntent.providerEnvironment);
     return { enquiryId: existing.id, paymentIntentId: existing.paymentIntent?.id ?? null, status: existing.status, planName: plan?.name ?? null, reused: true };
   }
 
@@ -98,7 +101,7 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
       const paymentIntent = plan?.amountMinor
         ? await tx.paymentIntent.create({
             data: {
-              organizationId, enquiryId: enquiry.id, status: "READY", currency: "INR", amountMinor: plan.amountMinor,
+              organizationId, enquiryId: enquiry.id, status: "READY", currency: "INR", amountMinor: plan.amountMinor, providerEnvironment: environment,
               paymentAccessHash: capability!.hash, paymentAccessExpiresAt: capability!.expiresAt,
               purpose: `${plan.name} checkout enquiry`, paymentMode: "FULL", totalOrderAmountMinor: plan.amountMinor,
               approvedAmountMinor: plan.amountMinor, amountAlreadyPaidMinor: 0n, balanceDueMinor: plan.amountMinor,
@@ -114,8 +117,9 @@ export async function persistPublicCheckout(input: CheckoutInput): Promise<Persi
     return saved;
   } catch (error) {
     if ((error as { code?: string }).code !== "P2002") throw error;
-    const raced = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true } } } });
+    const raced = await prisma.checkoutEnquiry.findUnique({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: input.idempotencyKey } }, include: { paymentIntent: { select: { id: true, providerEnvironment: true } } } });
     if (!raced || raced.requestFingerprint !== fingerprint) throw new Error("IDEMPOTENCY_KEY_REUSED");
+    if (raced.paymentIntent) assertPaymentEnvironment(raced.paymentIntent.providerEnvironment);
     return { enquiryId: raced.id, paymentIntentId: raced.paymentIntent?.id ?? null, status: raced.status, planName: plan?.name ?? null, reused: true };
   }
 }

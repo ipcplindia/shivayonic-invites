@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ transaction: vi.fn(), findEnquiry: vi.fn(), createIntent: vi.fn(), updateEnquiry: vi.fn(), updateIntent: vi.fn(), audit: vi.fn(), email: vi.fn() }));
 vi.mock("@/core/customer-order", () => ({ sendOrderEmail: mocks.email }));
@@ -9,8 +9,10 @@ import { approveCheckoutPayment } from "@/core/payment-approval";
 describe("payment approval authority", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv("RAZORPAY_MODE", "TEST"); vi.stubEnv("VERCEL_ENV", "preview");
     mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ checkoutEnquiry: { findFirst: mocks.findEnquiry, update: mocks.updateEnquiry }, paymentIntent: { create: mocks.createIntent, updateMany: mocks.updateIntent }, auditLog: { create: mocks.audit } }));
   });
+  afterEach(() => vi.unstubAllEnvs());
 
   it("denies every payment approval to ADMIN", async () => {
     mocks.findEnquiry.mockResolvedValue({ id: "enquiry-1", planKey: "CUSTOM", paymentIntent: null });
@@ -34,5 +36,17 @@ describe("payment approval authority", () => {
     mocks.findEnquiry.mockResolvedValue(enquiry);
     await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "owner", actorRole: "OWNER", enquiryId: enquiry.id })).rejects.toThrow("STANDARD_PAYMENT_AUTO_READY");
     expect(mocks.updateIntent).not.toHaveBeenCalled();
+  });
+  it.each(["TEST", "LIVE"])("pins OWNER-approved custom intent to %s", async mode => {
+    vi.stubEnv("RAZORPAY_MODE", mode); vi.stubEnv("VERCEL_ENV", mode === "TEST" ? "preview" : "production");
+    mocks.findEnquiry.mockResolvedValue({ id: "enquiry-1", planKey: "CUSTOM", paymentIntent: null });
+    mocks.createIntent.mockResolvedValue({ id: "intent-1" });
+    await approveCheckoutPayment({ organizationId: "org-a", actorUserId: "owner", actorRole: "OWNER", enquiryId: "enquiry-1", amountMinor: "5000000" });
+    expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ providerEnvironment: mode, paymentMode: "CUSTOM_APPROVED_AMOUNT" }) }));
+  });
+  it("does not reuse a custom intent from another environment", async () => {
+    mocks.findEnquiry.mockResolvedValue({ id: "enquiry-1", planKey: "CUSTOM", paymentIntent: { providerEnvironment: "LIVE" } });
+    await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "owner", actorRole: "OWNER", enquiryId: "enquiry-1", amountMinor: "5000000" })).rejects.toThrow("PAYMENT_ENVIRONMENT_MISMATCH");
+    expect(mocks.createIntent).not.toHaveBeenCalled(); expect(mocks.email).not.toHaveBeenCalled();
   });
 });

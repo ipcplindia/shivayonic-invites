@@ -21,7 +21,14 @@ describe("public payment capability", () => {
   });
 });
 describe("Razorpay signatures and environment", () => {
-  function configure() { vi.stubEnv("RAZORPAY_MODE", "TEST"); vi.stubEnv("RAZORPAY_KEY_ID", "rzp_test_fixture"); vi.stubEnv("RAZORPAY_KEY_SECRET", "test-secret"); vi.stubEnv("VERCEL_ENV", "preview"); }
+  function configure(mode: "TEST" | "LIVE" = "TEST") {
+    const prefix = mode.toLowerCase();
+    vi.stubEnv("RAZORPAY_MODE", mode);
+    vi.stubEnv("RAZORPAY_KEY_ID", `rzp_${prefix}_fixture`);
+    vi.stubEnv("RAZORPAY_KEY_SECRET", `${prefix}-secret`);
+    vi.stubEnv("RAZORPAY_WEBHOOK_SECRET", `${prefix}-webhook-secret`);
+    vi.stubEnv("VERCEL_ENV", mode === "TEST" ? "preview" : "production");
+  }
   it("verifies exact bytes and rejects malformed signatures", () => {
     const signature = createHmac("sha256", "fixture").update("raw").digest("hex");
     expect(validHmac("raw", signature, "fixture")).toBe(true);
@@ -34,10 +41,24 @@ describe("Razorpay signatures and environment", () => {
     expect(verifyCheckout("order_2", "pay_1", signature)).toBe(false);
     expect(verifyCheckout("order_1", "pay_2", signature)).toBe(false);
   });
-  it("fails closed without webhook secret", () => { configure(); vi.stubEnv("RAZORPAY_WEBHOOK_SECRET", ""); expect(verifyWebhook(Buffer.from("{}"), "a".repeat(64))).toBe(false); });
-  it("rejects live keys, mode and production execution", () => {
-    configure(); vi.stubEnv("RAZORPAY_KEY_ID", "rzp_live_fixture"); expect(razorpayConfig).toThrow();
-    configure(); vi.stubEnv("RAZORPAY_MODE", "LIVE"); expect(razorpayConfig).toThrow();
-    configure(); vi.stubEnv("VERCEL_ENV", "production"); expect(razorpayConfig).toThrow();
+  it.each(["TEST", "LIVE"] as const)("uses only the active %s mode's secrets", (mode) => {
+    configure(mode);
+    const prefix = mode.toLowerCase();
+    const other = mode === "TEST" ? "live" : "test";
+    const raw = Buffer.from('{"event":"payment.captured"}');
+    const sign = (body: string | Uint8Array, secret: string) => createHmac("sha256", secret).update(body).digest("hex");
+    expect(razorpayConfig().mode).toBe(mode);
+    expect(verifyCheckout("order_1", "pay_1", sign("order_1|pay_1", `${prefix}-secret`))).toBe(true);
+    expect(verifyCheckout("order_1", "pay_1", sign("order_1|pay_1", `${other}-secret`))).toBe(false);
+    expect(verifyCheckout("order_1", "pay_1", sign("order_1|pay_1", `${prefix}-webhook-secret`))).toBe(false);
+    expect(verifyWebhook(raw, sign(raw, `${prefix}-webhook-secret`))).toBe(true);
+    expect(verifyWebhook(raw, sign(raw, `${other}-webhook-secret`))).toBe(false);
+    expect(verifyWebhook(raw, sign(raw, `${prefix}-secret`))).toBe(false);
+    expect(verifyWebhook(Buffer.from("{}"), sign(raw, `${prefix}-webhook-secret`))).toBe(false);
+  });
+  it.each([undefined, "", " "])("fails closed without a usable webhook secret (%s)", (secret) => {
+    configure();
+    vi.stubEnv("RAZORPAY_WEBHOOK_SECRET", secret);
+    expect(() => verifyWebhook(Buffer.from("{}"), "a".repeat(64))).toThrow("RAZORPAY_CONFIGURATION_REQUIRED");
   });
 });

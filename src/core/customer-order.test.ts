@@ -8,9 +8,9 @@ import { customerOrderPath, getCustomerOrder, resendOrderPaymentLink, sendOrderE
 
 describe("durable customer order access", () => {
   const capability = createPaymentCapability();
-  const order = { id: "order-a", customerEmail: "customer@example.test", designName: "Test", planKey: "GOLD", eventDate: null, status: "PAYMENT_READY", paymentIntent: { id: "payment-a", enquiryId: "order-a", organizationId: "org", status: "READY", amountMinor: 7500000n, currency: "INR", paymentAccessHash: capability.hash, paymentAccessExpiresAt: capability.expiresAt } };
+  const order = { id: "order-a", customerEmail: "customer@example.test", designName: "Test", planKey: "GOLD", eventDate: null, status: "PAYMENT_READY", paymentIntent: { id: "payment-a", enquiryId: "order-a", organizationId: "org", status: "READY", providerEnvironment: "TEST", amountMinor: 7500000n, currency: "INR", paymentAccessHash: capability.hash, paymentAccessExpiresAt: capability.expiresAt } };
   beforeEach(() => {
-    vi.clearAllMocks(); vi.stubEnv("VERCEL_ENV", "preview"); vi.stubEnv("VERCEL_BRANCH_URL", "test.vercel.app");
+    vi.clearAllMocks(); vi.stubEnv("RAZORPAY_MODE", "TEST"); vi.stubEnv("VERCEL_ENV", "preview"); vi.stubEnv("VERCEL_BRANCH_URL", "test.vercel.app");
     mocks.find.mockResolvedValue(order); mocks.email.mockResolvedValue({ ok: true }); mocks.update.mockResolvedValue({ count: 1 });
     mocks.transaction.mockImplementation(async callback => callback({ checkoutEnquiry: { findFirst: mocks.find }, paymentIntent: { updateMany: mocks.update }, auditLog: { create: mocks.audit } }));
   });
@@ -33,6 +33,19 @@ describe("durable customer order access", () => {
     mocks.find.mockResolvedValue({ ...order, paymentIntent: { ...order.paymentIntent, organizationId: "other" } });
     await expect(getCustomerOrder("order-a", capability.token)).rejects.toThrow();
   });
+  it.each([["TEST", "LIVE"], ["LIVE", "TEST"], ["TEST", null], ["LIVE", null]])("rejects %s access to a %s payment before reissuing links", async (mode, providerEnvironment) => {
+    vi.stubEnv("RAZORPAY_MODE", mode!); vi.stubEnv("VERCEL_ENV", "development");
+    mocks.find.mockResolvedValue({ ...order, paymentIntent: { ...order.paymentIntent, providerEnvironment } });
+    await expect(getCustomerOrder("order-a", capability.token)).rejects.toThrow("PAYMENT_ENVIRONMENT_MISMATCH");
+    await expect(resendOrderPaymentLink({ organizationId: "org", actorUserId: "owner", actorRole: "OWNER", enquiryId: "order-a" })).rejects.toThrow("PAYMENT_ENVIRONMENT_MISMATCH");
+    expect(mocks.update).not.toHaveBeenCalled(); expect(mocks.audit).not.toHaveBeenCalled(); expect(mocks.email).not.toHaveBeenCalled();
+  });
+  it("keeps pending custom quotes accessible when payments are unconfigured", async () => {
+    vi.stubEnv("RAZORPAY_MODE", ""); vi.stubEnv("PAYMENTS_ENABLED", "false");
+    mocks.find.mockResolvedValue({ ...order, planKey: "CUSTOM", paymentIntent: null });
+    mocks.verification.mockResolvedValue({ identifier: "org", value: capability.hash, expiresAt: capability.expiresAt });
+    expect(await getCustomerOrder("order-a", capability.token)).toEqual(expect.objectContaining({ paymentStatus: "PENDING_APPROVAL", paymentIntentId: null }));
+  });
   it("uses random tokens and a 30-day expiry", () => {
     const a = createPaymentCapability("same"); const b = createPaymentCapability("same");
     expect(a.token).not.toBe(b.token); expect(a.hash).not.toBe(a.token);
@@ -43,12 +56,16 @@ describe("durable customer order access", () => {
     const result = await resendOrderPaymentLink({ organizationId: "org", actorUserId: "owner", actorRole: "OWNER", enquiryId: "order-a" });
     expect(result.delivered).toBe(true); expect(result.testUrl).toContain("#access=");
     const update = mocks.update.mock.calls[0][0]; const token = result.testUrl!.split("#access=")[1];
+    expect(update.where.providerEnvironment).toBe("TEST");
     expect(validPaymentCapability(token, update.data.paymentAccessHash, update.data.paymentAccessExpiresAt)).toBe(true);
     expect(JSON.stringify(update)).not.toContain(token); expect(JSON.stringify(mocks.audit.mock.calls)).not.toContain(token);
   });
   it("does not give production admins a token in the response", async () => {
-    vi.stubEnv("VERCEL_ENV", "production"); vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://www.shivayonic.com");
+    vi.stubEnv("VERCEL_ENV", "production"); vi.stubEnv("RAZORPAY_MODE", "LIVE"); vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://www.shivayonic.com");
+    mocks.find.mockResolvedValue({ ...order, paymentIntent: { ...order.paymentIntent, providerEnvironment: "LIVE" } });
+    expect((await getCustomerOrder("order-a", capability.token)).paymentStatus).toBe("READY");
     expect(await resendOrderPaymentLink({ organizationId: "org", actorUserId: "owner", actorRole: "OWNER", enquiryId: "order-a" })).toEqual({ delivered: true });
+    expect(mocks.update.mock.calls[0][0].where.providerEnvironment).toBe("LIVE");
   });
   it("denies resend to non-OWNER before DB work", async () => {
     await expect(resendOrderPaymentLink({ organizationId: "org", actorUserId: "staff", actorRole: "STAFF", enquiryId: "order-a" })).rejects.toThrow(); expect(mocks.transaction).not.toHaveBeenCalled();
