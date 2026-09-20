@@ -44,6 +44,14 @@ const nextConfig: NextConfig = {
   // function. Explicit tracing prevents deployment pruning them as static-only.
   outputFileTracingIncludes: {
     "/api/public/form-submissions": ["./public/forms/*.pdf"],
+    // Temporary production migration runner: ship only the Prisma CLI and its
+    // migration inputs with this single serverless function.
+    "/api/internal/production-migration": [
+      "./node_modules/prisma/**/*",
+      "./node_modules/@prisma/**/*",
+      "./prisma/schema.prisma",
+      "./prisma/migrations/**/*",
+    ],
   },
   async redirects() {
     return [{ source: "/favicon.ico", destination: "/icon.svg", permanent: true }];
