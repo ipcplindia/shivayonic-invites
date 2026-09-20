@@ -22,7 +22,14 @@ async function migrate(request: Request) {
     await run(command, ["prisma", "migrate", "deploy"], { env: process.env, timeout: 120_000 });
     return NextResponse.json({ migration: MIGRATION, ok: true });
   } catch (error) {
-    console.error("Production migration failed", { code: error && typeof error === "object" && "code" in error ? (error as { code?: unknown }).code : "UNKNOWN" });
+    const record = error && typeof error === "object" ? error as { code?: unknown; stderr?: unknown; stdout?: unknown } : {};
+    const detail = typeof record.stderr === "string"
+      ? record.stderr.split(/\r?\n/).map((line) => line.trim()).find((line) => /error|P\d{4}|migration/i.test(line))?.slice(0, 180)
+      : undefined;
+    console.error("Production migration failed", {
+      code: typeof record.code === "string" || typeof record.code === "number" ? record.code : "UNKNOWN",
+      detail,
+    });
     return NextResponse.json({ migration: MIGRATION, ok: false, error: { code: "MIGRATION_FAILED" } }, { status: 500 });
   }
 }
