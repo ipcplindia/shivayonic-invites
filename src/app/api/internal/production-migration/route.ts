@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 async function migrate(request: Request) {
   const host = request.headers.get("host")?.split(":")[0] ?? "";
   const confirmed = new URL(request.url).searchParams.get("confirm");
-  if (process.env.VERCEL_ENV !== "production" || !host.endsWith(".vercel.app") || confirmed !== MIGRATION) {
+  const protectedHost = host.endsWith(".vercel.app") || host === "www.shivayonic.com";
+  if (process.env.VERCEL_ENV !== "production" || !protectedHost || confirmed !== MIGRATION) {
     return NextResponse.json({ error: { code: "NOT_FOUND" } }, { status: 404 });
   }
   try {
