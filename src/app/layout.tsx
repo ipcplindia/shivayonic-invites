@@ -42,6 +42,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: "Shivayonic Command Center", template: "%s · Shivayonic Command Center" },
   description: "Private operating platform for Shivayonic Invites.",
+  icons: { icon: "/icon.svg" },
+  manifest: "/manifest.webmanifest",
   robots: { index: false, follow: false },
 };
 

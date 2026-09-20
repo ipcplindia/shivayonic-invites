@@ -17,6 +17,7 @@ export default function Page() {
           trail={[{ label: "Home", href: "/" }, { label: "Cart", href: "/cart" }, { label: "Checkout" }]}
         />
         <SectionHead
+          level={1}
           center={false}
           eyebrow="Checkout"
           lede="Tell us where to reach you, then review your details before secure payment."

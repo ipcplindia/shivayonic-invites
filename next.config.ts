@@ -45,6 +45,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/public/form-submissions": ["./public/forms/*.pdf"],
   },
+  async redirects() {
+    return [{ source: "/favicon.ico", destination: "/icon.svg", permanent: true }];
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

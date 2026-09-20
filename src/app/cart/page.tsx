@@ -16,6 +16,7 @@ export default function Page() {
       <Band>
         <Breadcrumb trail={[{ label: "Home", href: "/" }, { label: "Cart" }]} />
         <SectionHead
+          level={1}
           center={false}
           eyebrow="Your cart"
           lede="Everything you have chosen so far. Change anything here before you continue."

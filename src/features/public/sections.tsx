@@ -314,10 +314,12 @@ const planIncludes = [
 export function PlansSection({
   id,
   showHead = true,
+  showPrices = true,
   chooseHref = "/cart",
 }: {
   id?: string;
   showHead?: boolean;
+  showPrices?: boolean;
   /** Where choosing a plan lands. The brief flow sends it straight to the cart. */
   chooseHref?: string;
 }) {
@@ -353,7 +355,7 @@ export function PlansSection({
                 ))}
               </span>
 
-              <div className="planPriceBlock">
+              {showPrices ? <div className="planPriceBlock">
                 {plan.price ? (
                   <>
                     <p className="planPrice">{plan.price}</p>
@@ -362,7 +364,7 @@ export function PlansSection({
                 ) : (
                   <p className="planPriceAsk">{plan.priceNote}</p>
                 )}
-              </div>
+              </div> : null}
 
               <p className="planTagline">{plan.tagline}</p>
 

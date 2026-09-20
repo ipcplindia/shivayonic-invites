@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 
 import { catalogueProductInclude, catalogueProductShape } from "@/core/catalogue-api";
 import { cataloguePage, decodeCatalogueCursor, parseCatalogueFilters } from "@/core/catalogue";
+import { showcaseCatalogue } from "@/core/catalogue-showcase";
 import { prisma } from "@/db/client";
 
 export async function GET(request: Request) {
@@ -18,6 +19,9 @@ export async function GET(request: Request) {
       ...(filters.q ? { OR: [{ name: { contains: filters.q, mode: "insensitive" } }, { shortDescription: { contains: filters.q, mode: "insensitive" } }] } : {}),
     };
     const products = await prisma.publicProduct.findMany({ where, include: catalogueProductInclude, orderBy: [{ displayOrder: "asc" }, { id: "asc" }], ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), take: filters.limit + 1 });
+    if (products.length === 0 && !cursor && await prisma.publicProduct.count({ where: { status: "PUBLISHED" } }) === 0) {
+      return NextResponse.json(showcaseCatalogue(filters));
+    }
     return NextResponse.json(cataloguePage(products.map(catalogueProductShape), filters.limit));
   } catch (error) {
     return NextResponse.json({ error: { code: error instanceof Error && error.message.startsWith("INVALID_CATALOGUE") ? error.message : "PUBLIC_CATALOGUE_UNAVAILABLE" } }, { status: error instanceof Error && error.message.startsWith("INVALID_CATALOGUE") ? 400 : 503 });

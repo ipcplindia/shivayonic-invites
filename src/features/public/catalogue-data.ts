@@ -2,7 +2,6 @@ import "server-only";
 
 import { headers } from "next/headers";
 
-import { featuredProducts } from "@/features/public/data";
 import type {
   CatalogueFilters,
   CatalogueListResponse,
@@ -11,6 +10,7 @@ import type {
   PublicProductSummary,
   VisualStyle,
 } from "@/shared/catalogue";
+import { showcaseCatalogue, showcaseProducts } from "@/core/catalogue-showcase";
 
 /**
  * Server-side reader for the verified public catalogue APIs.
@@ -82,52 +82,11 @@ export async function listCategories(): Promise<PublicCategory[]> {
  * artwork that exists. The moment the catalogue API returns rows, they win and
  * this is not used.
  */
-function showcaseSummaries(): PublicProductSummary[] {
-  return featuredProducts.map((design, index) => ({
-    id: `showcase-${design.slug}`,
-    slug: design.slug,
-    name: design.name,
-    shortDescription: design.blurb,
-    category: {
-      id: `showcase-${design.occasion}`,
-      slug: slugify(design.occasion),
-      name: design.occasion,
-      parentSlug: null,
-    },
-    styles: [
-      {
-        id: `showcase-${design.style}`,
-        slug: slugify(design.style),
-        name: design.style,
-        description: null,
-      },
-    ],
-    productType: "INVITATION",
-    startingPrice: null,
-    pricingLabel: null,
-    currency: "INR",
-    coverMediaId: null,
-    featured: true,
-    displayOrder: index,
-  }));
-}
-
 function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 /** Matches a design against the same filters the API applies. */
-function matchesFilters(product: PublicProductSummary, filters: CatalogueFilters) {
-  if (filters.category && product.category.slug !== filters.category) return false;
-  if (filters.style && !product.styles.some((s) => s.slug === filters.style)) return false;
-  if (filters.q) {
-    const needle = filters.q.trim().toLowerCase();
-    const hay = `${product.name} ${product.category.name} ${product.styles.map((s) => s.name).join(" ")}`;
-    if (!hay.toLowerCase().includes(needle)) return false;
-  }
-  return true;
-}
-
 /**
  * The catalogue, preferring real records and falling back to the published
  * showcase so no browsing surface is ever blank.
@@ -138,8 +97,7 @@ export async function listProductsForDisplay(
   const live = await listProducts(filters);
   if (live.products.length > 0) return { ...live, isShowcase: false };
 
-  const products = showcaseSummaries().filter((product) => matchesFilters(product, filters));
-  return { products, pageInfo: { nextCursor: null, hasMore: false }, isShowcase: true };
+  return { ...showcaseCatalogue(filters), isShowcase: true };
 }
 
 /** Designs for one occasion, matched on the occasion name rather than a slug. */
@@ -147,7 +105,7 @@ export async function listDesignsForOccasion(occasion: string): Promise<PublicPr
   const slug = slugify(occasion);
   const live = await listProducts({ category: slug, limit: 12 });
   if (live.products.length > 0) return live.products;
-  return showcaseSummaries().filter((product) => product.category.slug === slug);
+  return showcaseProducts().filter((product) => product.category.slug === slug);
 }
 
 /* ------------------------------------------------------------- view helpers */

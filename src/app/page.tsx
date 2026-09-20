@@ -376,7 +376,7 @@ export default function HomePage() {
         </section>
 
         {/* 13 — SERVICE PLANS */}
-        <PlansSection id="plans" />
+        <PlansSection id="plans" showPrices={false} />
 
         {/* 14 — HOW IT WORKS */}
         <section className="section">
