@@ -43,6 +43,10 @@ export async function POST(request: Request) {
     persisted = await persistPublicCheckout(parsed.data);
   } catch (error) {
     const code = error instanceof Error ? error.message : "CHECKOUT_UNAVAILABLE";
+    const providerCode = error && typeof error === "object" && "code" in error && typeof (error as { code?: unknown }).code === "string"
+      ? (error as { code: string }).code
+      : undefined;
+    console.error("Public order persistence failed", { code, providerCode });
     if (code === "IDEMPOTENCY_KEY_REUSED") return NextResponse.json({ message: "This submission key cannot be reused with different details." }, { status: 409 });
     if (code === "CHECKOUT_PLAN_NOT_FOUND") return NextResponse.json({ message: "That plan is not available." }, { status: 400 });
     if (code === "CHECKOUT_BRIEF_REQUIRED") return NextResponse.json({ message: "Complete the invitation brief before secure payment." }, { status: 400 });
