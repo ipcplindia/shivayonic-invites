@@ -6,9 +6,14 @@ import { sendEmail } from "@/features/public/notify";
 import { assertPaymentEnvironment } from "@/config/razorpay";
 
 export function customerOrigin() {
+  // A live Razorpay key is approved for the public website, not for Vercel's
+  // ephemeral deployment host. Never put a production payment capability on
+  // VERCEL_URL: Razorpay correctly blocks that host as a website mismatch.
   const source = process.env.VERCEL_ENV === "preview"
     ? `https://${process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL || ""}`
-    : process.env.NEXT_PUBLIC_APP_URL;
+    : process.env.VERCEL_ENV === "production"
+      ? "https://www.shivayonic.com"
+      : process.env.NEXT_PUBLIC_APP_URL;
   if (!source) throw new Error("CUSTOMER_ORIGIN_UNAVAILABLE");
   const url = new URL(source);
   if (url.protocol !== "https:" && !(process.env.NODE_ENV === "development" && url.hostname === "localhost")) throw new Error("CUSTOMER_ORIGIN_UNAVAILABLE");

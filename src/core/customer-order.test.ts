@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({ find: vi.fn(), verification: vi.fn(), update: 
 vi.mock("@/db/client", () => ({ prisma: { checkoutEnquiry: { findFirst: mocks.find }, verification: { findUnique: mocks.verification }, $transaction: mocks.transaction } }));
 vi.mock("@/core/public-organization", () => ({ getPublicOrganizationId: async () => "org" }));
 vi.mock("@/features/public/notify", () => ({ sendEmail: mocks.email }));
-import { customerOrderPath, getCustomerOrder, resendOrderPaymentLink, sendOrderEmail } from "./customer-order";
+import { customerOrderPath, customerOrigin, getCustomerOrder, resendOrderPaymentLink, sendOrderEmail } from "./customer-order";
 
 describe("durable customer order access", () => {
   const capability = createPaymentCapability();
@@ -66,6 +66,11 @@ describe("durable customer order access", () => {
     expect((await getCustomerOrder("order-a", capability.token)).paymentStatus).toBe("READY");
     expect(await resendOrderPaymentLink({ organizationId: "org", actorUserId: "owner", actorRole: "OWNER", enquiryId: "order-a" })).toEqual({ delivered: true });
     expect(mocks.update.mock.calls[0][0].where.providerEnvironment).toBe("LIVE");
+  });
+  it("uses the Razorpay-approved public origin for production payment links", () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://deployment-name.vercel.app");
+    expect(customerOrigin()).toBe("https://www.shivayonic.com");
   });
   it("denies resend to non-OWNER before DB work", async () => {
     await expect(resendOrderPaymentLink({ organizationId: "org", actorUserId: "staff", actorRole: "STAFF", enquiryId: "order-a" })).rejects.toThrow(); expect(mocks.transaction).not.toHaveBeenCalled();
