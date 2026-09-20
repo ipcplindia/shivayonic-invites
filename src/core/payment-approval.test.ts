@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ transaction: vi.fn(), findEnquiry: vi.fn(), createIntent: vi.fn(), updateEnquiry: vi.fn(), updateIntent: vi.fn(), audit: vi.fn(), email: vi.fn() }));
+const mocks = vi.hoisted(() => ({ transaction: vi.fn(), findEnquiry: vi.fn(), verification: vi.fn(), createIntent: vi.fn(), updateEnquiry: vi.fn(), updateIntent: vi.fn(), audit: vi.fn(), email: vi.fn() }));
 vi.mock("@/core/customer-order", () => ({ sendOrderEmail: mocks.email }));
 vi.mock("@/db/client", () => ({ prisma: { $transaction: mocks.transaction } }));
 
@@ -10,7 +10,7 @@ describe("payment approval authority", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("RAZORPAY_MODE", "TEST"); vi.stubEnv("VERCEL_ENV", "preview");
-    mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ checkoutEnquiry: { findFirst: mocks.findEnquiry, update: mocks.updateEnquiry }, paymentIntent: { create: mocks.createIntent, updateMany: mocks.updateIntent }, auditLog: { create: mocks.audit } }));
+    mocks.transaction.mockImplementation(async (callback: (tx: unknown) => unknown) => callback({ checkoutEnquiry: { findFirst: mocks.findEnquiry, update: mocks.updateEnquiry }, verification: { findUnique: mocks.verification }, paymentIntent: { create: mocks.createIntent, updateMany: mocks.updateIntent }, auditLog: { create: mocks.audit } }));
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -30,6 +30,15 @@ describe("payment approval authority", () => {
     mocks.createIntent.mockResolvedValue({ id: "intent-1", status: "READY" });
     await expect(approveCheckoutPayment({ organizationId: "org-a", actorUserId: "owner", actorRole: "OWNER", enquiryId: "enquiry-1", amountMinor: "5000000" })).resolves.toEqual(expect.objectContaining({ id: "intent-1" }));
     expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ amountMinor: 5_000_000n, status: "READY", paymentMode: "CUSTOM_APPROVED_AMOUNT" }) }));
+  });
+  it("promotes the original customer capability so approval can continue on the checkout page", async () => {
+    const hash = "a".repeat(64);
+    mocks.findEnquiry.mockResolvedValue({ id: "enquiry-1", planKey: "CUSTOM", customerEmail: "customer@example.test", designName: "Test", paymentIntent: null });
+    mocks.verification.mockResolvedValue({ identifier: "org-a", value: hash, expiresAt: new Date(Date.now() + 60_000) });
+    mocks.createIntent.mockResolvedValue({ id: "intent-1" });
+    await approveCheckoutPayment({ organizationId: "org-a", actorUserId: "owner", actorRole: "OWNER", enquiryId: "enquiry-1", amountMinor: "20000" });
+    expect(mocks.createIntent).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ paymentAccessHash: hash }) }));
+    expect(mocks.email).not.toHaveBeenCalled();
   });
   it("rejects standard-plan approval because fixed plans are auto-ready", async () => {
     const enquiry = { id: "enquiry-1", planKey: "GOLD", customerEmail: "customer@example.test", paymentIntent: { id: "intent-1", organizationId: "org-a", status: "PENDING_APPROVAL", paymentMode: "FULL", paymentAccessExpiresAt: new Date(0) } };

@@ -13,19 +13,21 @@ export function CustomerOrderSummary({ order, access }: { order: CustomerOrderDa
     {order.paymentIntentId && ["READY", "PROCESSING"].includes(order.paymentStatus) ? <PaymentCheckout paymentIntentId={order.paymentIntentId} paymentAccessToken={access} /> : null}
   </>;
 }
-export function CustomerOrder({ enquiryId }: { enquiryId: string }) {
+export function CustomerOrder({ enquiryId, access: suppliedAccess }: { enquiryId: string; access?: string }) {
   const [order, setOrder] = useState<CustomerOrderData | null>(null);
   const [access, setAccess] = useState("");
   const [message, setMessage] = useState("Loading your order…");
   useEffect(() => {
     const controller = new AbortController();
-    const token = new URLSearchParams(window.location.hash.slice(1)).get("access") ?? "";
+    const token = suppliedAccess ?? new URLSearchParams(window.location.hash.slice(1)).get("access") ?? "";
     setAccess(token);
-    void fetch("/api/public/customer-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enquiryId, access: token }), cache: "no-store", signal: controller.signal })
+    let refresh: ReturnType<typeof setTimeout> | undefined;
+    const load = () => void fetch("/api/public/customer-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enquiryId, access: token }), cache: "no-store", signal: controller.signal })
       .then(async response => { if (!response.ok) throw new Error(); return response.json(); })
-      .then(value => setOrder(value))
+      .then(value => { setOrder(value); if (value.paymentStatus === "PENDING_APPROVAL") refresh = setTimeout(load, 5000); })
       .catch(() => { if (!controller.signal.aborted) setMessage("This private link is invalid or expired. Ask the studio for a new link, or sign in to your account."); });
-    return () => controller.abort();
-  }, [enquiryId]);
+    load();
+    return () => { controller.abort(); if (refresh) clearTimeout(refresh); };
+  }, [enquiryId, suppliedAccess]);
   return <>{order ? <CustomerOrderSummary order={order} access={access} /> : <p role="status">{message}</p>}<p><a href="/account">My orders</a></p><button type="button" onClick={() => window.location.reload()}>Refresh status</button><p>Bookmark this private link or use the link in your email to return from another device.</p></>;
 }

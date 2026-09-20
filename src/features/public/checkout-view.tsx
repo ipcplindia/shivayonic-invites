@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import { useCart } from "@/features/public/cart";
 import { PaymentCheckout } from "@/features/public/payment-checkout";
+import { CustomerOrder } from "@/features/public/customer-order";
 
 /**
  * Checkout: who the commission is for and where it goes.
@@ -16,6 +17,7 @@ export function CheckoutView() {
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [payment, setPayment] = useState<{ paymentIntentId: string; paymentAccessToken: string } | null>(null);
+  const [customerOrder, setCustomerOrder] = useState<{ enquiryId: string; access: string } | null>(null);
   const submissionKey = useRef<string | null>(null);
 
   if (!ready) return <p className="cartNote">Loading…</p>;
@@ -42,6 +44,7 @@ export function CheckoutView() {
           {payment ? "Your details are confirmed. Continue to secure payment." : "Your request is saved. We will contact you about the next step."}
         </p>
         {payment ? <PaymentCheckout paymentIntentId={payment.paymentIntentId} paymentAccessToken={payment.paymentAccessToken} /> : null}
+        {customerOrder ? <CustomerOrder enquiryId={customerOrder.enquiryId} access={customerOrder.access} /> : null}
         <div className="cartActions">
           <Link className="btn btnPrimary" href="/catalogue">
             Continue browsing
@@ -76,6 +79,8 @@ export function CheckoutView() {
       submissionKey.current = null;
       if (typeof saved.paymentIntentId === "string" && typeof saved.paymentAccessToken === "string") {
         setPayment({ paymentIntentId: saved.paymentIntentId, paymentAccessToken: saved.paymentAccessToken });
+      } else if (typeof saved.enquiryId === "string" && typeof saved.paymentAccessToken === "string") {
+        setCustomerOrder({ enquiryId: saved.enquiryId, access: saved.paymentAccessToken });
       }
       clear();
       setState("sent");
