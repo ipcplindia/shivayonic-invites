@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import path from "node:path";
 import { promisify } from "node:util";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/auth/context";
@@ -18,8 +19,8 @@ async function migrate(request: Request) {
   }
   try {
     await requireRole("OWNER", { headers: request.headers });
-    const command = process.platform === "win32" ? "npx.cmd" : "npx";
-    await run(command, ["prisma", "migrate", "deploy"], { env: process.env, timeout: 120_000 });
+    const prismaCli = path.join(process.cwd(), "node_modules", "prisma", "build", "index.js");
+    await run(process.execPath, [prismaCli, "migrate", "deploy"], { env: process.env, timeout: 120_000 });
     return NextResponse.json({ migration: MIGRATION, ok: true });
   } catch (error) {
     const record = error && typeof error === "object" ? error as { code?: unknown; stderr?: unknown; stdout?: unknown } : {};
