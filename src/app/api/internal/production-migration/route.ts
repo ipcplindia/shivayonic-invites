@@ -9,7 +9,7 @@ const MIGRATION = "20260906000000_payment_security_foundation";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+async function migrate(request: Request) {
   const host = request.headers.get("host")?.split(":")[0] ?? "";
   const confirmed = new URL(request.url).searchParams.get("confirm");
   if (process.env.VERCEL_ENV !== "production" || !host.endsWith(".vercel.app") || confirmed !== MIGRATION) {
@@ -25,3 +25,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ migration: MIGRATION, ok: false, error: { code: "MIGRATION_FAILED" } }, { status: 500 });
   }
 }
+
+export const GET = migrate;
+export const POST = migrate;
