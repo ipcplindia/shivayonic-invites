@@ -1,6 +1,7 @@
 "use client";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 
 /**
  * Analytics loaders, off by default. Nothing renders unless the matching env
@@ -9,6 +10,8 @@ import { usePathname } from "next/navigation";
  *
  *   NEXT_PUBLIC_GA_ID        e.g. G-XXXXXXXXXX   (Google Analytics 4)
  *   NEXT_PUBLIC_FB_PIXEL_ID  e.g. 1234567890     (Meta Pixel)
+ *
+ * Vercel Web Analytics is enabled automatically when deployed to Vercel.
  */
 export function Analytics() {
   const pathname = usePathname();
@@ -31,6 +34,7 @@ export function Analytics() {
           {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixel}');fbq('track','PageView');`}
         </Script>
       ) : null}
+      <VercelAnalytics />
     </>
   );
 }
